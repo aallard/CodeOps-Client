@@ -8,6 +8,7 @@ library;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../models/enums.dart';
+import '../models/jira_models.dart';
 import '../models/project.dart';
 import '../models/qa_job.dart';
 import '../utils/constants.dart';
@@ -521,4 +522,185 @@ final filteredJobHistoryProvider = Provider<AsyncValue<List<JobSummary>>>(
       return filtered;
     });
   },
+);
+
+// ---------------------------------------------------------------------------
+// BugInvestigatorWizardState
+// ---------------------------------------------------------------------------
+
+/// Immutable state for the Bug Investigator wizard flow.
+class BugInvestigatorWizardState {
+  /// The current step index (0-based).
+  final int currentStep;
+
+  /// The selected Jira issue to investigate.
+  final JiraIssue? selectedIssue;
+
+  /// Comments fetched for the selected issue.
+  final List<JiraComment> selectedComments;
+
+  /// The selected project (auto-detected from Jira project key).
+  final Project? selectedProject;
+
+  /// The selected branch name.
+  final String? selectedBranch;
+
+  /// The set of selected agent types.
+  final Set<AgentType> selectedAgents;
+
+  /// Job configuration.
+  final JobConfig config;
+
+  /// Free-form additional context for agents.
+  final String additionalContext;
+
+  /// Whether the wizard is currently launching.
+  final bool isLaunching;
+
+  /// Error message from a failed launch attempt.
+  final String? launchError;
+
+  /// Creates a [BugInvestigatorWizardState].
+  const BugInvestigatorWizardState({
+    this.currentStep = 0,
+    this.selectedIssue,
+    this.selectedComments = const [],
+    this.selectedProject,
+    this.selectedBranch,
+    this.selectedAgents = const {},
+    this.config = const JobConfig(),
+    this.additionalContext = '',
+    this.isLaunching = false,
+    this.launchError,
+  });
+
+  /// Creates a copy with the given fields replaced.
+  BugInvestigatorWizardState copyWith({
+    int? currentStep,
+    JiraIssue? selectedIssue,
+    List<JiraComment>? selectedComments,
+    Project? selectedProject,
+    String? selectedBranch,
+    Set<AgentType>? selectedAgents,
+    JobConfig? config,
+    String? additionalContext,
+    bool? isLaunching,
+    String? launchError,
+    bool clearLaunchError = false,
+  }) {
+    return BugInvestigatorWizardState(
+      currentStep: currentStep ?? this.currentStep,
+      selectedIssue: selectedIssue ?? this.selectedIssue,
+      selectedComments: selectedComments ?? this.selectedComments,
+      selectedProject: selectedProject ?? this.selectedProject,
+      selectedBranch: selectedBranch ?? this.selectedBranch,
+      selectedAgents: selectedAgents ?? this.selectedAgents,
+      config: config ?? this.config,
+      additionalContext: additionalContext ?? this.additionalContext,
+      isLaunching: isLaunching ?? this.isLaunching,
+      launchError: clearLaunchError ? null : (launchError ?? this.launchError),
+    );
+  }
+}
+
+/// StateNotifier for managing the Bug Investigator wizard flow.
+class BugInvestigatorWizardNotifier
+    extends StateNotifier<BugInvestigatorWizardState> {
+  /// Creates a [BugInvestigatorWizardNotifier] with recommended bug agents.
+  BugInvestigatorWizardNotifier()
+      : super(BugInvestigatorWizardState(
+          selectedAgents: AuditWizardNotifier._recommendedAgents(
+              JobMode.bugInvestigate),
+        ));
+
+  /// Moves to the next step.
+  void nextStep() {
+    state = state.copyWith(currentStep: state.currentStep + 1);
+  }
+
+  /// Moves to the previous step.
+  void previousStep() {
+    if (state.currentStep > 0) {
+      state = state.copyWith(currentStep: state.currentStep - 1);
+    }
+  }
+
+  /// Jumps to a specific step.
+  void goToStep(int step) {
+    state = state.copyWith(currentStep: step);
+  }
+
+  /// Sets the selected Jira issue and its comments.
+  void selectIssue(JiraIssue issue, List<JiraComment> comments) {
+    state = state.copyWith(
+      selectedIssue: issue,
+      selectedComments: comments,
+    );
+  }
+
+  /// Sets the selected project and initializes the branch.
+  void selectProject(Project project) {
+    state = state.copyWith(
+      selectedProject: project,
+      selectedBranch: project.defaultBranch ?? 'main',
+    );
+  }
+
+  /// Sets the selected branch.
+  void selectBranch(String branch) {
+    state = state.copyWith(selectedBranch: branch);
+  }
+
+  /// Toggles a single agent type selection.
+  void toggleAgent(AgentType agent) {
+    final updated = Set<AgentType>.from(state.selectedAgents);
+    if (updated.contains(agent)) {
+      updated.remove(agent);
+    } else {
+      updated.add(agent);
+    }
+    state = state.copyWith(selectedAgents: updated);
+  }
+
+  /// Selects the recommended agents for bug investigation mode.
+  void selectRecommendedAgents() {
+    state = state.copyWith(
+      selectedAgents:
+          AuditWizardNotifier._recommendedAgents(JobMode.bugInvestigate),
+    );
+  }
+
+  /// Sets additional context text.
+  void setAdditionalContext(String context) {
+    state = state.copyWith(additionalContext: context);
+  }
+
+  /// Updates the job configuration.
+  void updateConfig(JobConfig config) {
+    state = state.copyWith(config: config);
+  }
+
+  /// Marks the wizard as launching.
+  void setLaunching(bool launching) {
+    state = state.copyWith(isLaunching: launching, clearLaunchError: true);
+  }
+
+  /// Records a launch error.
+  void setLaunchError(String error) {
+    state = state.copyWith(isLaunching: false, launchError: error);
+  }
+
+  /// Resets the wizard to its initial state.
+  void reset() {
+    state = BugInvestigatorWizardState(
+      selectedAgents:
+          AuditWizardNotifier._recommendedAgents(JobMode.bugInvestigate),
+    );
+  }
+}
+
+/// Provider for the Bug Investigator wizard state.
+final bugInvestigatorWizardStateProvider = StateNotifierProvider<
+    BugInvestigatorWizardNotifier, BugInvestigatorWizardState>(
+  (ref) => BugInvestigatorWizardNotifier(),
 );

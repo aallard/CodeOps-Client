@@ -242,11 +242,197 @@ void main() {
       container.read(jobHistoryFiltersProvider.notifier).state =
           const JobHistoryFilters(mode: JobMode.audit);
 
-      // Need to wait for async providers
-      // This is a synchronous derived provider, so reading it after
-      // the underlying async data resolves would work. For unit tests
-      // we just verify the provider exists and has correct type.
       expect(container.read(filteredJobHistoryProvider), isA<AsyncValue<List<JobSummary>>>());
+    });
+  });
+
+  group('BugInvestigatorWizardState', () {
+    test('default values are correct', () {
+      const state = BugInvestigatorWizardState();
+
+      expect(state.currentStep, 0);
+      expect(state.selectedIssue, isNull);
+      expect(state.selectedComments, isEmpty);
+      expect(state.selectedProject, isNull);
+      expect(state.selectedBranch, isNull);
+      expect(state.selectedAgents, isEmpty);
+      expect(state.additionalContext, '');
+      expect(state.isLaunching, isFalse);
+      expect(state.launchError, isNull);
+    });
+
+    test('copyWith replaces specified fields', () {
+      const state = BugInvestigatorWizardState();
+      final updated = state.copyWith(
+        currentStep: 2,
+        additionalContext: 'extra info',
+      );
+
+      expect(updated.currentStep, 2);
+      expect(updated.additionalContext, 'extra info');
+      expect(updated.selectedIssue, isNull);
+    });
+  });
+
+  group('BugInvestigatorWizardNotifier', () {
+    test('initial state has recommended bug agents', () {
+      final container = ProviderContainer();
+      addTearDown(container.dispose);
+
+      final state = container.read(bugInvestigatorWizardStateProvider);
+
+      expect(state.currentStep, 0);
+      expect(state.selectedAgents, contains(AgentType.security));
+      expect(state.selectedAgents, contains(AgentType.codeQuality));
+      expect(state.selectedAgents, contains(AgentType.testCoverage));
+      expect(state.selectedAgents, contains(AgentType.performance));
+      expect(state.selectedAgents.length, 4);
+    });
+
+    test('nextStep increments step', () {
+      final container = ProviderContainer();
+      addTearDown(container.dispose);
+
+      container.read(bugInvestigatorWizardStateProvider.notifier).nextStep();
+
+      expect(
+          container.read(bugInvestigatorWizardStateProvider).currentStep, 1);
+    });
+
+    test('previousStep decrements step', () {
+      final container = ProviderContainer();
+      addTearDown(container.dispose);
+
+      final notifier =
+          container.read(bugInvestigatorWizardStateProvider.notifier);
+      notifier.nextStep();
+      notifier.nextStep();
+      notifier.previousStep();
+
+      expect(
+          container.read(bugInvestigatorWizardStateProvider).currentStep, 1);
+    });
+
+    test('previousStep does not go below 0', () {
+      final container = ProviderContainer();
+      addTearDown(container.dispose);
+
+      container
+          .read(bugInvestigatorWizardStateProvider.notifier)
+          .previousStep();
+
+      expect(
+          container.read(bugInvestigatorWizardStateProvider).currentStep, 0);
+    });
+
+    test('selectProject sets project and branch', () {
+      final container = ProviderContainer();
+      addTearDown(container.dispose);
+
+      const project = Project(
+        id: 'p1',
+        teamId: 't1',
+        name: 'Test Project',
+        defaultBranch: 'develop',
+      );
+      container
+          .read(bugInvestigatorWizardStateProvider.notifier)
+          .selectProject(project);
+
+      final state = container.read(bugInvestigatorWizardStateProvider);
+
+      expect(state.selectedProject?.id, 'p1');
+      expect(state.selectedBranch, 'develop');
+    });
+
+    test('toggleAgent toggles agent selection', () {
+      final container = ProviderContainer();
+      addTearDown(container.dispose);
+
+      final notifier =
+          container.read(bugInvestigatorWizardStateProvider.notifier);
+
+      // Security is initially selected, toggle it off.
+      notifier.toggleAgent(AgentType.security);
+
+      expect(
+          container
+              .read(bugInvestigatorWizardStateProvider)
+              .selectedAgents,
+          isNot(contains(AgentType.security)));
+
+      // Toggle it back on.
+      notifier.toggleAgent(AgentType.security);
+
+      expect(
+          container
+              .read(bugInvestigatorWizardStateProvider)
+              .selectedAgents,
+          contains(AgentType.security));
+    });
+
+    test('setAdditionalContext updates context', () {
+      final container = ProviderContainer();
+      addTearDown(container.dispose);
+
+      container
+          .read(bugInvestigatorWizardStateProvider.notifier)
+          .setAdditionalContext('repro steps: ...');
+
+      expect(
+          container
+              .read(bugInvestigatorWizardStateProvider)
+              .additionalContext,
+          'repro steps: ...');
+    });
+
+    test('setLaunching sets flag and clears error', () {
+      final container = ProviderContainer();
+      addTearDown(container.dispose);
+
+      final notifier =
+          container.read(bugInvestigatorWizardStateProvider.notifier);
+      notifier.setLaunchError('failed');
+      notifier.setLaunching(true);
+
+      final state = container.read(bugInvestigatorWizardStateProvider);
+
+      expect(state.isLaunching, isTrue);
+      expect(state.launchError, isNull);
+    });
+
+    test('setLaunchError sets error and clears launching', () {
+      final container = ProviderContainer();
+      addTearDown(container.dispose);
+
+      final notifier =
+          container.read(bugInvestigatorWizardStateProvider.notifier);
+      notifier.setLaunching(true);
+      notifier.setLaunchError('something broke');
+
+      final state = container.read(bugInvestigatorWizardStateProvider);
+
+      expect(state.isLaunching, isFalse);
+      expect(state.launchError, 'something broke');
+    });
+
+    test('reset restores initial state', () {
+      final container = ProviderContainer();
+      addTearDown(container.dispose);
+
+      final notifier =
+          container.read(bugInvestigatorWizardStateProvider.notifier);
+      notifier.nextStep();
+      notifier.setAdditionalContext('context');
+      notifier.setLaunching(true);
+      notifier.reset();
+
+      final state = container.read(bugInvestigatorWizardStateProvider);
+
+      expect(state.currentStep, 0);
+      expect(state.additionalContext, '');
+      expect(state.isLaunching, isFalse);
+      expect(state.selectedAgents.length, 4);
     });
   });
 }

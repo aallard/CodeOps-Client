@@ -17,8 +17,11 @@ import 'pages/job_progress_page.dart';
 import 'pages/job_report_page.dart';
 import 'pages/login_page.dart';
 import 'pages/jira_browser_page.dart';
+import 'pages/bug_investigator_page.dart';
 import 'pages/placeholder_page.dart';
 import 'pages/project_detail_page.dart';
+import 'pages/task_list_page.dart';
+import 'pages/task_manager_page.dart';
 import 'pages/projects_page.dart';
 import 'pages/settings_page.dart';
 import 'services/auth/auth_service.dart';
@@ -139,8 +142,10 @@ final GoRouter router = GoRouter(
         GoRoute(
           path: '/bugs',
           name: 'bugs',
-          pageBuilder: (context, state) => const NoTransitionPage(
-            child: PlaceholderPage(title: 'Bug Investigator'),
+          pageBuilder: (context, state) => NoTransitionPage(
+            child: BugInvestigatorPage(
+              initialJiraKey: state.uri.queryParameters['jiraKey'],
+            ),
           ),
         ),
         // 11. Jira Browser
@@ -156,7 +161,7 @@ final GoRouter router = GoRouter(
           path: '/tasks',
           name: 'tasks',
           pageBuilder: (context, state) => const NoTransitionPage(
-            child: PlaceholderPage(title: 'Task Manager'),
+            child: TaskManagerPage(),
           ),
         ),
         // 13. Tech Debt
@@ -217,8 +222,10 @@ final GoRouter router = GoRouter(
         GoRoute(
           path: '/jobs/:id/tasks',
           name: 'taskList',
-          pageBuilder: (context, state) => const NoTransitionPage(
-            child: PlaceholderPage(title: 'Task List'),
+          pageBuilder: (context, state) => NoTransitionPage(
+            child: TaskListPage(
+              jobId: state.pathParameters['id']!,
+            ),
           ),
         ),
         // 20. Personas

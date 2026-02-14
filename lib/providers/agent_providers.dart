@@ -11,6 +11,7 @@ import '../models/agent_run.dart';
 import '../models/enums.dart';
 import '../services/orchestration/agent_dispatcher.dart';
 import '../services/orchestration/agent_monitor.dart';
+import '../services/orchestration/bug_investigation_orchestrator.dart';
 import '../services/orchestration/job_orchestrator.dart';
 import '../services/orchestration/progress_aggregator.dart';
 import '../services/orchestration/vera_manager.dart';
@@ -129,6 +130,15 @@ final jobLifecycleProvider = StreamProvider<JobLifecycleEvent>((ref) {
   final orchestrator = ref.watch(jobOrchestratorProvider);
   return orchestrator.lifecycleStream;
 });
+
+/// Provides [BugInvestigationOrchestrator] for launching bug investigations.
+final bugInvestigationOrchestratorProvider =
+    Provider<BugInvestigationOrchestrator>(
+  (ref) => BugInvestigationOrchestrator(
+    jobApi: ref.watch(jobApiProvider),
+    jobOrchestrator: ref.watch(jobOrchestratorProvider),
+  ),
+);
 
 /// Agent dispatch configuration (user-configurable).
 final agentDispatchConfigProvider =
