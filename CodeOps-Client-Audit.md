@@ -1,93 +1,37 @@
-# CodeOps-Client Codebase Audit
+# CodeOps-Client — Comprehensive Codebase Audit
 
-**Service:** CodeOps-Client
-**Type:** Flutter/Dart Desktop Application (macOS, Windows, Linux)
-**Audit Date:** 2026-02-14
-**Auditor:** Claude Opus 4.6
+**Audit Date:** 2026-02-15T21:30:00Z
+**Branch:** main
+**Commit:** ad0bd82 Fix paginated API response parsing and add post-login team auto-selection
+**Auditor:** Claude Code (Automated)
+**Purpose:** Zero-context reference for AI-assisted development
+**Audit File:** CodeOps-Client-Audit.md
+**OpenAPI Spec:** N/A — This is a client application; the server's OpenAPI spec lives in CodeOps-Server
+**Quality Grade:** A
+**Overall Score:** 86/104 (83%)
 
----
-
-## Table of Contents
-
-1. [Project Identity](#1-project-identity)
-2. [Directory Structure](#2-directory-structure)
-3. [Build & Run](#3-build--run)
-4. [Configuration & Environment](#4-configuration--environment)
-5. [Entry Point & Application Bootstrap](#5-entry-point--application-bootstrap)
-6. [Database Schema](#6-database-schema)
-7. [Models / DTOs](#7-models--dtos)
-8. [Enumerations](#8-enumerations)
-9. [Services / Business Logic](#9-services--business-logic)
-10. [State Management (Riverpod Providers)](#10-state-management-riverpod-providers)
-11. [Consumed REST API Surface](#11-consumed-rest-api-surface)
-12. [Inbound REST API](#12-inbound-rest-api)
-13. [Navigation & Routing](#13-navigation--routing)
-14. [Pages (Screens)](#14-pages-screens)
-15. [Widgets](#15-widgets)
-16. [Theme & Styling](#16-theme--styling)
-17. [Utilities & Helpers](#17-utilities--helpers)
-18. [Error Handling & Exceptions](#18-error-handling--exceptions)
-19. [Authentication & Authorization](#19-authentication--authorization)
-20. [External Integrations](#20-external-integrations)
-21. [Event / Messaging System](#21-event--messaging-system)
-22. [Infrastructure / Docker](#22-infrastructure--docker)
-23. [OpenAPI / Swagger](#23-openapi--swagger)
-24. [Tests](#24-tests)
-25. [Cross-Cutting Concerns](#25-cross-cutting-concerns)
-26. [Quality Scorecard](#26-quality-scorecard)
+> This audit is the single source of truth for the CodeOps-Client codebase.
+> An AI reading only this document should be able to generate accurate code
+> changes, new features, tests, and fixes without filesystem access.
 
 ---
 
 ## 1. Project Identity
 
-| Field | Value |
-|-------|-------|
-| **Name** | CodeOps-Client |
-| **Description** | Desktop client for the CodeOps AI-Powered Software Maintenance Platform. Orchestrates multi-agent Claude Code QA jobs, manages projects via a REST API backend, and provides GitHub/Jira integrations. |
-| **Language** | Dart 3.6+ |
-| **Framework** | Flutter 3.27+ |
-| **Platform targets** | macOS, Windows, Linux (desktop only) |
-| **SDK constraint** | `>=3.6.0 <4.0.0` |
-| **Flutter constraint** | `>=3.27.0` |
-| **State management** | Riverpod 2.x (manual providers, no `@riverpod` codegen) |
-| **Navigation** | GoRouter 14.8.1 |
-| **HTTP client** | Dio 5.7.0 (centralized ApiClient) |
-| **Local database** | Drift 2.22.1 (SQLite) |
-| **Code generation** | JsonSerializable (models), Drift (database) |
-| **Auth mechanism** | JWT Bearer tokens, FlutterSecureStorage |
-| **Package manager** | pub (pubspec.yaml) |
-| **Backend API base** | `http://localhost:8090/api/v1` |
+```
+Project Name:           CodeOps-Client
+Repository URL:         GitHub (private)
+Primary Language:       Dart / Flutter
+SDK Version:            Flutter 3.41.1 / Dart 3.11.0
+Build Tool:             Flutter CLI + pub
+Current Branch:         main
+Latest Commit Hash:     ad0bd82
+Latest Commit Message:  Fix paginated API response parsing and add post-login team auto-selection
+Audit Timestamp:        2026-02-15T21:30:00Z
+```
 
-### Key Dependencies (pubspec.yaml)
-
-| Package | Version | Purpose |
-|---------|---------|---------|
-| `flutter_riverpod` | ^2.6.1 | State management |
-| `go_router` | ^14.8.1 | Declarative routing |
-| `drift` | ^2.22.1 | SQLite ORM / local cache |
-| `sqlite3_flutter_libs` | ^0.5.28 | SQLite native bindings |
-| `dio` | ^5.7.0 | HTTP client |
-| `flutter_secure_storage` | ^9.2.3 | Keychain/keystore token storage |
-| `window_manager` | ^0.4.3 | Desktop window configuration |
-| `json_annotation` | ^4.9.0 | JSON serialization annotations |
-| `fl_chart` | ^0.70.2 | Charts and graphs |
-| `pdf` | ^3.11.2 | PDF document generation |
-| `archive` | ^4.0.2 | ZIP archive creation |
-| `file_picker` | ^8.1.7 | Native file save dialogs |
-| `intl` | ^0.19.0 | Date/number formatting |
-| `path` | ^1.9.1 | Path manipulation |
-| `url_launcher` | ^6.3.1 | Open URLs in browser |
-| `package_info_plus` | ^8.1.3 | App version info |
-
-### Dev Dependencies
-
-| Package | Version | Purpose |
-|---------|---------|---------|
-| `build_runner` | ^2.4.14 | Code generation runner |
-| `json_serializable` | ^6.9.2 | JSON code generation |
-| `drift_dev` | ^2.22.1 | Drift code generation |
-| `flutter_lints` | ^5.0.0 | Lint rules |
-| `mocktail` | ^1.0.4 | Mocking framework for tests |
+**Platform:** macOS desktop application (Flutter desktop)
+**Architecture:** Riverpod state management + GoRouter navigation + Dio HTTP client + Drift local SQLite database
 
 ---
 
@@ -95,1502 +39,1520 @@
 
 ```
 CodeOps-Client/
-  lib/
-    main.dart                     # App entry point
-    app.dart                      # Root MaterialApp.router widget
-    router.dart                   # GoRouter with 24 routes + AuthNotifier
-    database/
-      database.dart               # Drift database class, migrations, singleton
-      database.g.dart             # Generated Drift code
-      tables.dart                 # 17 Drift table definitions
-    models/
-      agent_run.dart              # AgentRun model
-      compliance_item.dart        # ComplianceItem model
-      dependency_scan.dart        # DependencyScan, DependencyVulnerability
-      directive.dart              # Directive, ProjectDirective
-      enums.dart                  # 22 enums with JSON converters
-      finding.dart                # Finding model
-      health_snapshot.dart        # 12 models (HealthSnapshot, PageResponse<T>, AuthResponse, etc.)
-      jira_models.dart            # 21 Jira-specific model classes
-      persona.dart                # Persona model
-      project.dart                # Project model
-      qa_job.dart                 # QaJob, JobSummary
-      remediation_task.dart       # RemediationTask model
-      specification.dart          # Specification model
-      team.dart                   # Team, TeamMember, Invitation
-      tech_debt_item.dart         # TechDebtItem model
-      user.dart                   # User model
-      vcs_models.dart             # 16 VCS model classes + 2 enums
-    pages/
-      admin_hub_page.dart
-      audit_wizard_page.dart
-      bug_investigator_page.dart
-      compliance_wizard_page.dart
-      dependency_scan_page.dart
-      directives_page.dart
-      findings_explorer_page.dart
-      github_browser_page.dart
-      health_dashboard_page.dart
-      home_page.dart
-      jira_browser_page.dart
-      job_history_page.dart
-      job_progress_page.dart
-      job_report_page.dart
-      login_page.dart
-      persona_editor_page.dart
-      personas_page.dart
-      placeholder_page.dart
-      project_detail_page.dart
-      projects_page.dart
-      settings_page.dart
-      task_list_page.dart
-      task_manager_page.dart
-      tech_debt_page.dart
-    providers/
-      admin_providers.dart
-      agent_providers.dart
-      auth_providers.dart
-      compliance_providers.dart
-      dependency_providers.dart
-      directive_providers.dart
-      finding_providers.dart
-      github_providers.dart
-      health_providers.dart
-      jira_providers.dart
-      job_providers.dart
-      persona_providers.dart
-      project_providers.dart
-      report_providers.dart
-      settings_providers.dart
-      task_providers.dart
-      tech_debt_providers.dart
-      user_providers.dart
-      wizard_providers.dart
-    services/
-      agent/
-        persona_manager.dart       # Prompt assembly (persona + directives + context)
-        report_parser.dart         # Markdown report -> structured data
-        task_generator.dart        # Findings -> remediation tasks + prompts
-      analysis/
-        dependency_scanner.dart    # Dependency health score + report generation
-        health_calculator.dart     # Composite health score from agent runs
-        tech_debt_tracker.dart     # Debt scoring, priority matrix, reports
-      auth/
-        auth_service.dart          # Login, register, refresh, logout
-        secure_storage.dart        # FlutterSecureStorage wrapper
-      cloud/
-        admin_api.dart             # Admin endpoints
-        api_client.dart            # Centralized Dio wrapper with interceptors
-        api_exceptions.dart        # Sealed ApiException hierarchy
-        compliance_api.dart        # Compliance spec/item endpoints
-        dependency_api.dart        # Dependency scan/vulnerability endpoints
-        directive_api.dart         # Directive CRUD endpoints
-        finding_api.dart           # Finding CRUD endpoints
-        health_monitor_api.dart    # Health schedule/snapshot endpoints
-        integration_api.dart       # GitHub/Jira connections + all domain endpoints
-        job_api.dart               # Job/AgentRun/BugInvestigation endpoints
-        metrics_api.dart           # Team/project metrics endpoints
-        persona_api.dart           # Persona CRUD endpoints
-        project_api.dart           # Project CRUD endpoints
-        report_api.dart            # Report upload/download endpoints
-        task_api.dart              # Remediation task endpoints
-        team_api.dart              # Team/member/invitation endpoints
-        tech_debt_api.dart         # Tech debt CRUD endpoints
-        user_api.dart              # User profile endpoints
-      data/
-        sync_service.dart          # Cloud-to-local project sync
-      integration/
-        export_service.dart        # Markdown/PDF/ZIP/CSV export
-      jira/
-        jira_mapper.dart           # Jira ADF <-> Markdown + model mapping
-        jira_service.dart          # Direct Jira Cloud REST API client
-      orchestration/
-        agent_dispatcher.dart      # Claude Code subprocess spawner w/ concurrency
-        agent_monitor.dart         # Process output collection + timeout enforcement
-        bug_investigation_orchestrator.dart  # Jira -> bug investigation job flow
-        job_orchestrator.dart      # 10-step job lifecycle coordinator
-        progress_aggregator.dart   # Real-time multi-agent progress stream
-        vera_manager.dart          # Vera consolidation engine (dedup, scoring, summary)
-      platform/
-        claude_code_detector.dart  # Claude Code CLI detection + version validation
-        process_manager.dart       # Subprocess lifecycle management
-      vcs/
-        git_service.dart           # Git CLI wrapper (20+ operations)
-        github_provider.dart       # GitHub REST API v3 implementation
-        repo_manager.dart          # Local cloned repo registry
-        vcs_provider.dart          # Abstract VCS provider interface
-    theme/
-      app_theme.dart              # AppTheme.darkTheme (Material 3)
-      colors.dart                 # CodeOpsColors constants + severity/status maps
-      typography.dart             # CodeOpsTypography (Inter + JetBrains Mono)
-    utils/
-      constants.dart              # AppConstants (60+ config values)
-      date_utils.dart             # Date formatting helpers
-      file_utils.dart             # File size/extension/name helpers
-      string_utils.dart           # String manipulation helpers
-    widgets/
-      shell/
-        navigation_shell.dart      # Sidebar + top bar shell
-      (87+ widget files across subdirectories)
-  assets/
-    personas/                     # Built-in agent persona markdown files
-  test/                           # Test files
-  pubspec.yaml                    # Package manifest
-  analysis_options.yaml           # Lint configuration
+├── analysis_options.yaml
+├── pubspec.yaml
+├── pubspec.lock
+├── assets/
+│   └── personas/                    # Built-in agent persona markdown files
+├── lib/
+│   ├── main.dart                    # App entry point
+│   ├── app.dart                     # Root widget (MaterialApp.router)
+│   ├── router.dart                  # GoRouter with 24 routes
+│   ├── database/
+│   │   ├── database.dart            # Drift SQLite database definition
+│   │   └── tables.dart              # 18 Drift table definitions
+│   ├── models/
+│   │   ├── enums.dart               # 22 enums with JSON converters (1,481 lines)
+│   │   ├── user.dart
+│   │   ├── team.dart
+│   │   ├── project.dart
+│   │   ├── qa_job.dart
+│   │   ├── finding.dart
+│   │   ├── agent_run.dart
+│   │   ├── health_snapshot.dart     # Also contains PageResponse, AuthResponse, TeamMetrics, etc.
+│   │   ├── remediation_task.dart
+│   │   ├── persona.dart
+│   │   ├── directive.dart
+│   │   ├── compliance_item.dart
+│   │   ├── dependency_scan.dart
+│   │   ├── tech_debt_item.dart
+│   │   ├── jira_models.dart         # 17+ Jira model classes
+│   │   ├── specification.dart
+│   │   └── vcs_models.dart          # 18 VCS model classes (plain Dart, no codegen)
+│   ├── pages/                       # 24 page files
+│   │   ├── admin_hub_page.dart
+│   │   ├── audit_wizard_page.dart
+│   │   ├── bug_investigator_page.dart
+│   │   ├── compliance_wizard_page.dart
+│   │   ├── dependency_scan_page.dart
+│   │   ├── directives_page.dart
+│   │   ├── findings_explorer_page.dart
+│   │   ├── github_browser_page.dart
+│   │   ├── health_dashboard_page.dart
+│   │   ├── home_page.dart
+│   │   ├── jira_browser_page.dart
+│   │   ├── job_history_page.dart
+│   │   ├── job_progress_page.dart
+│   │   ├── job_report_page.dart
+│   │   ├── login_page.dart
+│   │   ├── persona_editor_page.dart
+│   │   ├── personas_page.dart
+│   │   ├── placeholder_page.dart
+│   │   ├── project_detail_page.dart
+│   │   ├── projects_page.dart
+│   │   ├── settings_page.dart
+│   │   ├── task_list_page.dart
+│   │   ├── task_manager_page.dart
+│   │   └── tech_debt_page.dart
+│   ├── providers/                   # 20 provider files (230 total providers)
+│   │   ├── admin_providers.dart
+│   │   ├── agent_providers.dart
+│   │   ├── auth_providers.dart
+│   │   ├── compliance_providers.dart
+│   │   ├── dependency_providers.dart
+│   │   ├── directive_providers.dart
+│   │   ├── finding_providers.dart
+│   │   ├── github_providers.dart
+│   │   ├── health_providers.dart
+│   │   ├── jira_providers.dart
+│   │   ├── job_providers.dart
+│   │   ├── persona_providers.dart
+│   │   ├── project_providers.dart
+│   │   ├── report_providers.dart
+│   │   ├── settings_providers.dart
+│   │   ├── task_providers.dart
+│   │   ├── team_providers.dart
+│   │   ├── tech_debt_providers.dart
+│   │   ├── user_providers.dart
+│   │   └── wizard_providers.dart
+│   ├── services/
+│   │   ├── agent/                   # Agent processing (3 files)
+│   │   │   ├── persona_manager.dart
+│   │   │   ├── report_parser.dart
+│   │   │   └── task_generator.dart
+│   │   ├── analysis/                # Analysis services (3 files)
+│   │   │   ├── dependency_scanner.dart
+│   │   │   ├── health_calculator.dart
+│   │   │   └── tech_debt_tracker.dart
+│   │   ├── auth/                    # Authentication (2 files)
+│   │   │   ├── auth_service.dart
+│   │   │   └── secure_storage.dart
+│   │   ├── cloud/                   # Server API clients (18 files)
+│   │   │   ├── admin_api.dart
+│   │   │   ├── api_client.dart      # Dio HTTP client with interceptors
+│   │   │   ├── api_exceptions.dart  # 10-class sealed exception hierarchy
+│   │   │   ├── compliance_api.dart
+│   │   │   ├── dependency_api.dart
+│   │   │   ├── directive_api.dart
+│   │   │   ├── finding_api.dart
+│   │   │   ├── health_monitor_api.dart
+│   │   │   ├── integration_api.dart
+│   │   │   ├── job_api.dart
+│   │   │   ├── metrics_api.dart
+│   │   │   ├── persona_api.dart
+│   │   │   ├── project_api.dart
+│   │   │   ├── report_api.dart
+│   │   │   ├── task_api.dart
+│   │   │   ├── team_api.dart
+│   │   │   ├── tech_debt_api.dart
+│   │   │   └── user_api.dart
+│   │   ├── data/                    # Data sync (1 file)
+│   │   │   └── sync_service.dart
+│   │   ├── integration/             # Export service (1 file)
+│   │   │   └── export_service.dart
+│   │   ├── jira/                    # Jira integration (2 files)
+│   │   │   ├── jira_mapper.dart
+│   │   │   └── jira_service.dart
+│   │   ├── logging/                 # Structured logging (2 files)
+│   │   │   ├── log_level.dart
+│   │   │   └── log_service.dart
+│   │   ├── orchestration/           # Job orchestration (5 files)
+│   │   │   ├── agent_dispatcher.dart
+│   │   │   ├── agent_monitor.dart
+│   │   │   ├── bug_investigation_orchestrator.dart
+│   │   │   ├── job_orchestrator.dart
+│   │   │   └── progress_aggregator.dart
+│   │   ├── platform/                # Platform services (2 files)
+│   │   │   ├── claude_code_detector.dart
+│   │   │   └── process_manager.dart
+│   │   └── vcs/                     # Version control (4 files)
+│   │       ├── git_service.dart
+│   │       ├── github_provider.dart
+│   │       ├── repo_manager.dart
+│   │       └── vcs_provider.dart
+│   ├── theme/
+│   │   ├── app_theme.dart           # Material 3 dark theme
+│   │   ├── colors.dart              # Color palette + semantic color maps
+│   │   └── typography.dart          # Inter font + JetBrains Mono for code
+│   ├── utils/
+│   │   └── constants.dart           # All app constants (225 lines)
+│   └── widgets/                     # 85+ reusable widget files
+│       ├── admin/
+│       ├── compliance/
+│       ├── dashboard/
+│       ├── dependency/
+│       ├── findings/
+│       ├── health/
+│       ├── jira/
+│       ├── personas/
+│       ├── progress/
+│       ├── reports/
+│       ├── shared/                  # ErrorPanel, EmptyState, SearchBar, etc.
+│       ├── shell/                   # NavigationShell, TeamSwitcherDialog
+│       ├── tasks/
+│       ├── tech_debt/
+│       ├── vcs/
+│       └── wizard/
+├── test/                            # 192 test files
+│   ├── database/
+│   ├── integration/
+│   ├── models/
+│   ├── pages/
+│   ├── providers/
+│   ├── router/
+│   ├── services/
+│   ├── utils/
+│   └── widgets/
+├── integration_test/                # 5 integration test files
+├── macos/                           # macOS platform config
+└── linux/                           # Linux platform config
+```
+
+**Narrative summary:**
+- **Single-project Flutter desktop application** targeting macOS (primary) and Linux
+- **Source code** in `lib/` (193 Dart files, 50,257 lines)
+- **Tests** in `test/` (192 files) and `integration_test/` (5 files)
+- **Configuration** via `pubspec.yaml`, `analysis_options.yaml`, `macos/` platform config
+- **No monorepo** — standalone project that connects to CodeOps-Server backend
+
+---
+
+## 3. Build & Dependency Manifest
+
+### Dependencies (30)
+
+| Dependency | Version | Purpose |
+|---|---|---|
+| flutter (sdk) | 3.41.1 | Flutter framework |
+| flutter_riverpod | ^2.6.1 | State management (Riverpod 2.x) |
+| go_router | ^14.8.1 | Declarative routing with auth guards |
+| dio | ^5.7.0 | HTTP client with interceptors |
+| drift | ^2.23.1 | Local SQLite database (ORM) |
+| sqlite3_flutter_libs | ^0.5.28 | SQLite native libraries |
+| flutter_secure_storage | ^9.2.4 | OS keychain storage (tokens) |
+| json_annotation | ^4.9.0 | JSON serialization annotations |
+| json_serializable | ^6.9.4 | JSON code generation |
+| uuid | ^4.5.1 | UUID generation (correlation IDs) |
+| path_provider | ^2.1.5 | Platform-specific file paths |
+| path | ^1.9.1 | Path manipulation |
+| intl | ^0.19.0 | Date/number formatting |
+| fl_chart | ^0.70.2 | Charts and data visualization |
+| flutter_markdown | ^0.7.6+2 | Markdown rendering |
+| url_launcher | ^6.3.1 | Open URLs in browser |
+| file_picker | ^8.1.7 | Native file picker dialogs |
+| archive | ^4.0.4 | ZIP file creation/extraction |
+| pdf | ^3.11.3 | PDF document generation |
+| collection | ^1.19.1 | Collection utilities |
+| window_manager | ^0.4.3 | Desktop window management |
+| crypto | ^3.0.6 | Cryptographic utilities |
+| convert | ^3.1.2 | Encoding/decoding (base64, utf8) |
+
+### Dev Dependencies (5)
+
+| Dependency | Version | Purpose |
+|---|---|---|
+| flutter_test (sdk) | — | Widget testing framework |
+| integration_test (sdk) | — | Integration testing |
+| mocktail | ^1.0.4 | Mocking framework |
+| build_runner | ^2.4.14 | Code generation runner |
+| drift_dev | ^2.23.1 | Drift code generation |
+
+### Build Commands
+
+```
+Install:    flutter pub get
+Build:      flutter build macos
+Run (dev):  flutter run -d macos
+Test:       flutter test
+Analyze:    flutter analyze
+Codegen:    dart run build_runner build --delete-conflicting-outputs
 ```
 
 ---
 
-## 3. Build & Run
+## 4. Configuration Files
 
-### Prerequisites
+### analysis_options.yaml
 
-- Flutter SDK 3.27+ (`flutter --version`)
-- Dart SDK 3.6+
-- Claude Code CLI installed and on PATH (for agent dispatch)
-- CodeOps-Server running on `localhost:8090`
+```yaml
+include: package:flutter_lints/flutter.yaml
 
-### Install Dependencies
+analyzer:
+  language:
+    strict-casts: true
+    strict-inference: true
+    strict-raw-types: true
+  errors:
+    invalid_annotation_target: ignore
 
-```bash
-cd CodeOps-Client
-flutter pub get
+linter:
+  rules:
+    - always_declare_return_types
+    - annotate_overrides
+    - avoid_empty_else
+    - avoid_print
+    - avoid_relative_lib_imports
+    - prefer_const_constructors
+    - prefer_const_declarations
+    - prefer_final_fields
+    - prefer_final_locals
+    - sort_constructors_first
+    - unnecessary_this
+    - use_key_in_widget_constructors
 ```
 
-### Code Generation (after model/database changes)
+### lib/utils/constants.dart (key values)
 
-```bash
-dart run build_runner build --delete-conflicting-outputs
+```
+API Base URL:           http://localhost:8090
+API Prefix:             /api/v1
+App Name:               CodeOps
+Window Min Size:        1024 × 700
+Window Default Size:    1440 × 900
+Sidebar Expanded:       240px
+Sidebar Collapsed:      64px
+Max Concurrent Agents:  1-6 (default 3)
+Agent Timeout:          5-60 min
+Max Turns:              10-100
+Default Pass Threshold: 80
+Default Warn Threshold: 60
+Max Spec File Size:     50 MB
+Max Live Findings:      50
+Job Polling Interval:   5 seconds
+Debounce Duration:      300ms
+Default Page Size:      20
 ```
 
-### Run (macOS)
+### macOS Entitlements
 
-```bash
-flutter run -d macos
+**Debug:** app-sandbox, JIT, network.server, network.client
+**Release:** app-sandbox, network.client
+
+### Connection Map
+
 ```
-
-### Run (Linux)
-
-```bash
-flutter run -d linux
-```
-
-### Run (Windows)
-
-```bash
-flutter run -d windows
-```
-
-### Run Tests
-
-```bash
-flutter test
-```
-
-### Build Release
-
-```bash
-flutter build macos --release
-flutter build linux --release
-flutter build windows --release
+Backend API:     http://localhost:8090/api/v1 (CodeOps-Server)
+GitHub API:      https://api.github.com (via GitHubProvider, PAT auth)
+Jira API:        https://{instance}.atlassian.net (via JiraService, Basic auth)
+Local Database:  SQLite via Drift (~/.codeops/codeops.db)
+Secure Storage:  macOS Keychain / Linux libsecret
+Log Files:       ~/.codeops/logs/codeops-YYYY-MM-DD.log
 ```
 
 ---
 
-## 4. Configuration & Environment
+## 5. Startup & Runtime Behavior
 
-### AppConstants (`lib/utils/constants.dart`)
-
-All configuration is centralized in `AppConstants` as `static const` values. There are no `.env` files or runtime environment variable lookups beyond platform environment (`HOME` for repo paths).
-
-| Constant | Value | Purpose |
-|----------|-------|---------|
-| `apiBaseUrl` | `'http://localhost:8090'` | CodeOps server base URL |
-| `apiPrefix` | `'/api/v1'` | API path prefix |
-| `maxTeamMembers` | `50` | Team member limit |
-| `maxProjectsPerTeam` | `100` | Project limit per team |
-| `jwtExpiryHours` | `24` | Token lifetime |
-| `refreshTokenExpiryDays` | `30` | Refresh token lifetime |
-| `defaultClaudeModel` | `'claude-sonnet-4-20250514'` | Default Claude model |
-| `defaultClaudeModelForDispatch` | `'claude-sonnet-4-5-20250514'` | Model for agent dispatch |
-| `minClaudeCodeVersion` | `'1.0.0'` | Minimum Claude CLI version |
-| `defaultMaxConcurrentAgents` | `3` | Max parallel agents |
-| `defaultAgentTimeoutMinutes` | `30` | Agent timeout |
-| `defaultMaxTurns` | `50` | Max Claude CLI turns |
-| `healthScoreGreenThreshold` | `80` | Green health threshold |
-| `healthScoreYellowThreshold` | `60` | Yellow health threshold |
-| `securityAgentWeight` | `1.5` | Security agent weight multiplier |
-| `architectureAgentWeight` | `1.5` | Architecture agent weight multiplier |
-| `defaultAgentWeight` | `1.0` | Default agent weight |
-| `criticalScoreReduction` | `20.0` | Points deducted per critical finding |
-| `highScoreReduction` | `10.0` | Points deducted per high finding |
-| `mediumScoreReduction` | `3.0` | Points deducted per medium finding |
-| `lowScoreReduction` | `1.0` | Points deducted per low finding |
-| `deduplicationLineThreshold` | `5` | Lines proximity for dedup |
-| `deduplicationTitleSimilarityThreshold` | `0.8` | Title similarity for dedup |
-| `maxExportFilenameLength` | `100` | Export filename max chars |
-| `maxAgentTypes` | `12` | Total agent type count |
-| `maxSpecsPerJob` | `10` | Spec upload limit |
-| `minHealthScore` | `0` | Health score floor |
-| `maxHealthScore` | `100` | Health score ceiling |
-
-#### Secure Storage Keys
-
-| Key | Purpose |
-|-----|---------|
-| `codeops_auth_token` | JWT access token |
-| `codeops_refresh_token` | Refresh token |
-| `codeops_user_id` | Current user UUID |
-| `codeops_team_id` | Selected team UUID |
-
-#### S3 Prefix Constants
-
-| Constant | Value |
-|----------|-------|
-| `s3SummaryPrefix` | `'reports/summary/'` |
-| `s3AgentPrefix` | `'reports/agents/'` |
-| `s3SpecPrefix` | `'specs/'` |
-
-### Window Configuration (main.dart)
-
-| Setting | Value |
-|---------|-------|
-| Default size | 1440 x 900 |
-| Minimum size | 1024 x 700 |
-| Title | `'CodeOps'` |
-| Title bar style | Hidden |
-| Center on launch | `true` |
-| Skip task bar | `false` |
-
----
-
-## 5. Entry Point & Application Bootstrap
-
-### `lib/main.dart`
+### Entry Point: `lib/main.dart`
 
 ```dart
-Future<void> main() async {
+void main() async {
   WidgetsFlutterBinding.ensureInitialized();
+  await LogConfig.initialize();
   await windowManager.ensureInitialized();
-
-  WindowOptions windowOptions = const WindowOptions(
-    size: Size(1440, 900),
-    minimumSize: Size(1024, 700),
-    center: true,
-    skipTaskbar: false,
-    titleBarStyle: TitleBarStyle.hidden,
-    title: 'CodeOps',
-  );
-
-  windowManager.waitUntilReadyToShow(windowOptions, () async {
-    await windowManager.show();
-    await windowManager.focus();
-  });
-
+  // Window options: size 1440×900, min 1024×700, centered, title 'CodeOps'
+  log.i('App', 'CodeOps starting');
   runApp(const ProviderScope(child: CodeOpsApp()));
 }
 ```
 
-- Initializes `WidgetsBinding` and `WindowManager`
-- Configures window with hidden title bar, 1440x900 default, 1024x700 minimum
-- Wraps the entire app in Riverpod `ProviderScope`
+### Startup Sequence
 
-### `lib/app.dart`
+1. Flutter binding initialized
+2. LogConfig initialized (debug: console colors, release: file logging)
+3. Window manager configured (size, min size, centering, title)
+4. ProviderScope wraps app (Riverpod container)
+5. CodeOpsApp builds MaterialApp.router with GoRouter
+6. GoRouter redirects unauthenticated users to `/login`
+7. On login success, AuthService stores tokens → authStateStream emits `authenticated`
+8. app.dart `ref.listen(authStateProvider)` fires → sets `authNotifier.state` → router redirects to `/`
+9. `_initTeamSelection()` auto-selects first team (or restores from secure storage)
+10. Dashboard data loads: myJobs, teamProjects, teamMetrics
 
-```dart
-class CodeOpsApp extends ConsumerWidget {
-  const CodeOpsApp({super.key});
+### Background Tasks
 
-  @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    return MaterialApp.router(
-      title: 'CodeOps',
-      theme: AppTheme.darkTheme,
-      routerConfig: router,
-      debugShowCheckedModeBanner: false,
-    );
-  }
-}
-```
-
-- Uses `MaterialApp.router` with GoRouter
-- Dark theme only (no light theme)
-- `ConsumerWidget` for Riverpod access
+- **Job progress polling:** Every 5 seconds when a job is active (fallback for lifecycle stream)
+- **Auth token refresh:** Automatic via Dio interceptor on 401 responses
+- **Log file rotation:** 7-day retention, daily rotation
 
 ---
 
-## 6. Database Schema
+## 6. Data Model Layer
 
-### Technology
+### Models Summary (17 files, 50+ classes)
 
-- **ORM:** Drift 2.22.1
-- **Engine:** SQLite (via `sqlite3_flutter_libs`)
-- **File location:** `getApplicationSupportDirectory()/codeops.db`
-- **Schema version:** 2
-- **Migration:** v1 -> v2 creates `clonedRepos` table
+All models use `@JsonSerializable()` with custom enum converters unless noted.
 
-### Singleton Access
-
-```dart
-CodeOpsDatabase get database => _database ??= CodeOpsDatabase();
+#### User (`lib/models/user.dart`)
+```
+Fields:
+  - id: String (UUID)
+  - email: String
+  - displayName: String?
+  - avatarUrl: String?
+  - isActive: bool
+  - lastLoginAt: DateTime?
+  - createdAt: DateTime?
 ```
 
-### Tables (17 total) - `lib/database/tables.dart`
+#### Team (`lib/models/team.dart`)
+```
+Classes: Team, TeamMember, Invitation
 
-#### Users
+Team:
+  - id: String (UUID)
+  - name: String
+  - description: String?
+  - ownerId: String
+  - ownerName: String?
+  - teamsWebhookUrl: String?
+  - memberCount: int?
+  - createdAt, updatedAt: DateTime?
 
-| Column | Dart Type | Drift Type | Nullable | Notes |
-|--------|-----------|------------|----------|-------|
-| id | String | text | No | Primary key |
-| email | String | text | No | |
-| displayName | String | text | No | |
-| avatarUrl | String? | text | Yes | |
-| isActive | bool | boolean | Yes | Default `true` |
-| lastLoginAt | DateTime? | dateTime | Yes | |
-| createdAt | DateTime? | dateTime | Yes | |
+TeamMember:
+  - id: String, userId: String, displayName: String, email: String
+  - avatarUrl: String?, role: TeamRole (@TeamRoleConverter)
+  - joinedAt: DateTime?
 
-#### Teams
+Invitation:
+  - id: String, email: String, role: TeamRole (@TeamRoleConverter)
+  - status: InvitationStatus, invitedByName: String?, expiresAt, createdAt: DateTime?
+```
 
-| Column | Dart Type | Drift Type | Nullable | Notes |
-|--------|-----------|------------|----------|-------|
-| id | String | text | No | Primary key |
-| name | String | text | No | |
-| description | String? | text | Yes | |
-| ownerId | String | text | No | |
-| memberCount | int? | integer | Yes | |
-| createdAt | DateTime? | dateTime | Yes | |
+#### Project (`lib/models/project.dart`)
+```
+Fields:
+  - id: String (UUID)
+  - teamId: String
+  - name: String
+  - description: String?
+  - githubConnectionId, repoUrl, repoFullName, defaultBranch: String?
+  - jiraConnectionId, jiraProjectKey, jiraDefaultIssueType: String?
+  - jiraLabels: List<String>?, jiraComponent: String?
+  - techStack: String?
+  - healthScore: int?
+  - lastAuditAt: DateTime?
+  - isArchived: bool
+  - createdAt, updatedAt: DateTime?
+```
 
-#### Projects
+#### QaJob (`lib/models/qa_job.dart`)
+```
+Classes: QaJob, JobSummary
 
-| Column | Dart Type | Drift Type | Nullable | Notes |
-|--------|-----------|------------|----------|-------|
-| id | String | text | No | Primary key |
-| teamId | String | text | No | |
-| name | String | text | No | |
-| description | String? | text | Yes | |
-| githubConnectionId | String? | text | Yes | |
-| repoUrl | String? | text | Yes | |
-| repoFullName | String? | text | Yes | e.g. `owner/repo` |
-| defaultBranch | String? | text | Yes | |
-| jiraConnectionId | String? | text | Yes | |
-| jiraProjectKey | String? | text | Yes | |
-| techStack | String? | text | Yes | |
-| healthScore | int? | integer | Yes | 0-100 |
-| isArchived | bool | boolean | No | Default `false` |
+QaJob:
+  - id, projectId, projectName: String
+  - mode: JobMode, status: JobStatus
+  - name, branch, configJson, summaryMd: String?
+  - overallResult: JobResult?
+  - healthScore, totalFindings, criticalCount, highCount, mediumCount, lowCount: int?
+  - jiraTicketKey, startedBy, startedByName: String?
+  - startedAt, completedAt, createdAt: DateTime?
 
-#### QaJobs
+JobSummary:
+  - id: String, projectName: String?
+  - mode: JobMode, status: JobStatus
+  - name: String?, overallResult: JobResult?
+  - healthScore, totalFindings, criticalCount: int?
+  - completedAt, createdAt: DateTime?
+```
 
-| Column | Dart Type | Drift Type | Nullable | Notes |
-|--------|-----------|------------|----------|-------|
-| id | String | text | No | Primary key |
-| projectId | String | text | No | |
-| mode | String | text | No | JobMode enum as text |
-| status | String | text | No | JobStatus enum as text |
-| name | String? | text | Yes | |
-| branch | String? | text | Yes | |
-| overallResult | String? | text | Yes | JobResult enum |
-| healthScore | int? | integer | Yes | |
-| totalFindings | int? | integer | Yes | |
-| criticalCount | int? | integer | Yes | |
-| highCount | int? | integer | Yes | |
-| summaryReportS3Key | String? | text | Yes | |
-| createdAt | DateTime? | dateTime | Yes | |
-| startedAt | DateTime? | dateTime | Yes | |
-| completedAt | DateTime? | dateTime | Yes | |
+#### Finding (`lib/models/finding.dart`)
+```
+Fields:
+  - id, jobId: String
+  - agentType: AgentType, severity: Severity
+  - title, description: String
+  - filePath: String?, lineNumber: int?
+  - recommendation, evidence: String?
+  - effortEstimate: Effort?, debtCategory: DebtCategory?
+  - status: FindingStatus
+  - statusChangedBy: String?, statusChangedAt: DateTime?
+  - createdAt: DateTime?
+```
 
-#### AgentRuns
+#### AgentRun (`lib/models/agent_run.dart`)
+```
+Fields:
+  - id, jobId: String
+  - agentType: AgentType, status: AgentStatus, result: AgentResult?
+  - reportS3Key: String?
+  - score, findingsCount, criticalCount, highCount: int?
+  - startedAt, completedAt: DateTime?
+```
 
-| Column | Dart Type | Drift Type | Nullable | Notes |
-|--------|-----------|------------|----------|-------|
-| id | String | text | No | Primary key |
-| jobId | String | text | No | |
-| agentType | String | text | No | AgentType enum |
-| status | String | text | No | AgentStatus enum |
-| result | String? | text | Yes | AgentResult enum |
-| reportS3Key | String? | text | Yes | |
-| score | int? | integer | Yes | |
-| findingsCount | int? | integer | Yes | |
-| criticalCount | int? | integer | Yes | |
-| highCount | int? | integer | Yes | |
-| startedAt | DateTime? | dateTime | Yes | |
-| completedAt | DateTime? | dateTime | Yes | |
+#### HealthSnapshot and Related (`lib/models/health_snapshot.dart`)
+```
+Classes: HealthSnapshot, HealthSchedule, PageResponse<T>, AuthResponse,
+         TeamMetrics, ProjectMetrics, GitHubConnection, JiraConnection,
+         BugInvestigation, SystemSetting, AuditLogEntry, NotificationPreference
 
-#### Findings
+HealthSnapshot:
+  - id, projectId, jobId: String
+  - healthScore: int
+  - findingsBySeverity: String? (JSON)
+  - techDebtScore, dependencyScore: int?
+  - testCoveragePercent: double?
+  - capturedAt: DateTime?
 
-| Column | Dart Type | Drift Type | Nullable | Notes |
-|--------|-----------|------------|----------|-------|
-| id | String | text | No | Primary key |
-| jobId | String | text | No | |
-| agentType | String | text | No | AgentType enum |
-| severity | String | text | No | Severity enum |
-| title | String | text | No | |
-| description | String? | text | Yes | |
-| filePath | String? | text | Yes | |
-| lineNumber | int? | integer | Yes | |
-| recommendation | String? | text | Yes | |
-| evidence | String? | text | Yes | |
-| effortEstimate | String? | text | Yes | Effort enum |
-| debtCategory | String? | text | Yes | DebtCategory enum |
-| status | String | text | No | FindingStatus enum |
-| createdAt | DateTime? | dateTime | Yes | |
+PageResponse<T>:
+  - content: List<T>
+  - page, size, totalElements, totalPages: int
+  - isLast: bool
+  Factory: PageResponse.fromJson(Map, T Function(Object))
 
-#### RemediationTasks
+TeamMetrics:
+  - teamId: String, totalProjects, totalJobs, totalFindings: int
+  - averageHealthScore: double, projectsBelowThreshold, openCriticalFindings: int
 
-| Column | Dart Type | Drift Type | Nullable | Notes |
-|--------|-----------|------------|----------|-------|
-| id | String | text | No | Primary key |
-| jobId | String | text | No | |
-| taskNumber | int | integer | No | |
-| title | String | text | No | |
-| description | String? | text | Yes | |
-| promptMd | String? | text | Yes | |
-| promptS3Key | String? | text | Yes | |
-| findingIds | String? | text | Yes | JSON array string |
-| priority | String? | text | Yes | Priority enum |
-| status | String | text | No | TaskStatus enum |
-| assignedTo | String? | text | Yes | |
-| jiraKey | String? | text | Yes | |
-| createdAt | DateTime? | dateTime | Yes | |
+ProjectMetrics:
+  - projectId, projectName: String
+  - currentHealthScore, previousHealthScore: int?
+  - totalJobs, totalFindings, openCritical, openHigh: int
+  - techDebtItemCount, openVulnerabilities: int
+  - lastAuditAt: DateTime?
+```
 
-#### Personas
+#### RemediationTask (`lib/models/remediation_task.dart`)
+```
+Fields:
+  - id, jobId: String
+  - taskNumber: int, title: String
+  - description, promptMd, promptS3Key: String?
+  - findingIds: List<String>?
+  - priority: Priority, status: TaskStatus
+  - assignedTo, assignedToName, jiraKey: String?
+  - createdAt: DateTime?
+```
 
-| Column | Dart Type | Drift Type | Nullable | Notes |
-|--------|-----------|------------|----------|-------|
-| id | String | text | No | Primary key |
-| name | String | text | No | |
-| agentType | String? | text | Yes | AgentType enum |
-| description | String? | text | Yes | |
-| contentMd | String? | text | Yes | Full markdown content |
-| scope | String | text | No | Scope enum |
-| teamId | String? | text | Yes | |
-| createdBy | String? | text | Yes | |
-| isDefault | bool? | boolean | Yes | |
-| version | int? | integer | Yes | |
-| createdAt | DateTime? | dateTime | Yes | |
-| updatedAt | DateTime? | dateTime | Yes | |
+#### Persona (`lib/models/persona.dart`)
+```
+Fields:
+  - id, name: String
+  - agentType: AgentType?, description, contentMd: String?
+  - scope: Scope
+  - teamId, createdBy, createdByName: String?
+  - isDefault: bool, version: int?
+  - createdAt, updatedAt: DateTime?
+```
 
-#### Directives
+#### Directive (`lib/models/directive.dart`)
+```
+Classes: Directive, ProjectDirective
 
-| Column | Dart Type | Drift Type | Nullable | Notes |
-|--------|-----------|------------|----------|-------|
-| id | String | text | No | Primary key |
-| name | String | text | No | |
-| description | String? | text | Yes | |
-| contentMd | String? | text | Yes | |
-| category | String? | text | Yes | DirectiveCategory enum |
-| scope | String | text | No | DirectiveScope enum |
-| teamId | String? | text | Yes | |
-| projectId | String? | text | Yes | |
-| createdBy | String? | text | Yes | |
-| version | int? | integer | Yes | |
-| createdAt | DateTime? | dateTime | Yes | |
-| updatedAt | DateTime? | dateTime | Yes | |
+Directive:
+  - id, name: String, description, contentMd: String?
+  - category: DirectiveCategory, scope: DirectiveScope
+  - teamId, projectId, createdBy, createdByName: String?
+  - version: int?, createdAt, updatedAt: DateTime?
 
-#### TechDebtItems
+ProjectDirective:
+  - projectId, directiveId, directiveName: String
+  - category: DirectiveCategory, enabled: bool
+```
 
-| Column | Dart Type | Drift Type | Nullable | Notes |
-|--------|-----------|------------|----------|-------|
-| id | String | text | No | Primary key |
-| projectId | String | text | No | |
-| category | String | text | No | DebtCategory enum |
-| title | String | text | No | |
-| description | String? | text | Yes | |
-| filePath | String? | text | Yes | |
-| effortEstimate | String? | text | Yes | Effort enum |
-| businessImpact | String? | text | Yes | BusinessImpact enum |
-| status | String | text | No | DebtStatus enum |
-| firstDetectedJobId | String? | text | Yes | |
-| resolvedJobId | String? | text | Yes | |
-| createdAt | DateTime? | dateTime | Yes | |
-| updatedAt | DateTime? | dateTime | Yes | |
+#### VCS Models (`lib/models/vcs_models.dart`) — Plain Dart (no codegen)
+```
+18 classes:
+  FileChangeType (enum), DiffLineType (enum),
+  VcsCredentials, VcsOrganization, VcsRepository, VcsBranch,
+  VcsPullRequest, CreatePRRequest, VcsCommit, VcsStash, VcsTag,
+  CloneProgress, RepoStatus, FileChange, DiffResult, DiffHunk,
+  DiffLine, WorkflowRun
 
-#### DependencyScans
+All use manual fromGitHubJson()/fromGitJson() factories.
+```
 
-| Column | Dart Type | Drift Type | Nullable | Notes |
-|--------|-----------|------------|----------|-------|
-| id | String | text | No | Primary key |
-| projectId | String | text | No | |
-| jobId | String? | text | Yes | |
-| manifestFile | String? | text | Yes | |
-| totalDependencies | int? | integer | Yes | |
-| outdatedCount | int? | integer | Yes | |
-| vulnerableCount | int? | integer | Yes | |
-| createdAt | DateTime? | dateTime | Yes | |
+#### Additional Models
+- **ComplianceItem:** id, jobId, requirement, specId, specName, status (ComplianceStatus), evidence, agentType, notes, createdAt
+- **DependencyScan:** id, projectId, jobId, manifestFile, totalDependencies, outdatedCount, vulnerableCount, createdAt
+- **DependencyVulnerability:** id, scanId, dependencyName, currentVersion, fixedVersion, cveId, severity, description, status (VulnerabilityStatus), createdAt
+- **TechDebtItem:** id, projectId, category (DebtCategory), title, description, filePath, effortEstimate (Effort), businessImpact (BusinessImpact), status (DebtStatus), firstDetectedJobId, resolvedJobId, createdAt, updatedAt
+- **Specification:** id, jobId, name, specType (SpecType), s3Key, createdAt
+- **JiraModels:** 17+ classes including JiraSearchResult, JiraIssue, JiraIssueFields, JiraStatus, JiraUser, JiraComment, JiraProject, JiraSprint, JiraTransition, CreateJiraIssueRequest, etc.
 
-#### DependencyVulnerabilities
+---
 
-| Column | Dart Type | Drift Type | Nullable | Notes |
-|--------|-----------|------------|----------|-------|
-| id | String | text | No | Primary key |
-| scanId | String | text | No | |
-| dependencyName | String | text | No | |
-| currentVersion | String? | text | Yes | |
-| fixedVersion | String? | text | Yes | |
-| cveId | String? | text | Yes | |
-| severity | String | text | No | Severity enum |
-| description | String? | text | Yes | |
-| status | String | text | No | VulnerabilityStatus enum |
-| createdAt | DateTime? | dateTime | Yes | |
+## 7. Enum Definitions
 
-#### HealthSnapshots
+All enums are in `lib/models/enums.dart` (1,481 lines). Each has `toJson()`, `fromJson()`, and `displayName` getter.
 
-| Column | Dart Type | Drift Type | Nullable | Notes |
-|--------|-----------|------------|----------|-------|
-| id | String | text | No | Primary key |
-| projectId | String | text | No | |
-| healthScore | int | integer | No | |
-| jobId | String? | text | Yes | |
-| findingsBySeverity | String? | text | Yes | JSON string |
-| techDebtScore | int? | integer | Yes | |
-| dependencyScore | int? | integer | Yes | |
-| testCoveragePercent | double? | real | Yes | |
-| createdAt | DateTime? | dateTime | Yes | |
+```
+AgentResult:     pass, warn, fail
+AgentStatus:     pending, running, completed, failed
+AgentType:       security, codeQuality, buildHealth, completeness, apiContract,
+                 testCoverage, uiUx, documentation, database, performance,
+                 dependency, architecture (12 types)
+BusinessImpact:  low, medium, high, critical
+ComplianceStatus: met, partial, missing, notApplicable
+DebtCategory:    architecture, code, test, dependency, documentation
+DebtStatus:      identified, planned, inProgress, resolved
+DirectiveCategory: architecture, standards, conventions, context, other
+DirectiveScope:  team, project, user
+Effort:          s, m, l, xl (t-shirt sizing)
+FindingStatus:   open, acknowledged, falsePositive, fixed, wontFix
+GitHubAuthType:  pat, oauth, ssh
+InvitationStatus: pending, accepted, expired
+JobMode:         audit, compliance, bugInvestigate, remediate, techDebt,
+                 dependency, healthMonitor (7 modes)
+JobResult:       pass, warn, fail
+JobStatus:       pending, running, completed, failed, cancelled
+Priority:        p0, p1, p2, p3
+ScheduleType:    daily, weekly, onCommit
+Scope:           system, team, user
+Severity:        critical, high, medium, low
+SpecType:        openapi, markdown, screenshot, figma
+TaskStatus:      pending, assigned, exported, jiraCreated, completed
+TeamRole:        owner, admin, member, viewer
+VulnerabilityStatus: open, updating, suppressed, resolved
+```
 
-#### ComplianceItems
+**JSON mapping convention:** camelCase strings (e.g., `codeQuality`, `bugInvestigate`, `falsePositive`)
 
-| Column | Dart Type | Drift Type | Nullable | Notes |
-|--------|-----------|------------|----------|-------|
-| id | String | text | No | Primary key |
-| jobId | String | text | No | |
-| requirement | String | text | No | |
-| specId | String? | text | Yes | |
-| status | String | text | No | ComplianceStatus enum |
-| evidence | String? | text | Yes | |
-| agentType | String? | text | Yes | AgentType enum |
-| notes | String? | text | Yes | |
-| createdAt | DateTime? | dateTime | Yes | |
+---
 
-#### Specifications
+## 8. Local Database Layer (Drift SQLite)
 
-| Column | Dart Type | Drift Type | Nullable | Notes |
-|--------|-----------|------------|----------|-------|
-| id | String | text | No | Primary key |
-| jobId | String | text | No | |
-| name | String | text | No | |
-| specType | String? | text | Yes | SpecType enum |
-| s3Key | String | text | No | |
-| createdAt | DateTime? | dateTime | Yes | |
+### Database: `lib/database/database.dart`
 
-#### ClonedRepos (added in schema v2)
+```
+Engine:         SQLite via Drift
+Location:       Platform-specific application support directory
+Schema Version: 4
+Migration:      onUpgrade with stepByStep strategy
+Logout:         clearAllTables() deletes all rows
+```
 
-| Column | Dart Type | Drift Type | Nullable | Notes |
-|--------|-----------|------------|----------|-------|
-| id | int | integer | No | Auto-increment PK |
-| repoFullName | String | text | No | Unique constraint |
-| localPath | String | text | No | Filesystem path |
-| projectId | String? | text | Yes | |
-| clonedAt | DateTime? | dateTime | Yes | |
-| lastAccessedAt | DateTime? | dateTime | Yes | |
+### Tables: `lib/database/tables.dart` (18 tables)
 
-#### SyncMetadata
+| Table | Primary Key | Purpose |
+|---|---|---|
+| Users | id (text) | User profile cache |
+| Teams | id (text) | Team cache |
+| Projects | id (text) | Project cache |
+| QaJobs | id (text) | Job cache |
+| AgentRuns | id (text) | Agent run cache |
+| Findings | id (text) | Finding cache |
+| RemediationTasks | id (text) | Task cache |
+| Personas | id (text) | Persona cache |
+| Directives | id (text) | Directive cache |
+| TechDebtItems | id (text) | Debt cache |
+| DependencyScans | id (text) | Scan cache |
+| DependencyVulnerabilities | id (text) | Vulnerability cache |
+| HealthSnapshots | id (text) | Health cache |
+| ComplianceItems | id (text) | Compliance cache |
+| Specifications | id (text) | Spec cache |
+| ClonedRepos | repoFullName (text) | Local repo registry |
+| SyncMetadata | syncTableName (text) | Sync tracking |
 
-| Column | Dart Type | Drift Type | Nullable | Notes |
-|--------|-----------|------------|----------|-------|
-| syncTableName | String | text | No | Primary key |
-| lastSyncAt | DateTime | dateTime | No | |
+All tables mirror the server-side PostgreSQL schema for offline caching.
 
-### Database Operations
+---
 
+## 9. Cloud API Service Layer (18 files)
+
+All API services are in `lib/services/cloud/` and share a common `ApiClient` (Dio wrapper).
+
+### ApiClient (`api_client.dart`)
+
+```
+Base URL:        http://localhost:8090/api/v1
+Interceptors:    Auth (JWT Bearer) → Token Refresh (on 401) → Error Mapper → Logging
+Timeout:         Connect: 30s, Receive: 60s
+Auth Header:     Authorization: Bearer {token}
+Correlation ID:  X-Correlation-ID header on each request
+```
+
+**Public Methods:**
+- `get<T>(path, {queryParameters})` → `Future<Response<T>>`
+- `post<T>(path, {data, queryParameters})` → `Future<Response<T>>`
+- `put<T>(path, {data, queryParameters})` → `Future<Response<T>>`
+- `delete<T>(path, {queryParameters})` → `Future<Response<T>>`
+- `uploadFile<T>(path, {filePath, fieldName})` → `Future<Response<T>>`
+- `downloadFile(path, savePath)` → `Future<Response>`
+
+### Exception Hierarchy (`api_exceptions.dart`)
+
+```
+ApiException (sealed base)
+├── BadRequestException (400, optional field errors map)
+├── UnauthorizedException (401)
+├── ForbiddenException (403)
+├── NotFoundException (404)
+├── ConflictException (409)
+├── ValidationException (422, optional fieldErrors map)
+├── RateLimitException (429, optional retryAfterSeconds)
+├── ServerException (500+)
+├── NetworkException (no connection)
+└── TimeoutException (request timeout)
+```
+
+### Complete API Surface (174 methods across 16 domain services)
+
+#### JobApi — `/jobs` (13 methods)
+```
+POST   /jobs                           createJob({projectId, mode, name?, branch?, configJson?, jiraTicketKey?}) → QaJob
+GET    /jobs/{jobId}                   getJob(jobId) → QaJob
+PUT    /jobs/{jobId}                   updateJob(jobId, {status?, summaryMd?, overallResult?, healthScore?, ...}) → QaJob
+DELETE /jobs/{jobId}                   deleteJob(jobId) → void
+GET    /jobs/project/{projectId}       getProjectJobs(projectId, {page, size}) → PageResponse<JobSummary>
+GET    /jobs/mine                      getMyJobs() → List<JobSummary>
+POST   /jobs/{jobId}/agents            createAgentRun(jobId, {agentType}) → AgentRun
+POST   /jobs/{jobId}/agents/batch      createAgentRunsBatch(jobId, agentTypes) → List<AgentRun>
+GET    /jobs/{jobId}/agents            getAgentRuns(jobId) → List<AgentRun>
+PUT    /jobs/agents/{agentRunId}       updateAgentRun(agentRunId, {status?, result?, ...}) → AgentRun
+POST   /jobs/{jobId}/investigation     createInvestigation(jobId, {jiraKey?, ...}) → BugInvestigation
+GET    /jobs/{jobId}/investigation     getInvestigation(jobId) → BugInvestigation
+PUT    /jobs/investigations/{id}       updateInvestigation(id, {rcaMd?, ...}) → BugInvestigation
+```
+
+#### FindingApi — `/findings` (10 methods)
+```
+POST   /findings                       createFinding({jobId, agentType, severity, title, ...}) → Finding
+POST   /findings/batch                 createFindingsBatch(List<Map>) → List<Finding>
+GET    /findings/job/{jobId}           getJobFindings(jobId, {page, size}) → PageResponse<Finding>
+GET    /findings/{findingId}           getFinding(findingId) → Finding
+GET    /findings/job/{jobId}/severity/{s} getFindingsBySeverity(jobId, severity) → List<Finding>
+GET    /findings/job/{jobId}/status/{s}   getFindingsByStatus(jobId, status) → List<Finding>
+GET    /findings/job/{jobId}/agent/{a}    getFindingsByAgent(jobId, agentType) → List<Finding>
+GET    /findings/job/{jobId}/counts       getFindingCounts(jobId) → Map<String, dynamic>
+PUT    /findings/{findingId}/status       updateFindingStatus(findingId, status) → Finding
+PUT    /findings/bulk-status              bulkUpdateStatus(findingIds, status) → List<Finding>
+```
+
+#### ProjectApi — `/projects` (8 methods)
+```
+POST   /projects/{teamId}              createProject(teamId, {name, description?, github/jira config...}) → Project
+GET    /projects/team/{teamId}         getTeamProjects(teamId, {includeArchived}) → List<Project>
+GET    /projects/team/{teamId}/paged   getTeamProjectsPaged(teamId, {page, size, includeArchived}) → PageResponse<Project>
+GET    /projects/{projectId}           getProject(projectId) → Project
+PUT    /projects/{projectId}           updateProject(projectId, {name?, ...}) → Project
+DELETE /projects/{projectId}           deleteProject(projectId) → void
+PUT    /projects/{projectId}/archive   archiveProject(projectId) → void
+PUT    /projects/{projectId}/unarchive unarchiveProject(projectId) → void
+```
+
+#### TeamApi — `/teams` (12 methods)
+```
+GET    /teams                           getTeams() → List<Team>
+POST   /teams                           createTeam({name, description?, teamsWebhookUrl?}) → Team
+GET    /teams/{teamId}                  getTeam(teamId) → Team
+PUT    /teams/{teamId}                  updateTeam(teamId, {name?, description?, teamsWebhookUrl?}) → Team
+DELETE /teams/{teamId}                  deleteTeam(teamId) → void
+GET    /teams/{teamId}/members          getTeamMembers(teamId) → List<TeamMember>
+PUT    /teams/{teamId}/members/{userId}/role updateMemberRole(teamId, userId, role) → TeamMember
+DELETE /teams/{teamId}/members/{userId} removeMember(teamId, userId) → void
+POST   /teams/{teamId}/invitations      inviteMember(teamId, {email, role}) → Invitation
+GET    /teams/{teamId}/invitations      getTeamInvitations(teamId) → List<Invitation>
+DELETE /teams/{teamId}/invitations/{id} cancelInvitation(teamId, invitationId) → void
+POST   /teams/invitations/{token}/accept acceptInvitation(token) → Team
+```
+
+#### UserApi — `/users` (6 methods)
+```
+GET    /users/me                        getCurrentUser() → User
+GET    /users/{id}                      getUserById(id) → User
+PUT    /users/{id}                      updateUser(id, {displayName?, avatarUrl?}) → User
+GET    /users/search                    searchUsers(query) → List<User>
+PUT    /users/{id}/deactivate           deactivateUser(id) → void
+PUT    /users/{id}/activate             activateUser(id) → void
+```
+
+#### PersonaApi — `/personas` (11 methods)
+```
+POST   /personas                        createPersona({name, contentMd, scope, agentType?, ...}) → Persona
+GET    /personas/{personaId}            getPersona(personaId) → Persona
+PUT    /personas/{personaId}            updatePersona(personaId, {name?, description?, contentMd?, isDefault?}) → Persona
+DELETE /personas/{personaId}            deletePersona(personaId) → void
+GET    /personas/team/{teamId}          getTeamPersonas(teamId) → List<Persona>
+GET    /personas/team/{teamId}/agent/{type} getTeamPersonasByAgentType(teamId, agentType) → List<Persona>
+GET    /personas/team/{teamId}/default/{type} getTeamDefaultPersona(teamId, agentType) → Persona
+PUT    /personas/{personaId}/set-default setAsDefault(personaId) → Persona
+PUT    /personas/{personaId}/remove-default removeDefault(personaId) → Persona
+GET    /personas/system                 getSystemPersonas() → List<Persona>
+GET    /personas/mine                   getMyPersonas() → List<Persona>
+```
+
+#### DirectiveApi — `/directives` (11 methods)
+```
+POST   /directives                      createDirective({name, contentMd, scope, ...}) → Directive
+GET    /directives/{directiveId}        getDirective(directiveId) → Directive
+PUT    /directives/{directiveId}        updateDirective(directiveId, {name?, ...}) → Directive
+DELETE /directives/{directiveId}        deleteDirective(directiveId) → void
+GET    /directives/team/{teamId}        getTeamDirectives(teamId) → List<Directive>
+GET    /directives/project/{projectId}  getProjectDirectives(projectId) → List<Directive>
+GET    /directives/project/{id}/enabled getProjectEnabledDirectives(projectId) → List<Directive>
+GET    /directives/project/{id}/assignments getProjectDirectiveAssignments(projectId) → List<ProjectDirective>
+POST   /directives/assign               assignToProject({projectId, directiveId, enabled}) → ProjectDirective
+PUT    /directives/project/{pId}/directive/{dId}/toggle toggleDirective(pId, dId, enabled) → ProjectDirective
+DELETE /directives/project/{pId}/directive/{dId} removeFromProject(pId, dId) → void
+```
+
+#### TaskApi — `/tasks` (6 methods)
+```
+POST   /tasks                           createTask({jobId, taskNumber, title, ...}) → RemediationTask
+POST   /tasks/batch                     createTasksBatch(List<Map>) → List<RemediationTask>
+GET    /tasks/job/{jobId}              getTasksForJob(jobId) → List<RemediationTask>
+GET    /tasks/{taskId}                 getTask(taskId) → RemediationTask
+PUT    /tasks/{taskId}                 updateTask(taskId, {status?, assignedTo?, jiraKey?}) → RemediationTask
+GET    /tasks/assigned-to-me           getAssignedTasks() → List<RemediationTask>
+```
+
+#### Additional APIs (ComplianceApi, DependencyApi, TechDebtApi, HealthMonitorApi, MetricsApi, IntegrationApi, AdminApi, ReportApi)
+
+- **ComplianceApi** (7 methods): specs CRUD, compliance items CRUD, summary
+- **DependencyApi** (10 methods): scans CRUD, vulnerabilities CRUD, status updates
+- **TechDebtApi** (9 methods): debt items CRUD, filtering, summary
+- **HealthMonitorApi** (8 methods): schedules, snapshots, trends
+- **MetricsApi** (3 methods): team metrics, project metrics, project trend
+- **IntegrationApi** (8 methods): GitHub connections, Jira connections
+- **AdminApi** (9 methods): users, settings, usage stats, audit logs
+- **ReportApi** (5 methods): upload summary/agent reports, upload specs, download
+
+---
+
+## 10. Service Layer (Non-Cloud)
+
+### Auth Services
+
+#### AuthService (`lib/services/auth/auth_service.dart`)
+```
+Dependencies: ApiClient, SecureStorageService, CodeOpsDatabase
+Methods:
+  - login(email, password) → User        — POST /auth/login, stores tokens
+  - register(email, password, displayName) → User — POST /auth/register
+  - refreshToken() → void                — POST /auth/refresh
+  - changePassword(current, newPassword) → void
+  - logout() → void                      — Clears tokens, DB, emits unauthenticated
+  - tryAutoLogin() → void                — Restores session from stored tokens
+  - authStateStream → Stream<AuthState>  — Broadcast stream
+```
+
+#### SecureStorageService (`lib/services/auth/secure_storage.dart`)
+```
+Dependencies: FlutterSecureStorage (OS keychain)
+Methods:
+  - getAuthToken/setAuthToken       — JWT access token
+  - getRefreshToken/setRefreshToken — Refresh token
+  - getCurrentUserId/setCurrentUserId
+  - getSelectedTeamId/setSelectedTeamId
+  - read(key)/write(key, value)/delete(key)/clearAll()
+```
+
+### Orchestration Services
+
+#### JobOrchestrator (`lib/services/orchestration/job_orchestrator.dart`)
+```
+Dependencies: AgentDispatcher, AgentMonitor, VeraManager, ProgressAggregator,
+              ReportParser, JobApi, FindingApi, ReportApi
+Methods:
+  - executeJob({...}) → JobResult        — Full 10-step job lifecycle
+  - cancelJob(jobId) → void              — Cancels running job
+  - lifecycleStream → Stream<JobLifecycleEvent>
+  - activeJobId → String?
+```
+
+10-step lifecycle:
+1. Create job record (API)
+2. Create agent run records (API)
+3. Dispatch agent subprocesses (Claude Code CLI)
+4. Monitor agent output streams
+5. Parse agent reports (markdown → structured data)
+6. Vera consolidation (dedup, score, summary)
+7. Upload agent reports to S3 (API)
+8. Batch-create findings (API)
+9. Upload executive summary (API)
+10. Update job status to completed/failed (API)
+
+#### AgentDispatcher (`lib/services/orchestration/agent_dispatcher.dart`)
+```
+Dependencies: ProcessManager, PersonaManager, ClaudeCodeDetector
+Methods:
+  - dispatchAgent({...}) → ManagedProcess     — Spawn single Claude Code subprocess
+  - dispatchAll({...}) → Stream<AgentDispatchEvent> — Concurrent dispatch with semaphore
+  - cancelAll() → void
+```
+
+#### AgentMonitor, VeraManager, ProgressAggregator, BugInvestigationOrchestrator
+- Monitor agent process output to completion
+- Consolidate reports: dedup findings, compute health score, determine result
+- Real-time progress aggregation across agents
+- Launch bug investigation jobs from Jira issues
+
+### VCS Services
+
+#### GitService (`lib/services/vcs/git_service.dart`)
+```
+Methods: clone, pull, push, fetchAll, checkout, createBranch, status, diff,
+         diffStat, log, commit, merge, blame, stash ops, tag ops, currentBranch, remoteUrl
+All via dart:io Process calls to git CLI
+```
+
+#### GitHubProvider (`lib/services/vcs/github_provider.dart`)
+```
+Dependencies: Dio (separate instance targeting api.github.com)
+Methods: authenticate, getOrganizations, getRepositories, searchRepositories,
+         getBranches, getPullRequests, createPullRequest, mergePullRequest,
+         getCommitHistory, getWorkflowRuns, getReleases
+Auth: PAT Bearer token
+```
+
+#### RepoManager (`lib/services/vcs/repo_manager.dart`)
+```
+Dependencies: GitService, CodeOpsDatabase
+Methods: registerRepo, unregisterRepo, getAllRepos, isCloned, getRepoStatus, openInFileManager
+Default repo dir: ~/CodeOps/repos/
+```
+
+### Jira Services
+
+#### JiraService (`lib/services/jira/jira_service.dart`)
+```
+Dependencies: Dio (separate instance targeting Jira Cloud)
+Auth: Basic (email:apiToken base64)
+Methods: configure, testConnection, searchIssues (JQL), getIssue, getComments,
+         postComment, createIssue, createSubTask, createIssuesBulk, updateIssue,
+         getTransitions, transitionIssue, getProjects, getSprints, getIssueTypes,
+         searchUsers, getPriorities
+```
+
+#### JiraMapper (`lib/services/jira/jira_mapper.dart`)
+```
+Static methods: toInvestigationFields, taskToJiraIssue, tasksToJiraIssues,
+                toDisplayModel, adfToMarkdown, markdownToAdf, mapStatusColor, mapPriority
+```
+
+### Agent Services
+- **PersonaManager:** Assembles agent prompts (persona + directives + context)
+- **ReportParser:** Parses markdown reports → structured models (findings, metadata, metrics)
+- **TaskGenerator:** Groups findings → creates remediation tasks with Claude Code prompts
+
+### Analysis Services
+- **HealthCalculator:** Weighted composite health scores from agent runs
+- **TechDebtTracker:** Debt scoring, category/status breakdowns, markdown reports
+- **DependencyScanner:** Vulnerability health scoring, grouping, reports
+
+### Platform Services
+- **ProcessManager:** Subprocess lifecycle with ManagedProcess wrapper, timeouts
+- **ClaudeCodeDetector:** Detects Claude Code CLI (installed, version, path)
+
+### Data & Integration Services
+- **SyncService:** Cloud ↔ local DB project sync
+- **ExportService:** Export as markdown, PDF, ZIP, CSV with file save dialogs
+
+### Logging Service
+- **LogService:** Singleton with v/d/i/w/e/f methods, ANSI colors in debug, file logging in release
+- **LogLevel:** verbose, debug, info, warning, error, fatal
+- **LogConfig:** Level, file logging, console colors, muted tags, log directory
+
+---
+
+## 11. Provider Layer (230 providers across 20 files)
+
+### Provider Architecture
+
+All providers are in `lib/providers/`. The app uses Riverpod 2.x with manual provider definitions (not @riverpod codegen).
+
+**Provider Types Used:**
+- `Provider` (36): API service instances, computed values
+- `StateProvider` (51): UI state (selected IDs, filters, search queries)
+- `FutureProvider` (55): Async data loading
+- `FutureProvider.family` (61): Parameterized async loading
+- `FutureProvider.autoDispose` (10): Auto-disposing async data
+- `FutureProvider.autoDispose.family` (9): Parameterized auto-disposing
+- `StreamProvider` (2): Reactive streams (jobProgress, jobLifecycle)
+- `StateNotifierProvider` (4): Complex state (wizards, favorites, dispatch config)
+
+### Key Providers
+
+```
+auth_providers.dart:
+  secureStorageProvider → SecureStorageService (singleton)
+  apiClientProvider → ApiClient (singleton, depends on secureStorage)
+  databaseProvider → CodeOpsDatabase (singleton)
+  authServiceProvider → AuthService
+  authStateProvider → Stream<AuthState>
+  currentUserProvider → User? (mutable)
+
+team_providers.dart:
+  teamApiProvider → TeamApi
+  teamsProvider → List<Team>
+  selectedTeamIdProvider → String? (CRITICAL: null → all team-scoped providers return empty)
+  selectedTeamProvider → Team?
+  teamMembersProvider → List<TeamMember>
+  teamInvitationsProvider → List<Invitation>
+
+project_providers.dart:
+  projectApiProvider → ProjectApi
+  selectedProjectIdProvider → String?
+  teamProjectsProvider → List<Project> (depends on selectedTeamIdProvider)
+  filteredProjectsProvider → List<Project> (search, sort, archive filter)
+
+job_providers.dart:
+  jobApiProvider → JobApi
+  myJobsProvider → List<JobSummary>
+  projectJobsProvider(projectId) → PageResponse<JobSummary>
+  jobDetailProvider(jobId) → QaJob
+  activeJobIdProvider → String?
+
+agent_providers.dart:
+  jobOrchestratorProvider → JobOrchestrator
+  jobProgressProvider → Stream<JobProgress>
+  jobLifecycleProvider → Stream<JobLifecycleEvent>
+  agentDispatchConfigProvider → AgentDispatchConfig
+
+health_providers.dart:
+  metricsApiProvider → MetricsApi
+  teamMetricsProvider → TeamMetrics? (depends on selectedTeamIdProvider)
+
+settings_providers.dart:
+  claudeModelProvider → String (default model selection)
+  maxConcurrentAgentsProvider → int
+  agentTimeoutMinutesProvider → int
+  sidebarCollapsedProvider → bool
+```
+
+---
+
+## 12. Router & Navigation (24 Routes)
+
+### GoRouter Configuration (`lib/router.dart`)
+
+```
+Initial Location:  /login
+Auth Guard:        AuthNotifier (ChangeNotifier bridged from AuthService stream)
+Redirect Logic:    Unauthenticated → /login, Authenticated on /login → /
+Shell Route:       NavigationShell wraps all authenticated routes
+Transitions:       NoTransitionPage for SPA feel (no page transitions)
+```
+
+### Route Table
+
+| # | Path | Page | Params | Shell |
+|---|------|------|--------|-------|
+| 1 | `/login` | LoginPage | — | No |
+| 2 | `/setup` | PlaceholderPage | — | No |
+| 3 | `/` | HomePage | — | Yes |
+| 4 | `/projects` | ProjectsPage | — | Yes |
+| 5 | `/projects/:id` | ProjectDetailPage | id (path) | Yes |
+| 6 | `/repos` | GitHubBrowserPage | — | Yes |
+| 7 | `/audit` | AuditWizardPage | — | Yes |
+| 8 | `/compliance` | ComplianceWizardPage | — | Yes |
+| 9 | `/dependencies` | DependencyScanPage | — | Yes |
+| 10 | `/bugs` | BugInvestigatorPage | jiraKey (query) | Yes |
+| 11 | `/bugs/jira` | JiraBrowserPage | — | Yes |
+| 12 | `/tasks` | TaskManagerPage | — | Yes |
+| 13 | `/tech-debt` | TechDebtPage | — | Yes |
+| 14 | `/health` | HealthDashboardPage | — | Yes |
+| 15 | `/history` | JobHistoryPage | — | Yes |
+| 16 | `/jobs/:id` | JobProgressPage | id (path) | Yes |
+| 17 | `/jobs/:id/report` | JobReportPage | id (path) | Yes |
+| 18 | `/jobs/:id/findings` | FindingsExplorerPage | id (path) | Yes |
+| 19 | `/jobs/:id/tasks` | TaskListPage | id (path) | Yes |
+| 20 | `/personas` | PersonasPage | — | Yes |
+| 21 | `/personas/:id/edit` | PersonaEditorPage | id (path) | Yes |
+| 22 | `/directives` | DirectivesPage | — | Yes |
+| 23 | `/settings` | SettingsPage | — | Yes |
+| 24 | `/admin` | AdminHubPage | — | Yes |
+
+### Navigation Shell (`lib/widgets/shell/navigation_shell.dart`)
+
+Sidebar sections:
+- **NAVIGATE:** Home, Projects
+- **SOURCE:** GitHub Browser
+- **ANALYZE:** Audit, Compliance, Dependencies, Bug Investigator
+- **MAINTAIN:** Jira Browser, Task Manager, Tech Debt
+- **TOOLS:** Directives, Health Dashboard, History, Personas, Settings
+- **ADMIN:** Admin Hub
+
+Animated sidebar: collapsed (64px) ↔ expanded (240px)
+
+---
+
+## 13. Security Architecture
+
+### Authentication Flow (Client-Side)
+
+1. User submits email/password on LoginPage
+2. AuthService calls `POST /api/v1/auth/login`
+3. Server returns `AuthResponse` with `token` + `refreshToken` + `User`
+4. Tokens stored in OS keychain via SecureStorageService
+5. ApiClient's auth interceptor attaches `Authorization: Bearer {token}` to all requests
+6. On 401, refresh interceptor attempts `POST /api/v1/auth/refresh` with refresh token
+7. If refresh fails, `onAuthFailure` callback triggers logout
+
+### Token Storage
+
+```
+Storage:     Flutter Secure Storage (macOS Keychain, Linux libsecret)
+Keys:        codeops_auth_token, codeops_refresh_token, codeops_user_id, codeops_selected_team_id
+Cleared on:  Logout (clearAll)
+```
+
+### RBAC (Client-Side Enforcement)
+
+Roles displayed in UI: `owner`, `admin`, `member`, `viewer`
+Admin Hub page checks `teamMembersProvider` for current user's role (OWNER/ADMIN only)
+Server-side enforcement is the actual security boundary.
+
+### Sensitive Data Handling
+
+- **NEVER logged:** Tokens, passwords, request/response bodies, Authorization headers
+- **Logged:** API paths, HTTP methods, status codes, correlation IDs, timing
+- **Keychain:** Tokens stored via OS-native encryption
+
+---
+
+## 14. Error Handling
+
+### ErrorPanel Widget (`lib/widgets/shared/error_panel.dart`)
+
+```
+ApiException mapping → User-facing messages:
+  NetworkException     → "No Internet" / "Check your network connection"
+  TimeoutException     → "Request Timed Out" / "The server took too long"
+  ServerException      → "Server Error" / "Something went wrong on the server"
+  UnauthorizedException → "Session Expired" / "Please log in again"
+  ForbiddenException   → "Access Denied" / "You do not have permission"
+  Default              → "Something Went Wrong" / "An unexpected error occurred"
+```
+
+All async providers use `.when(loading:, error:, data:)` pattern.
+Error states show `ErrorPanel.fromException(error, onRetry: () => ref.invalidate(provider))`.
+
+### ApiClient Error Mapping
+
+Dio `DioException` → `ApiException` subtypes based on HTTP status code.
+Network-level errors → `NetworkException` or `TimeoutException`.
+No stack traces or raw error messages exposed to UI.
+
+---
+
+## 15. Theme & UI
+
+### Dark Theme (`lib/theme/`)
+
+```
+Background:     #1A1B2E (deep navy)
+Surface:        #222442 (card/panel)
+Surface Variant: #2A2D52
+Primary:        #6C63FF (indigo/purple)
+Secondary:      #00D9FF (cyan)
+Success:        #4ADE80 (green)
+Warning:        #FBBF24 (amber)
+Error:          #EF4444 (red)
+Critical:       #DC2626 (deeper red)
+Text Primary:   #E2E8F0
+Text Secondary: #94A3B8
+Text Tertiary:  #64748B
+Border:         #334155
+Divider:        #1E293B
+```
+
+**Typography:** Inter (primary), JetBrains Mono (code)
+**Spacing:** 4px base
+**Cards:** 0 elevation, 1px border, 8px border radius
+**Buttons:** 8px border radius, 24×12 padding
+
+### Semantic Color Maps
+- `severityColors` → Severity → Color
+- `jobStatusColors` → JobStatus → Color
+- `agentTypeColors` → AgentType → Color (12 unique colors)
+- `taskStatusColors` → TaskStatus → Color
+- `debtStatusColors` → DebtStatus → Color
+- `directiveCategoryColors` → DirectiveCategory → Color
+- `vulnerabilityStatusColors` → VulnerabilityStatus → Color
+
+---
+
+## 16. Test Coverage
+
+### Test Inventory
+
+| Category | Files | Test Methods | % of Total |
+|----------|-------|-------------|------------|
+| Services | 43 | 685 | 34.1% |
+| Widgets | 85 | 478 | 23.8% |
+| Models | 17 | 344 | 17.1% |
+| Providers | 18 | 269 | 13.4% |
+| Pages | 20 | 137 | 6.8% |
+| Utils | 5 | 39 | 1.9% |
+| Integration (test/) | 1 | 20 | 1.0% |
+| Database | 2 | 13 | 0.6% |
+| Router | 1 | 13 | 0.6% |
+| Integration (root) | 5 | 9 | 0.4% |
+| **TOTAL** | **197** | **2,007** | **100%** |
+
+### Test Framework
+- **Framework:** Flutter Test (dart:test)
+- **Mocking:** mocktail 1.0.4 (39+ test files use Mock classes)
+- **Widget Testing:** `testWidgets()` with `ProviderScope(overrides:)`
+- **Provider Testing:** Direct `ProviderContainer` usage
+- **Integration Testing:** `IntegrationTestWidgetsFlutterBinding` with mocked APIs
+
+### Test Patterns
 ```dart
-/// File: lib/database/database.dart
-class CodeOpsDatabase extends _$CodeOpsDatabase {
-  @override
-  int get schemaVersion => 2;
+// Service test pattern
+test('login returns user on success', () async {
+  when(() => mockClient.post<Map<String, dynamic>>(any(), data: any(named: 'data')))
+      .thenAnswer((_) async => Response(...));
+  final user = await authService.login('test@test.com', 'pass');
+  expect(user.email, 'test@test.com');
+});
 
-  @override
-  MigrationStrategy get migration => MigrationStrategy(
-    onCreate: (m) => m.createAll(),
-    onUpgrade: (m, from, to) async {
-      if (from < 2) {
-        await m.createTable(clonedRepos);
-      }
-    },
+// Widget test pattern
+testWidgets('shows error panel on failure', (tester) async {
+  await tester.pumpWidget(
+    ProviderScope(
+      overrides: [myJobsProvider.overrideWith((ref) => throw NetworkException(...))],
+      child: MaterialApp(home: RecentActivity()),
+    ),
   );
+  await tester.pumpAndSettle();
+  expect(find.text('No Internet'), findsOneWidget);
+});
+```
 
-  /// Clears all tables (called on logout).
-  Future<void> clearAllTables() async { ... }
-}
+### Top 5 Test-Heavy Files
+1. `enums_test.dart` — 109 methods
+2. `enums_alignment_test.dart` — 96 methods
+3. `jira_mapper_test.dart` — 46 methods
+4. `report_parser_test.dart` — 38 methods
+5. `jira_models_test.dart` — 38 methods
+
+### Integration Tests (5 files)
+- `dependency_flow_test.dart`
+- `directive_flow_test.dart`
+- `health_dashboard_flow_test.dart`
+- `persona_flow_test.dart`
+- `tech_debt_flow_test.dart`
+
+---
+
+## 17. Infrastructure & Deployment
+
+### Platform Configuration
+- **macOS:** `macos/Runner/Info.plist`, `macos/Podfile`
+- **Linux:** `linux/` directory (standard Flutter Linux setup)
+- **Min macOS Deployment Target:** 10.15
+- **App Sandbox:** Enabled (network client only in release)
+- **CocoaPods:** `inhibit_all_warnings!` suppresses third-party warnings
+
+### No CI/CD Configuration
+No `.github/workflows/`, `Jenkinsfile`, or CI config files detected.
+
+### No Dockerfile
+This is a desktop application, not containerized.
+
+---
+
+## 18. Cross-Cutting Patterns & Conventions
+
+### Naming Conventions
+- **Files:** snake_case (e.g., `auth_service.dart`, `job_providers.dart`)
+- **Classes:** PascalCase (e.g., `AuthService`, `JobOrchestrator`)
+- **Providers:** camelCase with `Provider` suffix (e.g., `teamApiProvider`, `selectedTeamIdProvider`)
+- **API paths:** kebab-case (e.g., `/assigned-to-me`, `/tech-debt`)
+- **Enum JSON values:** camelCase (e.g., `codeQuality`, `bugInvestigate`)
+
+### Architecture Patterns
+- **Layered:** Pages → Providers → Services → API Client → Server
+- **No direct HTTP calls from UI** — all go through providers → API services
+- **Singleton services** via `Provider` (never `new`'d inline)
+- **Immutable state** via Riverpod providers and copyWith patterns
+- **Master-detail layouts** for list+detail views (directives, findings, tasks)
+- **Wizard pattern** for multi-step flows (audit, compliance, bug investigator)
+- **Error boundary** via `ErrorPanel.fromException` with retry
+
+### Pagination Pattern
+Server returns: `{"content": [...], "page": N, "size": N, "totalElements": N, "totalPages": N, "last": bool}`
+Client wrapper: `PageResponse<T>` generic class with factory `fromJson(map, elementParser)`
+
+### DartDoc Coverage
+- **100% file-level DartDoc** (193/193 lib files have `///` or `library;` documentation)
+- **Every public class and method** has DartDoc comments
+- **Every enum value** has documentation
+
+### Constants
+All in `lib/utils/constants.dart` — no magic numbers or strings in other files.
+
+### Code Quality
+- Zero `debugPrint()` calls (removed, replaced with `log.d()`)
+- Only `print()` in `log_service.dart` (intentional, with `// ignore: avoid_print`)
+- Zero TODO/FIXME/HACK markers in production code
+- Strict analyzer: `strict-casts`, `strict-inference`, `strict-raw-types`
+
+---
+
+## 19. Known Issues & Technical Debt
+
+```bash
+# Search results:
+grep -rn "TODO|FIXME|HACK|XXX|WORKAROUND|TEMPORARY" lib/ → 0 results
+```
+
+No TODO/FIXME markers exist in production code.
+
+**Known architectural observations (not actionable TODOs):**
+1. `selectedTeamIdProvider` starts null — if team auto-selection fails, dashboard shows empty
+2. VCS models use manual JSON parsing (not codegen) — intentional for GitHub API compatibility
+3. No offline-first architecture — app requires server connectivity for most operations
+4. Integration test coverage is minimal (9 methods across 5 files)
+
+---
+
+## 20. OpenAPI Specification
+
+**Not applicable.** CodeOps-Client is a Flutter desktop client application, not a server. The API specification lives in the CodeOps-Server repository. The client's API service layer (`lib/services/cloud/`) implements the client-side SDK for that server API, documented in Section 9.
+
+---
+
+## 21. Quality Assessment Scorecard
+
+### 21a. Security (adapted for client app)
+
+| Check | Score | Notes |
+|-------|-------|-------|
+| SEC-01 Auth on all API calls | 2 | ApiClient interceptor adds JWT to every request |
+| SEC-02 No hardcoded secrets | 2 | No passwords/tokens in source; secure storage used |
+| SEC-03 Secure token storage | 2 | OS keychain (macOS Keychain, Linux libsecret) |
+| SEC-04 Token refresh on expiry | 2 | Automatic 401 → refresh → retry interceptor |
+| SEC-05 Logout clears all data | 2 | clearAll() on secure storage + clearAllTables() on DB |
+| SEC-06 No sensitive data in logs | 2 | Never logs bodies, tokens, passwords |
+| SEC-07 App sandbox enabled | 2 | macOS app sandbox in entitlements |
+| SEC-08 SSRF N/A (client app) | 1 | GitHub/Jira URLs from user config (validated by server) |
+| SEC-09 Token never exposed to UI | 2 | Tokens in interceptors only, never in widget state |
+| SEC-10 .env not committed | 2 | No .env files exist |
+
+**Security Score: 19/20 (95%)**
+
+### 21b. Data Integrity (adapted for client app)
+
+| Check | Score | Notes |
+|-------|-------|-------|
+| DAT-01 Enum serialization consistent | 2 | All enums have toJson/fromJson with explicit maps |
+| DAT-02 Paginated response handling | 2 | PageResponse<T> for all paginated endpoints |
+| DAT-03 Type-safe JSON parsing | 2 | @JsonSerializable with strict types |
+| DAT-04 Null safety | 2 | Full null safety, nullable fields explicit |
+| DAT-05 Local DB schema versioned | 2 | Drift schema version 4 with migration strategy |
+| DAT-06 DB cleared on logout | 2 | clearAllTables() prevents data leakage |
+| DAT-07 No unbounded lists from server | 1 | Some endpoints fetch without pagination (getTeams, getMyJobs) |
+| DAT-08 Timestamps preserved | 2 | DateTime? fields with ISO 8601 parsing |
+
+**Data Integrity Score: 15/16 (94%)**
+
+### 21c. API Quality (adapted for client SDK)
+
+| Check | Score | Notes |
+|-------|-------|-------|
+| API-01 Consistent error handling | 2 | Sealed ApiException hierarchy, ErrorPanel mapping |
+| API-02 Error messages sanitized | 2 | No raw exceptions shown to user |
+| API-03 Typed API methods | 2 | Every endpoint returns typed model (not dynamic) |
+| API-04 Pagination support | 2 | PageResponse<T> with page/size params |
+| API-05 Correlation IDs | 2 | X-Correlation-ID header on every request |
+| API-06 Consistent HTTP method usage | 2 | GET=read, POST=create, PUT=update, DELETE=delete |
+| API-07 Retry on auth failure | 2 | Automatic token refresh interceptor |
+| API-08 No inline Dio instances | 1 | JiraService and GitHubProvider use separate Dio (by design) |
+
+**API Quality Score: 15/16 (94%)**
+
+### 21d. Code Quality
+
+| Check | Score | Notes |
+|-------|-------|-------|
+| CQ-01 No TODO/FIXME/HACK | 2 | Zero markers in production code |
+| CQ-02 Consistent exception hierarchy | 2 | 10-class sealed hierarchy |
+| CQ-03 Constants centralized | 2 | All in constants.dart (225 lines) |
+| CQ-04 No print/debugPrint | 2 | Only in LogService (annotated) |
+| CQ-05 Structured logging | 2 | LogService singleton with 6 levels |
+| CQ-06 No inline HTTP clients | 2 | All via providers (ApiClient, separate Dio) |
+| CQ-07 DartDoc on classes | 2 | 193/193 files (100%) |
+| CQ-08 DartDoc on public methods | 2 | All public methods documented |
+| CQ-09 Strict analyzer config | 2 | strict-casts, strict-inference, strict-raw-types |
+| CQ-10 Clean separation of concerns | 2 | Pages → Providers → Services → API Client |
+
+**Code Quality Score: 20/20 (100%)**
+
+### 21e. Test Quality
+
+| Check | Score | Notes |
+|-------|-------|-------|
+| TST-01 Unit test files exist | 2 | 192 test files |
+| TST-02 Integration tests exist | 1 | 5 integration tests (minimal) |
+| TST-03 Mocking framework used | 2 | mocktail in 39+ files |
+| TST-04 Source-to-test ratio | 2 | 197 test files / 193 source files = 1.02:1 |
+| TST-05 Test method count | 2 | 2,007 test methods |
+| TST-06 Widget tests present | 2 | 85 widget test files (478 methods) |
+| TST-07 Provider tests present | 2 | 18 provider test files (269 methods) |
+| TST-08 Page tests present | 1 | 20 page test files (137 methods, could be deeper) |
+| TST-09 Model/enum tests present | 2 | 17 model test files (344 methods, 205 enum-focused) |
+| TST-10 Test patterns consistent | 2 | ProviderScope overrides, mocktail, group/test |
+
+**Test Quality Score: 18/20 (90%)**
+
+### 21f. Infrastructure
+
+| Check | Score | Notes |
+|-------|-------|-------|
+| INF-01 macOS entitlements configured | 2 | Sandbox + network client |
+| INF-02 No exposed secrets in config | 2 | No .env files, no hardcoded credentials |
+| INF-03 Multi-platform support | 1 | macOS primary, Linux configured, Windows not yet |
+| INF-04 Structured logging to file | 2 | Daily rotation, 7-day retention |
+| INF-05 CI/CD pipeline | 0 | **BLOCKING: No CI/CD configuration** |
+| INF-06 Code generation automated | 2 | build_runner for Drift, JSON serializable |
+
+**Infrastructure Score: 9/12 (75%)**
+
+### Quality Scorecard Summary
+
+```
+╔══════════════════════════════════════════════════════════════╗
+║                 QUALITY SCORECARD SUMMARY                    ║
+╠══════════════════════════╦═══════╦═══════╦═══════════════════╣
+║ Category                 ║ Score ║  Max  ║ Percentage        ║
+╠══════════════════════════╬═══════╬═══════╬═══════════════════╣
+║ Security                 ║   19  ║   20  ║   95%             ║
+║ Data Integrity           ║   15  ║   16  ║   94%             ║
+║ API Quality              ║   15  ║   16  ║   94%             ║
+║ Code Quality             ║   20  ║   20  ║  100%             ║
+║ Test Quality             ║   18  ║   20  ║   90%             ║
+║ Infrastructure           ║    9  ║   12  ║   75%             ║
+╠══════════════════════════╬═══════╬═══════╬═══════════════════╣
+║ OVERALL                  ║   96  ║  104  ║   92%             ║
+╚══════════════════════════╩═══════╩═══════╩═══════════════════╝
+
+Grade: A (85-100%) | B (70-84%) | C (55-69%) | D (40-54%) | F (<40%)
+Overall Grade: A
+```
+
+**Blocking Issue:**
+- **INF-05:** No CI/CD pipeline. Add GitHub Actions workflow for `flutter analyze`, `flutter test`, and build verification.
+
+**Areas for Improvement:**
+- **TST-02:** Integration tests are minimal (5 files, 9 methods). Expand to cover auth flow, job lifecycle, and data sync end-to-end.
+- **INF-03:** Windows platform not configured yet.
+
+---
+
+## 22. Local Database — Schema Audit
+
+The app uses Drift SQLite, not a server database. The schema is defined in code (`lib/database/tables.dart`) and auto-created by Drift.
+
+### Schema Version: 4
+
+18 tables (all local cache of server data):
+
+| Table | Columns | Primary Key | Purpose |
+|-------|---------|-------------|---------|
+| Users | 7 | id | User profiles |
+| Teams | 9 | id | Teams |
+| Projects | 18 | id | Projects with GitHub/Jira config |
+| QaJobs | 21 | id | QA job records |
+| AgentRuns | 12 | id | Agent execution records |
+| Findings | 17 | id | Audit findings |
+| RemediationTasks | 13 | id | Fix tasks |
+| Personas | 14 | id | Agent personas |
+| Directives | 13 | id | QA directives |
+| TechDebtItems | 13 | id | Tech debt items |
+| DependencyScans | 7 | id | Dependency scans |
+| DependencyVulnerabilities | 10 | id | Vulnerabilities |
+| HealthSnapshots | 9 | id | Health history |
+| ComplianceItems | 10 | id | Compliance results |
+| Specifications | 6 | id | Uploaded specs |
+| ClonedRepos | 5 | repoFullName | Local repo registry |
+| SyncMetadata | 3 | syncTableName | Sync tracking |
+
+All string/text columns, no foreign key constraints enforced at DB level (application-level only).
+
+---
+
+## 23. Message Broker
+
+No message broker (Kafka, RabbitMQ, SQS/SNS) detected in this client application.
+
+The CodeOps-Server backend uses Kafka, but this client communicates with the server via REST API only.
+
+---
+
+## 24. Cache Layer
+
+No Redis or caching layer detected in this client application.
+
+Local caching is handled by the Drift SQLite database (Section 22), which caches server responses for offline access via the SyncService.
+
+---
+
+## 25. Environment Variable Inventory
+
+This Flutter desktop application does not use environment variables in the traditional sense. Configuration is embedded in `lib/utils/constants.dart`.
+
+| Setting | Location | Default | Purpose |
+|---------|----------|---------|---------|
+| API Base URL | constants.dart | `http://localhost:8090` | Backend server URL |
+| API Prefix | constants.dart | `/api/v1` | API path prefix |
+| Window Size | constants.dart | 1440×900 | Default window dimensions |
+| Min Window Size | constants.dart | 1024×700 | Minimum window dimensions |
+| Max Concurrent Agents | constants.dart | 3 (range 1-6) | Agent parallelism |
+| Agent Timeout | constants.dart | 30 min (range 5-60) | Agent execution timeout |
+| Pass Threshold | constants.dart | 80 | Health score pass threshold |
+| Warn Threshold | constants.dart | 60 | Health score warn threshold |
+
+**No `.env` files exist.** Configuration is compile-time only.
+
+**Production deployment note:** API Base URL would need to be changed via `--dart-define=API_BASE_URL=https://api.codeops.io` at build time, or the constant updated.
+
+---
+
+## 26. Inter-Service Communication Map
+
+```
+=== SERVICE DEPENDENCY MAP ===
+
+  ┌────────────────────┐
+  │   CodeOps-Client   │
+  │   (Flutter macOS)  │
+  └──────┬─────────────┘
+         │
+    Outbound calls:
+         ├──→ CodeOps-Server (REST, JWT Bearer auth, http://localhost:8090/api/v1)
+         │    All 174 API methods via 16 domain services
+         │
+         ├──→ GitHub API (REST, PAT Bearer, https://api.github.com)
+         │    GitHubProvider: orgs, repos, branches, PRs, commits, workflows, releases
+         │
+         ├──→ Jira Cloud API (REST, Basic auth, https://{instance}.atlassian.net)
+         │    JiraService: issues, comments, transitions, projects, sprints
+         │
+         ├──→ Local Git CLI (subprocess via ProcessManager)
+         │    GitService: clone, pull, push, checkout, diff, log, stash, tag
+         │
+         └──→ Claude Code CLI (subprocess via AgentDispatcher)
+              12 agent types dispatched as Claude Code subprocesses
+
+    Local Infrastructure:
+         ├──→ SQLite (Drift, ~/.codeops/codeops.db)
+         ├──→ OS Keychain (flutter_secure_storage)
+         └──→ Log Files (~/.codeops/logs/)
+
+    Inbound from:
+         └──← No inbound — this is a desktop client application
 ```
 
 ---
 
-## 7. Models / DTOs
-
-All models use `@JsonSerializable()` with `fromJson`/`toJson` factory constructors unless otherwise noted. File: `lib/models/`.
-
-### User (`user.dart`)
-
-```dart
-@JsonSerializable()
-class User {
-  final String id;
-  final String email;
-  final String displayName;
-  final String? avatarUrl;
-  final bool? isActive;
-  final DateTime? lastLoginAt;
-  final DateTime? createdAt;
-}
-```
-
-### Team, TeamMember, Invitation (`team.dart`)
-
-```dart
-@JsonSerializable()
-class Team {
-  final String id;
-  final String name;
-  final String? description;
-  final String ownerId;
-  final String? ownerName;
-  final String? teamsWebhookUrl;
-  final int? memberCount;
-  final DateTime? createdAt;
-  final DateTime? updatedAt;
-}
-
-@JsonSerializable()
-class TeamMember {
-  final String id;
-  final String userId;
-  final String? displayName;
-  final String? email;
-  final String? avatarUrl;
-  final TeamRole role;
-  final DateTime? joinedAt;
-}
-
-@JsonSerializable()
-class Invitation {
-  final String id;
-  final String email;
-  final TeamRole role;
-  final InvitationStatus status;
-  final String? invitedByName;
-  final DateTime? expiresAt;
-  final DateTime? createdAt;
-}
-```
-
-### Project (`project.dart`)
-
-```dart
-@JsonSerializable()
-class Project {
-  final String id;
-  final String teamId;
-  final String name;
-  final String? description;
-  final String? githubConnectionId;
-  final String? repoUrl;
-  final String? repoFullName;
-  final String? defaultBranch;
-  final String? jiraConnectionId;
-  final String? jiraProjectKey;
-  final String? jiraDefaultIssueType;
-  final List<String>? jiraLabels;
-  final String? jiraComponent;
-  final String? techStack;
-  final int? healthScore;
-  final DateTime? lastAuditAt;
-  final String? settingsJson;
-  final bool? isArchived;
-  final String? createdBy;
-  final DateTime? createdAt;
-  final DateTime? updatedAt;
-}
-```
-
-### QaJob, JobSummary (`qa_job.dart`)
-
-```dart
-@JsonSerializable()
-class QaJob {
-  final String id;
-  final String projectId;
-  final String? projectName;
-  final JobMode mode;
-  final JobStatus status;
-  final String? name;
-  final String? branch;
-  final String? jiraTicketKey;
-  final JobResult? overallResult;
-  final int? healthScore;
-  final int? totalFindings;
-  final int? criticalCount;
-  final int? highCount;
-  final int? mediumCount;
-  final int? lowCount;
-  final String? summaryReportS3Key;
-  final String? createdBy;
-  final DateTime? createdAt;
-  final DateTime? startedAt;
-  final DateTime? completedAt;
-}
-
-@JsonSerializable()
-class JobSummary {
-  final String id;
-  final String projectId;
-  final JobMode mode;
-  final JobStatus status;
-  final String? name;
-  final JobResult? overallResult;
-  final int? healthScore;
-  final int? totalFindings;
-  final DateTime? createdAt;
-  final DateTime? startedAt;
-  final DateTime? completedAt;
-}
-```
-
-### AgentRun (`agent_run.dart`)
-
-```dart
-@JsonSerializable()
-class AgentRun {
-  final String id;
-  final String jobId;
-  final AgentType agentType;
-  final AgentStatus status;
-  final AgentResult? result;
-  final String? reportS3Key;
-  final int? score;
-  final int? findingsCount;
-  final int? criticalCount;
-  final int? highCount;
-  final DateTime? startedAt;
-  final DateTime? completedAt;
-}
-```
-
-### Finding (`finding.dart`)
-
-```dart
-@JsonSerializable()
-class Finding {
-  final String id;
-  final String jobId;
-  final AgentType agentType;
-  final Severity severity;
-  final String title;
-  final String? description;
-  final String? filePath;
-  final int? lineNumber;
-  final String? recommendation;
-  final String? evidence;
-  final Effort? effortEstimate;
-  final DebtCategory? debtCategory;
-  final FindingStatus status;
-  final DateTime? createdAt;
-}
-```
-
-### RemediationTask (`remediation_task.dart`)
-
-```dart
-@JsonSerializable()
-class RemediationTask {
-  final String id;
-  final String jobId;
-  final int taskNumber;
-  final String title;
-  final String? description;
-  final String? promptMd;
-  final String? promptS3Key;
-  final List<String>? findingIds;
-  final Priority? priority;
-  final TaskStatus status;
-  final String? assignedTo;
-  final String? assignedToName;
-  final String? jiraKey;
-  final DateTime? createdAt;
-}
-```
-
-### Persona (`persona.dart`)
-
-```dart
-@JsonSerializable()
-class Persona {
-  final String id;
-  final String name;
-  final AgentType? agentType;
-  final String? description;
-  final String? contentMd;
-  final Scope scope;
-  final String? teamId;
-  final String? createdBy;
-  final String? createdByName;
-  final bool? isDefault;
-  final int? version;
-  final DateTime? createdAt;
-  final DateTime? updatedAt;
-}
-```
-
-### Directive, ProjectDirective (`directive.dart`)
-
-```dart
-@JsonSerializable()
-class Directive {
-  final String id;
-  final String name;
-  final String? description;
-  final String? contentMd;
-  final DirectiveCategory? category;
-  final DirectiveScope scope;
-  final String? teamId;
-  final String? projectId;
-  final String? createdBy;
-  final String? createdByName;
-  final int? version;
-  final DateTime? createdAt;
-  final DateTime? updatedAt;
-}
-
-@JsonSerializable()
-class ProjectDirective {
-  final String projectId;
-  final String directiveId;
-  final String? directiveName;
-  final DirectiveCategory? category;
-  final bool? enabled;
-}
-```
-
-### Specification (`specification.dart`)
-
-```dart
-@JsonSerializable()
-class Specification {
-  final String id;
-  final String jobId;
-  final String name;
-  final SpecType? specType;
-  final String s3Key;
-  final DateTime? createdAt;
-}
-```
-
-### ComplianceItem (`compliance_item.dart`)
-
-```dart
-@JsonSerializable()
-class ComplianceItem {
-  final String id;
-  final String jobId;
-  final String requirement;
-  final String? specId;
-  final String? specName;
-  final ComplianceStatus status;
-  final String? evidence;
-  final AgentType? agentType;
-  final String? notes;
-  final DateTime? createdAt;
-}
-```
-
-### TechDebtItem (`tech_debt_item.dart`)
-
-```dart
-@JsonSerializable()
-class TechDebtItem {
-  final String id;
-  final String projectId;
-  final DebtCategory category;
-  final String title;
-  final String? description;
-  final String? filePath;
-  final Effort? effortEstimate;
-  final BusinessImpact? businessImpact;
-  final DebtStatus status;
-  final String? firstDetectedJobId;
-  final String? resolvedJobId;
-  final DateTime? createdAt;
-  final DateTime? updatedAt;
-}
-```
-
-### DependencyScan, DependencyVulnerability (`dependency_scan.dart`)
-
-```dart
-@JsonSerializable()
-class DependencyScan {
-  final String id;
-  final String projectId;
-  final String? jobId;
-  final String? manifestFile;
-  final int? totalDependencies;
-  final int? outdatedCount;
-  final int? vulnerableCount;
-  final DateTime? createdAt;
-}
-
-@JsonSerializable()
-class DependencyVulnerability {
-  final String id;
-  final String scanId;
-  final String dependencyName;
-  final String? currentVersion;
-  final String? fixedVersion;
-  final String? cveId;
-  final Severity severity;
-  final String? description;
-  final VulnerabilityStatus status;
-  final DateTime? createdAt;
-}
-```
-
-### HealthSnapshot and Related (`health_snapshot.dart`)
-
-This file contains 12 model classes:
-
-```dart
-@JsonSerializable() class HealthSnapshot { ... }
-@JsonSerializable() class HealthSchedule { ... }
-class PageResponse<T> { ... }  // Generic paginated response
-@JsonSerializable() class AuthResponse { ... }
-@JsonSerializable() class TeamMetrics { ... }
-@JsonSerializable() class ProjectMetrics { ... }
-@JsonSerializable() class GitHubConnection { ... }
-@JsonSerializable() class JiraConnection { ... }
-@JsonSerializable() class BugInvestigation { ... }
-@JsonSerializable() class SystemSetting { ... }
-@JsonSerializable() class AuditLogEntry { ... }
-@JsonSerializable() class NotificationPreference { ... }
-```
-
-### VCS Models (`vcs_models.dart`)
-
-Plain Dart classes (no `@JsonSerializable`). Uses `fromGitHubJson` factory constructors and manual `fromGitLine`/`fromGitJson` parsers.
-
-16 model classes: `VcsCredentials`, `VcsOrganization`, `VcsRepository`, `VcsBranch`, `VcsPullRequest`, `CreatePRRequest`, `VcsCommit`, `VcsStash`, `VcsTag`, `CloneProgress`, `RepoStatus`, `FileChange`, `DiffResult`, `DiffHunk`, `DiffLine`, `WorkflowRun`.
-
-2 enums: `FileChangeType`, `DiffLineType`.
-
-### Jira Models (`jira_models.dart`)
-
-21 model classes with manual `fromJson`/`toJson`: `JiraSearchResult`, `JiraIssue`, `JiraIssueFields`, `JiraStatus`, `JiraStatusCategory`, `JiraIssueType`, `JiraPriority`, `JiraUser`, `JiraAvatarUrls`, `JiraProject`, `JiraComponent`, `JiraSprint`, `JiraComment`, `JiraCommentPage`, `JiraAttachment`, `JiraIssueLink`, `JiraIssueLinkType`, `JiraTransition`, `CreateJiraIssueRequest`, `CreateJiraSubTaskRequest`, `UpdateJiraIssueRequest`, `JiraIssueDisplayModel`.
-
-### Report Parser Models (`report_parser.dart`)
-
-Internal data classes: `ParsedReport`, `ReportMetadata`, `ParsedFinding`, `ReportMetrics`.
-
----
-
-## 8. Enumerations
-
-File: `lib/models/enums.dart`
-
-All enums include `toJson()` (returns SCREAMING_SNAKE_CASE string), `fromJson(String)` static constructor, `displayName` getter, and a `JsonConverter` class for `@JsonSerializable` integration.
-
-| Enum | Values | JSON Format |
-|------|--------|-------------|
-| `AgentResult` | `pass`, `warn`, `fail` | `PASS`, `WARN`, `FAIL` |
-| `AgentStatus` | `pending`, `running`, `completed`, `failed` | `PENDING`, `RUNNING`, `COMPLETED`, `FAILED` |
-| `AgentType` | `security`, `codeQuality`, `buildHealth`, `completeness`, `apiContract`, `testCoverage`, `uiUx`, `documentation`, `database`, `performance`, `dependency`, `architecture` | `SECURITY`, `CODE_QUALITY`, etc. |
-| `BusinessImpact` | `low`, `medium`, `high`, `critical` | `LOW`, `MEDIUM`, `HIGH`, `CRITICAL` |
-| `ComplianceStatus` | `met`, `partial`, `missing`, `notApplicable` | `MET`, `PARTIAL`, `MISSING`, `NOT_APPLICABLE` |
-| `DebtCategory` | `architecture`, `code`, `test`, `dependency`, `documentation` | `ARCHITECTURE`, `CODE`, `TEST`, `DEPENDENCY`, `DOCUMENTATION` |
-| `DebtStatus` | `identified`, `acknowledged`, `inProgress`, `resolved`, `accepted` | `IDENTIFIED`, `ACKNOWLEDGED`, `IN_PROGRESS`, `RESOLVED`, `ACCEPTED` |
-| `DirectiveCategory` | `coding`, `security`, `testing`, `documentation`, `architecture`, `process`, `other` | `CODING`, `SECURITY`, etc. |
-| `DirectiveScope` | `team`, `project` | `TEAM`, `PROJECT` |
-| `Effort` | `s`, `m`, `l`, `xl` | `S`, `M`, `L`, `XL` |
-| `FindingStatus` | `open`, `acknowledged`, `falsePositive`, `fixed`, `wontFix` | `OPEN`, `ACKNOWLEDGED`, `FALSE_POSITIVE`, `FIXED`, `WONT_FIX` |
-| `GitHubAuthType` | `pat`, `oauth`, `ssh` | `PAT`, `OAUTH`, `SSH` |
-| `InvitationStatus` | `pending`, `accepted`, `declined`, `expired`, `cancelled` | `PENDING`, `ACCEPTED`, etc. |
-| `JobMode` | `audit`, `compliance`, `bugInvestigate`, `remediate`, `techDebt`, `dependency`, `healthMonitor` | `AUDIT`, `COMPLIANCE`, `BUG_INVESTIGATE`, etc. |
-| `JobResult` | `pass`, `warn`, `fail` | `PASS`, `WARN`, `FAIL` |
-| `JobStatus` | `pending`, `running`, `completed`, `failed`, `cancelled` | `PENDING`, `RUNNING`, `COMPLETED`, `FAILED`, `CANCELLED` |
-| `Priority` | `p0`, `p1`, `p2`, `p3` | `P0`, `P1`, `P2`, `P3` |
-| `ScheduleType` | `daily`, `weekly`, `onCommit` | `DAILY`, `WEEKLY`, `ON_COMMIT` |
-| `Scope` | `system`, `team`, `user` | `SYSTEM`, `TEAM`, `USER` |
-| `Severity` | `critical`, `high`, `medium`, `low` | `CRITICAL`, `HIGH`, `MEDIUM`, `LOW` |
-| `SpecType` | `regulation`, `standard`, `policy`, `requirement`, `guideline` | `REGULATION`, `STANDARD`, etc. |
-| `TaskStatus` | `pending`, `inProgress`, `completed`, `skipped` | `PENDING`, `IN_PROGRESS`, `COMPLETED`, `SKIPPED` |
-| `TeamRole` | `owner`, `admin`, `member`, `viewer` | `OWNER`, `ADMIN`, `MEMBER`, `VIEWER` |
-| `VulnerabilityStatus` | `open`, `acknowledged`, `resolved`, `falsePositive` | `OPEN`, `ACKNOWLEDGED`, `RESOLVED`, `FALSE_POSITIVE` |
-
-### Additional Enums (not in enums.dart)
-
-| Enum | File | Values |
-|------|------|--------|
-| `FileChangeType` | `vcs_models.dart` | `added`, `modified`, `deleted`, `renamed`, `copied`, `unmerged`, `unknown` |
-| `DiffLineType` | `vcs_models.dart` | `context`, `addition`, `deletion`, `header` |
-| `ClaudeCodeStatus` | `claude_code_detector.dart` | `available`, `notInstalled`, `versionTooOld`, `error` |
-| `AgentMonitorStatus` | `agent_monitor.dart` | `completed`, `failed`, `timedOut`, `cancelled` |
-| `AgentPhase` | `progress_aggregator.dart` | `queued`, `running`, `parsing`, `completed`, `failed`, `timedOut` |
-| `ExportFormat` | `export_service.dart` | `markdown`, `pdf`, `zip`, `csv` |
-| `SyncState` | `sync_service.dart` | `idle`, `syncing`, `synced`, `error` |
-| `AuthState` | `auth_service.dart` | `unknown`, `authenticated`, `unauthenticated` |
-
----
-
-## 9. Services / Business Logic
-
-### 9.1 Authentication (`lib/services/auth/`)
-
-#### AuthService (`auth_service.dart`)
-
-```dart
-class AuthService {
-  Future<User> login(String email, String password);
-  Future<User> register(String email, String password, String displayName);
-  Future<void> refreshToken();
-  Future<void> changePassword(String currentPassword, String newPassword);
-  Future<void> logout();
-  Future<void> tryAutoLogin();
-  void dispose();
-}
-```
-
-#### SecureStorageService (`secure_storage.dart`)
-
-```dart
-class SecureStorageService {
-  Future<String?> getAuthToken();
-  Future<void> setAuthToken(String token);
-  Future<String?> getRefreshToken();
-  Future<void> setRefreshToken(String token);
-  Future<String?> getCurrentUserId();
-  Future<void> setCurrentUserId(String userId);
-  Future<String?> getSelectedTeamId();
-  Future<void> setSelectedTeamId(String teamId);
-  Future<String?> read(String key);
-  Future<void> write(String key, String value);
-  Future<void> delete(String key);
-  Future<void> clearAll();
-}
-```
-
-### 9.2 Cloud API Services (`lib/services/cloud/`)
-
-#### ApiClient (`api_client.dart`)
-
-Centralized Dio wrapper. Base: `http://localhost:8090/api/v1`. Timeouts: connect=15s, receive=30s, send=15s. Three interceptors: auth (Bearer token), refresh (401 retry), error (DioException -> ApiException).
-
-#### 18 API Service Classes
-
-- **UserApi** (6 methods): getCurrentUser, getUserById, updateUser, searchUsers, deactivateUser, activateUser
-- **TeamApi** (12 methods): getTeams, createTeam, getTeam, updateTeam, deleteTeam, getTeamMembers, updateMemberRole, removeMember, inviteMember, getTeamInvitations, cancelInvitation, acceptInvitation
-- **ProjectApi** (8 methods): createProject, getTeamProjects, getTeamProjectsPaged, getProject, updateProject, deleteProject, archiveProject, unarchiveProject
-- **JobApi** (13 methods): createJob, getJob, updateJob, deleteJob, getProjectJobs, getMyJobs, createAgentRun, createAgentRunsBatch, getAgentRuns, updateAgentRun, createInvestigation, getInvestigation, updateInvestigation
-- **FindingApi** (10 methods): createFinding, createFindingsBatch, getJobFindings, getFinding, getFindingsBySeverity, getFindingsByStatus, getFindingsByAgent, getFindingCounts, updateFindingStatus, bulkUpdateStatus
-- **ReportApi** (5 methods): uploadSummaryReport, uploadAgentReport, uploadSpecification, downloadReport, downloadSpecReport
-- **PersonaApi** (11 methods): createPersona, getPersona, updatePersona, deletePersona, getTeamPersonas, getTeamPersonasByAgentType, getTeamDefaultPersona, setAsDefault, removeDefault, getSystemPersonas, getMyPersonas
-- **DirectiveApi** (11 methods): createDirective, getDirective, updateDirective, deleteDirective, getTeamDirectives, getProjectDirectives, getProjectEnabledDirectives, getProjectDirectiveAssignments, assignToProject, toggleDirective, removeFromProject
-- **MetricsApi** (3 methods): getTeamMetrics, getProjectMetrics, getProjectTrend
-- **AdminApi** (9 methods): getAllUsers, getUserById, updateUserStatus, getAllSettings, getSetting, updateSetting, getUsageStats, getTeamAuditLog, getUserAuditLog
-- **IntegrationApi** (40+ methods): GitHub/Jira connections, dependency scans, vulnerabilities, compliance, tasks, tech debt, health monitor
-- **ComplianceApi** (7 methods): createSpecification, getSpecificationsForJob, createComplianceItem, createComplianceItems, getComplianceItemsForJob, getComplianceItemsByStatus, getComplianceSummary
-- **TaskApi** (6 methods): createTask, createTasksBatch, getTasksForJob, getTask, updateTask, getAssignedTasks
-- **TechDebtApi** (9 methods): createTechDebtItem, createTechDebtItems, getTechDebtItem, getTechDebtForProject, getTechDebtByStatus, getTechDebtByCategory, updateTechDebtStatus, deleteTechDebtItem, getDebtSummary
-- **DependencyApi** (10 methods): createScan, getScan, getScansForProject, getLatestScan, addVulnerability, addVulnerabilities, getVulnerabilities, getVulnerabilitiesBySeverity, getOpenVulnerabilities, updateVulnerabilityStatus
-- **HealthMonitorApi** (8 methods): createSchedule, getSchedulesForProject, updateSchedule, deleteSchedule, createSnapshot, getSnapshots, getLatestSnapshot, getHealthTrend
-
-### 9.3 Orchestration (`lib/services/orchestration/`)
-
-- **JobOrchestrator**: 10-step job lifecycle (create, batch agent runs, dispatch, monitor, parse, consolidate, upload, finalize)
-- **AgentDispatcher**: Spawns Claude Code CLI subprocesses with semaphore-based concurrency control (max 3)
-- **AgentMonitor**: Collects stdout/stderr, enforces timeouts, reports terminal status
-- **VeraManager**: Consolidation engine (deduplication, weighted health scoring, executive summary generation)
-- **ProgressAggregator**: Real-time progress stream for UI binding
-- **BugInvestigationOrchestrator**: Jira issue -> bug investigation job flow
-
-### 9.4 Agent Services (`lib/services/agent/`)
-
-- **PersonaManager**: Assembles prompts (persona + directives + job context + report format)
-- **ReportParser**: Regex-based markdown report parser (tolerant of AI formatting variations)
-- **TaskGenerator**: Groups findings by file, generates remediation prompts, batch-creates tasks
-
-### 9.5 Analysis Services (`lib/services/analysis/`)
-
-- **HealthCalculator**: Weighted composite health scores from agent runs
-- **TechDebtTracker**: Debt scoring (category*effort*impact), priority matrix, markdown reports
-- **DependencyScanner**: Dependency health scores (100 - severity deductions), vulnerability grouping
-
-### 9.6 Platform Services (`lib/services/platform/`)
-
-- **ProcessManager**: Subprocess lifecycle management with timeout support
-- **ClaudeCodeDetector**: Claude Code CLI detection, version validation, executable path resolution
-
-### 9.7 VCS Services (`lib/services/vcs/`)
-
-- **VcsProvider**: Abstract VCS interface (13 methods)
-- **GitHubProvider**: GitHub REST API v3 implementation with rate limit tracking
-- **GitService**: Git CLI wrapper (20+ operations, GIT_TERMINAL_PROMPT=0)
-- **RepoManager**: Local cloned repo registry (Drift-backed)
-
-### 9.8 Data Services (`lib/services/data/`)
-
-- **SyncService**: Cloud-to-local project sync with offline fallback
-
-### 9.9 Integration Services (`lib/services/integration/`)
-
-- **ExportService**: Markdown/PDF/ZIP/CSV export with section selection and file save dialogs
-
-### 9.10 Jira Services (`lib/services/jira/`)
-
-- **JiraService**: Direct Jira Cloud REST API client (Basic Auth, ADF conversion, rate limit handling)
-- **JiraMapper**: Bidirectional Jira<->CodeOps model mapping, ADF<->Markdown conversion
-
----
-
-## 10. State Management (Riverpod Providers)
-
-File: `lib/providers/`
-
-All providers use manual Riverpod 2.x patterns (no `@riverpod` code generation). 19 provider files covering all domains.
-
-### Key Provider Patterns
-
-```dart
-// Service providers (singleton)
-final apiClientProvider = Provider<ApiClient>((ref) => ...);
-
-// Data providers (async, cached)
-final teamProjectsProvider = FutureProvider<List<Project>>((ref) => ...);
-
-// Parameterized data providers
-final projectProvider = FutureProvider.family<Project, String>((ref, id) => ...);
-
-// UI state providers
-final selectedProjectIdProvider = StateProvider<String?>((ref) => null);
-
-// Complex state (StateNotifier)
-final favoriteProjectIdsProvider = StateNotifierProvider<FavoriteProjectsNotifier, Set<String>>(...);
-
-// Auto-disposing providers (for per-page data)
-final jobFindingsProvider = FutureProvider.autoDispose.family<List<Finding>, String>(...);
-```
-
----
-
-## 11. Consumed REST API Surface
-
-The CodeOps-Client consumes the CodeOps-Server REST API at `http://localhost:8090/api/v1`. All calls go through the centralized `ApiClient` Dio wrapper. The full endpoint catalog spans 100+ endpoints across Authentication, Users, Teams, Projects, Jobs, Agent Runs, Bug Investigations, Findings, Reports, Personas, Directives, Integrations (GitHub/Jira), Dependencies, Vulnerabilities, Compliance, Tasks, Tech Debt, Health Monitor, Metrics, and Admin.
-
-See Section 9.2 for the complete API service method signatures.
-
----
-
-## 12. Inbound REST API
-
-**N/A** -- This is a desktop client application. It does not expose any REST endpoints.
-
----
-
-## 13. Navigation & Routing
-
-File: `lib/router.dart`
-
-- **Framework:** GoRouter 14.8.1
-- **Initial location:** `/login`
-- **Refresh listenable:** `AuthNotifier` (bridges AuthService -> GoRouter)
-- **Transition:** `NoTransitionPage` for all authenticated routes (SPA feel)
-- **Shell:** `ShellRoute` wraps all authenticated routes in `NavigationShell`
-
-### Route Table (24 routes)
-
-| # | Path | Name | Page | Shell |
-|---|------|------|------|-------|
-| 1 | `/login` | `login` | LoginPage | No |
-| 2 | `/setup` | `setup` | PlaceholderPage | No |
-| 3 | `/` | `home` | HomePage | Yes |
-| 4 | `/projects` | `projects` | ProjectsPage | Yes |
-| 5 | `/projects/:id` | `projectDetail` | ProjectDetailPage | Yes |
-| 6 | `/repos` | `repos` | GitHubBrowserPage | Yes |
-| 7 | `/audit` | `audit` | AuditWizardPage | Yes |
-| 8 | `/compliance` | `compliance` | ComplianceWizardPage | Yes |
-| 9 | `/dependencies` | `dependencies` | DependencyScanPage | Yes |
-| 10 | `/bugs` | `bugs` | BugInvestigatorPage | Yes |
-| 11 | `/bugs/jira` | `jiraBrowser` | JiraBrowserPage | Yes |
-| 12 | `/tasks` | `tasks` | TaskManagerPage | Yes |
-| 13 | `/tech-debt` | `techDebt` | TechDebtPage | Yes |
-| 14 | `/health` | `health` | HealthDashboardPage | Yes |
-| 15 | `/history` | `history` | JobHistoryPage | Yes |
-| 16 | `/jobs/:id` | `jobProgress` | JobProgressPage | Yes |
-| 17 | `/jobs/:id/report` | `jobReport` | JobReportPage | Yes |
-| 18 | `/jobs/:id/findings` | `findingsExplorer` | FindingsExplorerPage | Yes |
-| 19 | `/jobs/:id/tasks` | `taskList` | TaskListPage | Yes |
-| 20 | `/personas` | `personas` | PersonasPage | Yes |
-| 21 | `/personas/:id/edit` | `personaEditor` | PersonaEditorPage | Yes |
-| 22 | `/directives` | `directives` | DirectivesPage | Yes |
-| 23 | `/settings` | `settings` | SettingsPage | Yes |
-| 24 | `/admin` | `admin` | AdminHubPage | Yes |
-
-### Redirect Logic
-
-- Unauthenticated users on any page except `/login` -> redirected to `/login`
-- Authenticated users on `/login` -> redirected to `/`
-- Authenticated users on `/setup` -> no redirect
-
----
-
-## 14. Pages (Screens)
-
-File: `lib/pages/` -- 24 page files.
-
-| Page | Description |
-|------|-------------|
-| LoginPage | Email/password authentication form |
-| HomePage | Dashboard with project overview, recent jobs, quick actions |
-| ProjectsPage | Team project listing with search, sort, archive filter |
-| ProjectDetailPage | Single project view with settings, integrations, jobs |
-| GitHubBrowserPage | Browse GitHub orgs, repos, branches, PRs, workflows |
-| AuditWizardPage | Multi-step wizard for launching QA audit jobs |
-| ComplianceWizardPage | Multi-step wizard for compliance check jobs |
-| DependencyScanPage | View dependency scans and vulnerabilities |
-| BugInvestigatorPage | Launch bug investigation from Jira issue |
-| JiraBrowserPage | Browse and search Jira issues |
-| TaskManagerPage | View and manage remediation tasks across jobs |
-| TechDebtPage | Tech debt tracking with category/status filters |
-| HealthDashboardPage | Health score trends, schedules, snapshots |
-| JobHistoryPage | Historical job listing with filters |
-| JobProgressPage | Live job execution monitoring with agent status |
-| JobReportPage | View and export job reports |
-| FindingsExplorerPage | Browse/filter/manage findings for a job |
-| TaskListPage | View remediation tasks for a specific job |
-| PersonasPage | Manage team and system personas |
-| PersonaEditorPage | Edit persona content (markdown editor) |
-| DirectivesPage | Manage team and project directives |
-| SettingsPage | Application and user settings |
-| AdminHubPage | Admin panel (user management, settings, audit log) |
-| PlaceholderPage | Generic placeholder for unimplemented features |
-
----
-
-## 15. Widgets
-
-File: `lib/widgets/`
-
-### NavigationShell (`shell/navigation_shell.dart`)
-
-Primary scaffold wrapping all authenticated pages. Collapsible sidebar (64px/240px), top bar, content area.
-
-Sidebar sections: NAVIGATE (Home, Projects), SOURCE (GitHub Browser), ANALYZE (Audit, Compliance, Dependencies, Bug Investigator), MAINTAIN (Jira Browser, Tasks, Tech Debt), MONITOR (Health, Job History), TEAM (Personas, Directives). Bottom: Settings, Admin (role-gated), User Profile with team switcher and logout.
-
-The `widgets/` directory contains 87+ reusable widget files organized by domain.
-
----
-
-## 16. Theme & Styling
-
-### Dark Theme Only (`lib/theme/app_theme.dart`)
-
-Material 3 dark theme with custom `ColorScheme`.
-
-### Colors (`lib/theme/colors.dart`)
+## Appendix A: File Metrics
 
 ```
-background     = #1A1B2E (Deep navy)
-surface        = #222442
-surfaceVariant = #2A2D52
-primary        = #6C63FF (Purple-blue)
-primaryVariant = #5A52D5
-secondary      = #00D9FF (Cyan)
-success        = #4ADE80 (Green)
-warning        = #FBBF24 (Amber)
-error          = #EF4444 (Red)
-critical       = #DC2626 (Dark red)
-textPrimary    = #E2E8F0
-textSecondary  = #94A3B8
-textTertiary   = #64748B
-border         = #334155
-divider        = #1E293B
+Source files (lib/):           193
+Lines of Dart code:            50,257
+Test files:                    197
+Test methods:                  2,007
+DartDoc coverage:              100%
+Providers:                     230
+API methods:                   174
+Routes:                        24
+Enum types:                    24
+Model classes:                 50+
+Database tables:               18
+Widget files:                  85+
 ```
-
-Color maps for: `severityColors`, `jobStatusColors`, `agentTypeColors` (12 unique colors).
-
-### Typography (`lib/theme/typography.dart`)
-
-Font family: Inter. Code font: JetBrains Mono. 12 text styles from headlineLarge (32px) to labelSmall (11px).
-
----
-
-## 17. Utilities & Helpers
-
-### Date Utilities (`lib/utils/date_utils.dart`)
-
-`formatDateTime`, `formatDate`, `formatTimeAgo`, `formatDuration`
-
-### String Utilities (`lib/utils/string_utils.dart`)
-
-`truncate`, `pluralize`, `camelToTitle`, `snakeToTitle`, `isValidEmail`
-
-### File Utilities (`lib/utils/file_utils.dart`)
-
-`formatFileSize`, `getFileExtension`, `getFileName`
-
----
-
-## 18. Error Handling & Exceptions
-
-### ApiException Hierarchy (`lib/services/cloud/api_exceptions.dart`)
-
-```
-ApiException (sealed)
-  +-- BadRequestException       (400)
-  +-- UnauthorizedException     (401)
-  +-- ForbiddenException        (403)
-  +-- NotFoundException         (404)
-  +-- ConflictException         (409)
-  +-- ValidationException       (422)
-  +-- RateLimitException        (429)
-  +-- ServerException           (500+)
-  +-- NetworkException          (connection errors)
-  +-- TimeoutException          (timeout errors)
-```
-
-### Error Flow
-
-1. **ApiClient error interceptor**: DioException -> typed ApiException
-2. **Refresh interceptor**: 401 -> single token refresh retry
-3. **GitHubProvider**: Maps GitHub DioExceptions to ApiException
-4. **JiraService**: 429 -> automatic retry after Retry-After delay
-5. **GitService**: Git command failures -> GitException
-6. **SyncService**: NetworkException/TimeoutException -> local DB fallback
-
----
-
-## 19. Authentication & Authorization
-
-### Auth Flow
-
-1. Login with email/password -> JWT tokens
-2. Tokens stored in platform keychain (FlutterSecureStorage)
-3. AuthNotifier triggers GoRouter redirect
-4. ApiClient attaches Bearer token to all requests
-5. On 401, refresh interceptor tries token refresh once
-6. Logout clears storage + wipes local database
-
-### Token Lifecycle
-
-| Token | Lifetime | Storage Key |
-|-------|----------|-------------|
-| Access | 24 hours | `codeops_auth_token` |
-| Refresh | 30 days | `codeops_refresh_token` |
-
-Public paths (no auth): `/auth/login`, `/auth/register`, `/auth/refresh`, `/health`
-
----
-
-## 20. External Integrations
-
-### GitHub REST API v3
-
-- Client: `GitHubProvider`, separate Dio instance
-- Auth: Bearer token (PAT)
-- Base URL: `https://api.github.com`
-- Rate limit tracking via response headers
-
-### Jira Cloud REST API v3
-
-- Client: `JiraService`, separate Dio instance
-- Auth: Basic Auth (email:apiToken base64)
-- Rate limiting: auto-retry on 429
-- ADF <-> Markdown conversion
-
-### Claude Code CLI
-
-- Detection: `ClaudeCodeDetector` (which/where.exe)
-- Dispatch: `AgentDispatcher` -> `ProcessManager` -> Process.run
-- CLI: `claude --print --output-format json --max-turns 50 --model <model> -p <prompt>`
-- Concurrency: max 3, timeout: 30min
-
-### Git CLI
-
-- Client: `GitService`, 20+ operations
-- Environment: `GIT_TERMINAL_PROMPT=0`
-
----
-
-## 21. Event / Messaging System
-
-Internal Dart `StreamController` broadcast streams only (no external message broker):
-
-- `JobLifecycleEvent` stream (9 event types)
-- `AgentDispatchEvent` stream (6 event types)
-- `AgentMonitorEvent` stream (3 event types)
-- `JobProgress` stream (real-time progress snapshots)
-- `AuthState` stream (auth state changes)
-
-**Kafka:** N/A (server-side only)
-**Redis:** N/A (server-side only)
-
----
-
-## 22. Infrastructure / Docker
-
-**N/A** -- Desktop application. No Docker, Kubernetes, or containerized deployment.
-
----
-
-## 23. OpenAPI / Swagger
-
-**N/A** -- Client application. No exposed API. Consumes server Swagger at `http://localhost:8090/swagger-ui.html`.
-
----
-
-## 24. Tests
-
-- **Framework:** `flutter_test` (built-in)
-- **Mocking:** `mocktail` 1.0.4
-- **Location:** `test/` directory
-
----
-
-## 25. Cross-Cutting Concerns
-
-### Caching
-
-- Local Drift/SQLite database for persistent cache
-- SyncService: server -> local DB with offline fallback
-- Riverpod FutureProvider: in-memory cache until invalidated
-
-### Offline Support
-
-Partial: projects cached locally; other operations require network.
-
-### Concurrency
-
-- Agent dispatch: semaphore-based (max 3 concurrent)
-- ProcessManager: tracks active subprocesses, kill-all support
-- Token refresh: single-retry pattern
-
-### Security
-
-- Platform-native secure storage for all credentials
-- No hardcoded secrets
-- GIT_TERMINAL_PROMPT=0 blocks interactive git prompts
-
-### Code Generation
-
-- JsonSerializable: model fromJson/toJson
-- Drift: database accessor code
-- Command: `dart run build_runner build --delete-conflicting-outputs`
-
----
-
-## 26. Quality Scorecard
-
-| Category | Weight | Score (0-10) | Weighted |
-|----------|--------|:------------:|----------|
-| Architecture & Separation of Concerns | 15% | 9 | 1.35 |
-| State Management | 12% | 8 | 0.96 |
-| Error Handling | 10% | 9 | 0.90 |
-| Type Safety & Null Safety | 10% | 9 | 0.90 |
-| Code Organization | 10% | 9 | 0.90 |
-| API Layer Design | 10% | 8 | 0.80 |
-| Database Layer | 8% | 8 | 0.64 |
-| Security | 8% | 9 | 0.72 |
-| Navigation & Routing | 5% | 9 | 0.45 |
-| Theme & UI Consistency | 5% | 9 | 0.45 |
-| Testing | 5% | 4 | 0.20 |
-| Documentation | 2% | 8 | 0.16 |
-| **TOTAL** | **100%** | | **8.43/10** |
-
-### Overall Assessment
-
-The CodeOps-Client is a well-architected Flutter desktop application with strong separation of concerns, comprehensive error handling, and thorough type safety. The orchestration layer for multi-agent Claude Code jobs is particularly well-designed with clear event hierarchies and concurrency control. The main area for improvement is test coverage. The codebase is clean, consistent, and ready for an AI agent to understand and modify.
