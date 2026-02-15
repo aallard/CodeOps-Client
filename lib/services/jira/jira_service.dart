@@ -97,18 +97,18 @@ class JiraService {
     List<String>? expand,
   }) async {
     _ensureConfigured();
-    final body = <String, dynamic>{
+    final queryParams = <String, dynamic>{
       'jql': jql,
       'startAt': startAt,
       'maxResults': maxResults,
     };
-    if (fields != null) body['fields'] = fields;
-    if (expand != null) body['expand'] = expand;
+    if (fields != null) queryParams['fields'] = fields.join(',');
+    if (expand != null) queryParams['expand'] = expand.join(',');
 
     final response = await _request<Map<String, dynamic>>(
-      'POST',
-      '/rest/api/3/search',
-      data: body,
+      'GET',
+      '/rest/api/3/search/jql',
+      queryParameters: queryParams,
     );
     return JiraSearchResult.fromJson(response.data!);
   }
