@@ -132,17 +132,19 @@ void main() {
 
     group('getTasksForJob', () {
       test('returns all tasks for a job', () async {
-        when(() => mockClient.get<List<dynamic>>('/tasks/job/job-1'))
+        when(() => mockClient.get<Map<String, dynamic>>('/tasks/job/job-1'))
             .thenAnswer((_) async => Response(
-                  data: [
-                    taskJson,
-                    {
-                      ...taskJson,
-                      'id': 'task-2',
-                      'taskNumber': 2,
-                      'title': 'Fix XSS vulnerability',
-                    },
-                  ],
+                  data: {
+                    'content': [
+                      taskJson,
+                      {
+                        ...taskJson,
+                        'id': 'task-2',
+                        'taskNumber': 2,
+                        'title': 'Fix XSS vulnerability',
+                      },
+                    ],
+                  },
                   requestOptions: RequestOptions(),
                   statusCode: 200,
                 ));
@@ -155,9 +157,9 @@ void main() {
       });
 
       test('returns empty list when no tasks exist', () async {
-        when(() => mockClient.get<List<dynamic>>('/tasks/job/job-1'))
+        when(() => mockClient.get<Map<String, dynamic>>('/tasks/job/job-1'))
             .thenAnswer((_) async => Response(
-                  data: <dynamic>[],
+                  data: {'content': <dynamic>[]},
                   requestOptions: RequestOptions(),
                   statusCode: 200,
                 ));
@@ -255,9 +257,10 @@ void main() {
 
     group('getAssignedTasks', () {
       test('returns tasks assigned to the current user', () async {
-        when(() => mockClient.get<List<dynamic>>('/tasks/assigned-to-me'))
+        when(() =>
+                mockClient.get<Map<String, dynamic>>('/tasks/assigned-to-me'))
             .thenAnswer((_) async => Response(
-                  data: [taskJson],
+                  data: {'content': [taskJson]},
                   requestOptions: RequestOptions(),
                   statusCode: 200,
                 ));
@@ -269,9 +272,10 @@ void main() {
       });
 
       test('returns empty list when no tasks assigned', () async {
-        when(() => mockClient.get<List<dynamic>>('/tasks/assigned-to-me'))
+        when(() =>
+                mockClient.get<Map<String, dynamic>>('/tasks/assigned-to-me'))
             .thenAnswer((_) async => Response(
-                  data: <dynamic>[],
+                  data: {'content': <dynamic>[]},
                   requestOptions: RequestOptions(),
                   statusCode: 200,
                 ));

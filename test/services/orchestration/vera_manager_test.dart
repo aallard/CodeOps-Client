@@ -3,35 +3,16 @@
 // Verifies consolidation, health score calculation, finding deduplication,
 // overall result determination, and executive summary generation.
 import 'package:flutter_test/flutter_test.dart';
-import 'package:mocktail/mocktail.dart';
 
 import 'package:codeops/models/enums.dart';
-import 'package:codeops/services/agent/persona_manager.dart';
 import 'package:codeops/services/agent/report_parser.dart';
-import 'package:codeops/services/orchestration/agent_dispatcher.dart';
 import 'package:codeops/services/orchestration/vera_manager.dart';
 
-class MockPersonaManager extends Mock implements PersonaManager {}
-
-class MockAgentDispatcher extends Mock implements AgentDispatcher {}
-
-class MockReportParser extends Mock implements ReportParser {}
-
 void main() {
-  late MockPersonaManager mockPersonaManager;
-  late MockAgentDispatcher mockAgentDispatcher;
-  late MockReportParser mockReportParser;
   late VeraManager veraManager;
 
   setUp(() {
-    mockPersonaManager = MockPersonaManager();
-    mockAgentDispatcher = MockAgentDispatcher();
-    mockReportParser = MockReportParser();
-    veraManager = VeraManager(
-      personaManager: mockPersonaManager,
-      agentDispatcher: mockAgentDispatcher,
-      reportParser: mockReportParser,
-    );
+    veraManager = VeraManager();
   });
 
   // ---------------------------------------------------------------------------

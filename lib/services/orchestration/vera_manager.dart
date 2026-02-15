@@ -11,10 +11,8 @@ import 'dart:math' as math;
 
 import '../../models/enums.dart';
 import '../../utils/constants.dart';
-import '../agent/persona_manager.dart';
 import '../agent/report_parser.dart';
 import '../logging/log_service.dart';
-import 'agent_dispatcher.dart';
 
 // ---------------------------------------------------------------------------
 // VeraReport
@@ -77,18 +75,8 @@ class VeraReport {
 /// potential follow-up dispatches, and [ReportParser] for structural access
 /// to parsed agent outputs.
 class VeraManager {
-  final PersonaManager _personaManager;
-  final AgentDispatcher _agentDispatcher;
-  final ReportParser _reportParser;
-
   /// Creates a [VeraManager].
-  VeraManager({
-    required PersonaManager personaManager,
-    required AgentDispatcher agentDispatcher,
-    required ReportParser reportParser,
-  })  : _personaManager = personaManager,
-        _agentDispatcher = agentDispatcher,
-        _reportParser = reportParser;
+  VeraManager();
 
   /// Consolidates all agent reports into a single [VeraReport].
   ///

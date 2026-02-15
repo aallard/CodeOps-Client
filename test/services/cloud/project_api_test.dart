@@ -59,11 +59,11 @@ void main() {
     });
 
     test('getTeamProjects fetches with includeArchived', () async {
-      when(() => mockClient.get<List<dynamic>>(
+      when(() => mockClient.get<Map<String, dynamic>>(
             '/projects/team/team-1',
             queryParameters: any(named: 'queryParameters'),
           )).thenAnswer((_) async => Response(
-            data: [projectJson],
+            data: {'content': [projectJson]},
             requestOptions: RequestOptions(),
             statusCode: 200,
           ));

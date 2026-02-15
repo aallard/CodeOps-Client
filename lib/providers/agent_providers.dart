@@ -101,11 +101,7 @@ final progressAggregatorProvider = Provider<ProgressAggregator>(
 
 /// Provides [VeraManager] for post-analysis consolidation.
 final veraManagerProvider = Provider<VeraManager>(
-  (ref) => VeraManager(
-    personaManager: ref.watch(personaManagerProvider),
-    agentDispatcher: ref.watch(agentDispatcherProvider),
-    reportParser: ref.watch(reportParserProvider),
-  ),
+  (ref) => VeraManager(),
 );
 
 /// Provides [JobOrchestrator] for driving complete job lifecycles.

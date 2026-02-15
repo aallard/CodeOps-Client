@@ -129,9 +129,10 @@ void main() {
 
     group('getTeamPersonas', () {
       test('returns list of personas', () async {
-        when(() => mockClient.get<List<dynamic>>('/personas/team/team-1'))
+        when(() =>
+                mockClient.get<Map<String, dynamic>>('/personas/team/team-1'))
             .thenAnswer((_) async => Response(
-                  data: [samplePersonaJson],
+                  data: {'content': [samplePersonaJson]},
                   requestOptions: RequestOptions(),
                   statusCode: 200,
                 ));

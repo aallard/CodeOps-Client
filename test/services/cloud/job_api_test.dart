@@ -133,17 +133,19 @@ void main() {
     });
 
     test('getMyJobs returns list', () async {
-      when(() => mockClient.get<List<dynamic>>('/jobs/mine'))
+      when(() => mockClient.get<Map<String, dynamic>>('/jobs/mine'))
           .thenAnswer((_) async => Response(
-                data: [
-                  {
-                    'id': 'job-1',
-                    'projectId': 'proj-1',
-                    'mode': 'AUDIT',
-                    'status': 'COMPLETED',
-                    'createdAt': '2024-01-01T00:00:00.000Z',
-                  }
-                ],
+                data: {
+                  'content': [
+                    {
+                      'id': 'job-1',
+                      'projectId': 'proj-1',
+                      'mode': 'AUDIT',
+                      'status': 'COMPLETED',
+                      'createdAt': '2024-01-01T00:00:00.000Z',
+                    }
+                  ],
+                },
                 requestOptions: RequestOptions(),
                 statusCode: 200,
               ));

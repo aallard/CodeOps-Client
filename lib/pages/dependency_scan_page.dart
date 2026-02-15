@@ -260,7 +260,7 @@ class _ScanOverview extends ConsumerWidget {
               SizedBox(
                 width: 250,
                 child: DropdownButtonFormField<String>(
-                  value: selectedProjectId,
+                  initialValue: selectedProjectId,
                   decoration: const InputDecoration(
                     labelText: 'Project',
                     isDense: true,

@@ -173,7 +173,7 @@ class _SummaryPanel extends ConsumerWidget {
         children: [
           // Project selector
           DropdownButtonFormField<String>(
-            value: selectedProjectId,
+            initialValue: selectedProjectId,
             decoration: const InputDecoration(
               labelText: 'Project',
               isDense: true,
