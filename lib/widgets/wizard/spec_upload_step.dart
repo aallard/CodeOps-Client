@@ -41,6 +41,7 @@ class _SpecUploadStepState extends State<SpecUploadStep> {
 
   static const _acceptedExtensions = [
     'md', 'txt', 'yaml', 'yml', 'json', 'pdf', 'png', 'jpg', 'jpeg',
+    'xml', 'csv', 'gif',
   ];
 
   @override
@@ -215,6 +216,9 @@ class _SpecUploadStepState extends State<SpecUploadStep> {
         'pdf' => 'application/pdf',
         'png' => 'image/png',
         'jpg' || 'jpeg' => 'image/jpeg',
+        'xml' => 'application/xml',
+        'csv' => 'text/csv',
+        'gif' => 'image/gif',
         _ => 'application/octet-stream',
       };
 }

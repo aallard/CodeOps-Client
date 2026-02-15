@@ -7,7 +7,6 @@ import 'package:codeops/models/project.dart';
 import 'package:codeops/providers/compliance_providers.dart';
 import 'package:codeops/providers/wizard_providers.dart';
 import 'package:codeops/services/cloud/compliance_api.dart';
-import 'package:codeops/services/cloud/report_api.dart';
 
 // ---------------------------------------------------------------------------
 // Mocks
@@ -15,15 +14,11 @@ import 'package:codeops/services/cloud/report_api.dart';
 
 class MockComplianceApi extends Mock implements ComplianceApi {}
 
-class MockReportApi extends Mock implements ReportApi {}
-
 void main() {
   late MockComplianceApi mockComplianceApi;
-  late MockReportApi mockReportApi;
 
   setUp(() {
     mockComplianceApi = MockComplianceApi();
-    mockReportApi = MockReportApi();
   });
 
   /// Creates a [ProviderContainer] with mocked API providers.
@@ -38,7 +33,6 @@ void main() {
   }
 
   const testProject = Project(id: 'p1', teamId: 't1', name: 'Test');
-  const testProject2 = Project(id: 'p2', teamId: 't1', name: 'Other Project');
   const testSpec =
       SpecFile(name: 'spec.md', path: '/tmp/spec.md', sizeBytes: 1024, contentType: 'text/markdown');
   const testSpec2 =

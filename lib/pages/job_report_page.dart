@@ -15,6 +15,9 @@ import '../models/qa_job.dart';
 import '../providers/job_providers.dart';
 import '../providers/report_providers.dart';
 import '../theme/colors.dart';
+import '../widgets/compliance/compliance_results_panel.dart';
+import '../widgets/compliance/gap_analysis_panel.dart';
+import '../widgets/compliance/spec_list_panel.dart';
 import '../widgets/reports/agent_report_tab.dart';
 import '../widgets/reports/executive_summary_card.dart';
 import '../widgets/reports/export_dialog.dart';
@@ -67,8 +70,13 @@ class _JobReportPageState extends ConsumerState<JobReportPage>
                 .where((r) => r.status == AgentStatus.completed)
                 .toList();
 
-            // Tabs: Overview + one per completed agent
-            final tabCount = 1 + completedRuns.length;
+            final isCompliance = job.mode == JobMode.compliance;
+
+            // Compliance mode: 3 compliance tabs + agent tabs + findings
+            // Non-compliance: Overview + per-agent tabs
+            final tabCount = isCompliance
+                ? 3 + completedRuns.length
+                : 1 + completedRuns.length;
             if (_tabController == null ||
                 _tabController!.length != tabCount) {
               _tabController?.dispose();
@@ -111,6 +119,8 @@ class _ReportContent extends ConsumerWidget {
     required this.tabController,
     required this.jobId,
   });
+
+  bool get _isCompliance => job.mode == JobMode.compliance;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -192,11 +202,19 @@ class _ReportContent extends ConsumerWidget {
             indicatorColor: CodeOpsColors.primary,
             labelStyle: const TextStyle(fontSize: 12, fontWeight: FontWeight.w600),
             unselectedLabelStyle: const TextStyle(fontSize: 12),
-            tabs: [
-              const Tab(text: 'Overview'),
-              ...completedRuns.map(
-                  (r) => Tab(text: r.agentType.displayName)),
-            ],
+            tabs: _isCompliance
+                ? [
+                    const Tab(text: 'Compliance Matrix'),
+                    const Tab(text: 'Gap Analysis'),
+                    const Tab(text: 'Specifications'),
+                    ...completedRuns.map(
+                        (r) => Tab(text: r.agentType.displayName)),
+                  ]
+                : [
+                    const Tab(text: 'Overview'),
+                    ...completedRuns.map(
+                        (r) => Tab(text: r.agentType.displayName)),
+                  ],
           ),
         ),
 
@@ -204,79 +222,93 @@ class _ReportContent extends ConsumerWidget {
         Expanded(
           child: TabBarView(
             controller: tabController,
-            children: [
-              // Overview tab
-              SingleChildScrollView(
-                padding: const EdgeInsets.all(24),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    // Executive summary
-                    ExecutiveSummaryCard(
-                      job: job,
-                      agentRuns: agentRuns,
-                      summaryMd: job.summaryMd,
-                    ),
-                    const SizedBox(height: 24),
-
-                    // Health trend
-                    Container(
-                      padding: const EdgeInsets.all(16),
-                      decoration: BoxDecoration(
-                        color: CodeOpsColors.surface,
-                        borderRadius: BorderRadius.circular(8),
-                        border: Border.all(color: CodeOpsColors.border),
-                      ),
+            children: _isCompliance
+                ? [
+                    // Compliance Matrix tab
+                    ComplianceResultsPanel(jobId: jobId),
+                    // Gap Analysis tab
+                    GapAnalysisPanel(jobId: jobId),
+                    // Specifications tab
+                    SpecListPanel(jobId: jobId),
+                    // Agent report tabs
+                    ...completedRuns.map((run) => Padding(
+                          padding: const EdgeInsets.all(16),
+                          child: AgentReportTab(agentRun: run),
+                        )),
+                  ]
+                : [
+                    // Overview tab
+                    SingleChildScrollView(
+                      padding: const EdgeInsets.all(24),
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          const Text(
-                            'Health Trend (30 days)',
-                            style: TextStyle(
-                              color: CodeOpsColors.textSecondary,
-                              fontSize: 12,
-                              fontWeight: FontWeight.w600,
-                            ),
+                          // Executive summary
+                          ExecutiveSummaryCard(
+                            job: job,
+                            agentRuns: agentRuns,
+                            summaryMd: job.summaryMd,
                           ),
-                          const SizedBox(height: 12),
-                          trendAsync.when(
-                            loading: () => const SizedBox(
-                              height: 220,
-                              child: Center(
-                                child: CircularProgressIndicator(
-                                  color: CodeOpsColors.primary,
-                                  strokeWidth: 2,
-                                ),
-                              ),
+                          const SizedBox(height: 24),
+
+                          // Health trend
+                          Container(
+                            padding: const EdgeInsets.all(16),
+                            decoration: BoxDecoration(
+                              color: CodeOpsColors.surface,
+                              borderRadius: BorderRadius.circular(8),
+                              border: Border.all(color: CodeOpsColors.border),
                             ),
-                            error: (_, __) => const SizedBox(
-                              height: 220,
-                              child: Center(
-                                child: Text(
-                                  'Failed to load trend data',
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                const Text(
+                                  'Health Trend (30 days)',
                                   style: TextStyle(
-                                    color: CodeOpsColors.textTertiary,
+                                    color: CodeOpsColors.textSecondary,
                                     fontSize: 12,
+                                    fontWeight: FontWeight.w600,
                                   ),
                                 ),
-                              ),
+                                const SizedBox(height: 12),
+                                trendAsync.when(
+                                  loading: () => const SizedBox(
+                                    height: 220,
+                                    child: Center(
+                                      child: CircularProgressIndicator(
+                                        color: CodeOpsColors.primary,
+                                        strokeWidth: 2,
+                                      ),
+                                    ),
+                                  ),
+                                  error: (_, __) => const SizedBox(
+                                    height: 220,
+                                    child: Center(
+                                      child: Text(
+                                        'Failed to load trend data',
+                                        style: TextStyle(
+                                          color: CodeOpsColors.textTertiary,
+                                          fontSize: 12,
+                                        ),
+                                      ),
+                                    ),
+                                  ),
+                                  data: (snapshots) =>
+                                      TrendChart(snapshots: snapshots),
+                                ),
+                              ],
                             ),
-                            data: (snapshots) =>
-                                TrendChart(snapshots: snapshots),
                           ),
                         ],
                       ),
                     ),
-                  ],
-                ),
-              ),
 
-              // Agent report tabs
-              ...completedRuns.map((run) => Padding(
-                    padding: const EdgeInsets.all(16),
-                    child: AgentReportTab(agentRun: run),
-                  )),
-            ],
+                    // Agent report tabs
+                    ...completedRuns.map((run) => Padding(
+                          padding: const EdgeInsets.all(16),
+                          child: AgentReportTab(agentRun: run),
+                        )),
+                  ],
           ),
         ),
       ],

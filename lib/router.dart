@@ -9,6 +9,7 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 
 import 'pages/audit_wizard_page.dart';
+import 'pages/compliance_wizard_page.dart';
 import 'pages/directives_page.dart';
 import 'pages/findings_explorer_page.dart';
 import 'pages/github_browser_page.dart';
@@ -130,7 +131,7 @@ final GoRouter router = GoRouter(
           path: '/compliance',
           name: 'compliance',
           pageBuilder: (context, state) => const NoTransitionPage(
-            child: PlaceholderPage(title: 'Compliance Wizard'),
+            child: ComplianceWizardPage(),
           ),
         ),
         // 9. Dependency Scan
