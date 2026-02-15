@@ -12,6 +12,7 @@ import 'dart:async';
 import '../../models/enums.dart';
 import '../../utils/constants.dart';
 import '../agent/persona_manager.dart';
+import '../logging/log_service.dart';
 import '../platform/claude_code_detector.dart';
 import '../platform/process_manager.dart';
 
@@ -222,6 +223,7 @@ class AgentDispatcher {
       timeout: config.agentTimeout,
     );
 
+    log.i('AgentDispatcher', 'Agent dispatched (type=${agentType.name}, model=${config.claudeModel}, pid=${process.pid})');
     _activeProcesses[agentType] = process;
     return process;
   }
@@ -305,6 +307,7 @@ class AgentDispatcher {
 
           if (exitCode == -1) {
             // Timeout occurred.
+            log.w('AgentDispatcher', 'Agent timed out, killing (type=${agentType.name})');
             await _processManager.kill(process);
             _activeProcesses.remove(agentType);
             controller.add(AgentTimedOut(agentType: agentType));
@@ -317,6 +320,7 @@ class AgentDispatcher {
             ));
           }
         } catch (e) {
+          log.e('AgentDispatcher', 'Agent spawn failed (type=${agentType.name})', e);
           _activeProcesses.remove(agentType);
           controller.add(AgentFailed(
             agentType: agentType,

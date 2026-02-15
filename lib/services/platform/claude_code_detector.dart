@@ -9,6 +9,7 @@ library;
 import 'dart:io';
 
 import '../../utils/constants.dart';
+import '../logging/log_service.dart';
 
 // ---------------------------------------------------------------------------
 // ClaudeCodeStatus
@@ -112,7 +113,10 @@ class ClaudeCodeDetector {
   Future<ClaudeCodeStatus> validate() async {
     try {
       final installed = await isInstalled();
-      if (!installed) return ClaudeCodeStatus.notInstalled;
+      if (!installed) {
+        log.w('ClaudeCodeDetector', 'Claude CLI not found on PATH');
+        return ClaudeCodeStatus.notInstalled;
+      }
 
       final version = await getVersion();
       if (version == null) return ClaudeCodeStatus.error;
@@ -121,6 +125,12 @@ class ClaudeCodeDetector {
         version,
         AppConstants.minClaudeCodeVersion,
       );
+      if (meetsMinimum) {
+        final path = await getExecutablePath();
+        log.i('ClaudeCodeDetector', 'CLI detected (path=$path, version=$version)');
+      } else {
+        log.w('ClaudeCodeDetector', 'CLI version too old ($version < ${AppConstants.minClaudeCodeVersion})');
+      }
       return meetsMinimum
           ? ClaudeCodeStatus.available
           : ClaudeCodeStatus.versionTooOld;

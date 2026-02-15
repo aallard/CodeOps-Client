@@ -13,6 +13,7 @@ import '../agent/report_parser.dart';
 import '../cloud/finding_api.dart';
 import '../cloud/job_api.dart';
 import '../cloud/report_api.dart';
+import '../logging/log_service.dart';
 import 'agent_dispatcher.dart';
 import 'agent_monitor.dart';
 import 'progress_aggregator.dart';
@@ -223,6 +224,7 @@ class JobOrchestrator {
       );
       jobId = job.id;
       _activeJobId = jobId;
+      log.i('JobOrchestrator', 'Job created (jobId=$jobId, project=$projectId, agents=${selectedAgents.length})');
       _lifecycleController.add(JobCreated(jobId: jobId));
 
       if (_cancelling) {
@@ -246,6 +248,7 @@ class JobOrchestrator {
         status: JobStatus.running,
         startedAt: DateTime.now(),
       );
+      log.i('JobOrchestrator', 'Job started (jobId=$jobId)');
       _lifecycleController.add(JobStarted(jobId: jobId));
 
       if (_cancelling) {
@@ -444,6 +447,7 @@ class JobOrchestrator {
       }
 
       // Step 6: Vera consolidation.
+      log.d('JobOrchestrator', 'Agent phase complete, starting Vera consolidation (jobId=$jobId)');
       _lifecycleController.add(ConsolidationStarted(jobId: jobId));
 
       // Tag all findings with their source agent type before consolidation.
@@ -521,6 +525,7 @@ class JobOrchestrator {
       );
 
       // Step 10: Emit completion event.
+      log.i('JobOrchestrator', 'Job completed (jobId=$jobId, score=${veraReport.healthScore}, findings=${veraReport.totalFindings})');
       _lifecycleController.add(
         JobCompleted(jobId: jobId, report: veraReport),
       );
@@ -528,6 +533,7 @@ class JobOrchestrator {
 
       return veraReport.overallResult;
     } catch (e) {
+      log.e('JobOrchestrator', 'Job failed (jobId=$jobId)', e);
       // Wrap entire flow in error handling.
       if (jobId != null) {
         try {
@@ -553,6 +559,7 @@ class JobOrchestrator {
   /// Kills all running agent processes via [AgentDispatcher.cancelAll] and
   /// updates the job status to CANCELLED on the server.
   Future<void> cancelJob(String jobId) async {
+    log.w('JobOrchestrator', 'Job cancellation requested (jobId=$jobId)');
     _cancelling = true;
     await _dispatcher.cancelAll();
 

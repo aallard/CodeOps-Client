@@ -11,6 +11,7 @@ import '../../models/jira_models.dart';
 import '../../models/project.dart';
 import '../../services/jira/jira_mapper.dart';
 import '../cloud/job_api.dart';
+import '../logging/log_service.dart';
 import 'agent_dispatcher.dart';
 import 'job_orchestrator.dart';
 
@@ -80,6 +81,8 @@ class BugInvestigationOrchestrator {
       }
     });
 
+    log.i('BugInvestigationOrchestrator', 'Investigation started (jiraKey=${issue.key}, project=${project.name})');
+
     // Fire-and-forget the job execution.
     _jobOrchestrator.executeJob(
       projectId: project.id,
@@ -101,7 +104,10 @@ class BugInvestigationOrchestrator {
         .timeout(const Duration(seconds: 5), onTimeout: () => null);
     await subscription.cancel();
 
-    if (jobId == null) return null;
+    if (jobId == null) {
+      log.w('BugInvestigationOrchestrator', 'JobCreated event not received within timeout');
+      return null;
+    }
 
     // Create the BugInvestigation record on the server.
     final fields = JiraMapper.toInvestigationFields(
@@ -122,10 +128,11 @@ class BugInvestigationOrchestrator {
         jiraLinkedIssues: fields['jiraLinkedIssues'] as String?,
         additionalContext: fields['additionalContext'] as String?,
       );
-    } catch (_) {
-      // Best-effort — the job is already running.
+    } catch (e) {
+      log.w('BugInvestigationOrchestrator', 'Failed to create investigation record', e);
     }
 
+    log.i('BugInvestigationOrchestrator', 'Investigation launched (jobId=$jobId)');
     return jobId;
   }
 }

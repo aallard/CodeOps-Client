@@ -15,6 +15,7 @@ import '../../models/health_snapshot.dart';
 import '../../models/user.dart';
 import '../cloud/api_client.dart';
 import '../cloud/api_exceptions.dart';
+import '../logging/log_service.dart';
 import 'secure_storage.dart';
 
 /// Represents the current authentication state of the application.
@@ -82,6 +83,7 @@ class AuthService {
 
     final authResponse = AuthResponse.fromJson(response.data!);
     await _storeAuthData(authResponse);
+    log.i('AuthService', 'Login successful (email=$email)');
     _setAuthState(AuthState.authenticated, authResponse.user);
     return authResponse.user;
   }
@@ -106,6 +108,7 @@ class AuthService {
 
     final authResponse = AuthResponse.fromJson(response.data!);
     await _storeAuthData(authResponse);
+    log.i('AuthService', 'Registration successful (email=$email)');
     _setAuthState(AuthState.authenticated, authResponse.user);
     return authResponse.user;
   }
@@ -114,6 +117,7 @@ class AuthService {
   ///
   /// Stores the new tokens in secure storage.
   Future<void> refreshToken() async {
+    log.d('AuthService', 'Token refresh triggered');
     final refreshToken = await _secureStorage.getRefreshToken();
     if (refreshToken == null) {
       _setAuthState(AuthState.unauthenticated, null);
@@ -151,6 +155,7 @@ class AuthService {
   /// Clears all stored tokens, wipes the local database cache,
   /// and emits [AuthState.unauthenticated].
   Future<void> logout() async {
+    log.i('AuthService', 'Logout');
     await _secureStorage.clearAll();
     await _database.clearAllTables();
     _setAuthState(AuthState.unauthenticated, null);
@@ -173,6 +178,7 @@ class AuthService {
       final user = User.fromJson(response.data!);
       _setAuthState(AuthState.authenticated, user);
     } on DioException catch (e) {
+      log.w('AuthService', 'Auto-login failed', e.error);
       final error = e.error;
       if (error is UnauthorizedException) {
         await _secureStorage.clearAll();

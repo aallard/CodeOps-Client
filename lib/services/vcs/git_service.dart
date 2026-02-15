@@ -10,6 +10,7 @@ import 'dart:convert';
 import 'dart:io';
 
 import '../../models/vcs_models.dart';
+import '../logging/log_service.dart' as logging;
 
 // ---------------------------------------------------------------------------
 // ProcessRunner abstraction
@@ -145,12 +146,14 @@ class GitService {
 
     final exitCode = await process.exitCode;
     if (exitCode != 0) {
+      logging.log.e('GitService', 'Clone failed (exitCode=$exitCode, target=$targetDir)');
       throw GitException(
         command: 'clone',
         message: 'Clone failed with exit code $exitCode',
         exitCode: exitCode,
       );
     }
+    logging.log.i('GitService', 'Clone completed (target=$targetDir)');
   }
 
   /// Pulls the latest changes from remote.
@@ -417,6 +420,7 @@ class GitService {
     List<String> args, {
     String? workingDirectory,
   }) async {
+    logging.log.d('GitService', 'git ${args.join(' ')}');
     final result = await _runner.run(
       'git',
       args,
@@ -425,12 +429,15 @@ class GitService {
     );
     if (result.exitCode != 0) {
       final stderr = result.stderr.toString().trim();
+      logging.log.e('GitService', 'git ${args.first} failed (exitCode=${result.exitCode}): ${stderr.length > 200 ? stderr.substring(0, 200) : stderr}');
       throw GitException(
         command: 'git ${args.join(' ')}',
         message: stderr.isNotEmpty ? stderr : 'Exit code ${result.exitCode}',
         exitCode: result.exitCode,
       );
     }
+    final stdout = result.stdout.toString().trim();
+    logging.log.d('GitService', 'git ${args.first} ok (${stdout.length > 200 ? '${stdout.substring(0, 200)}...' : stdout})');
     return result;
   }
 

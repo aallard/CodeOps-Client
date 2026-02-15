@@ -7,6 +7,7 @@ library;
 
 import '../../models/enums.dart';
 import '../../models/tech_debt_item.dart';
+import '../logging/log_service.dart';
 
 /// Analysis service for computing tech debt metrics from item lists.
 class TechDebtTracker {
@@ -41,6 +42,7 @@ class TechDebtTracker {
   /// Only non-RESOLVED items are counted.
   /// Defaults: effort=S (1), impact=LOW (1) if null.
   static int computeDebtScore(List<TechDebtItem> items) {
+    log.i('TechDebtTracker', 'Computing debt score (${items.length} items)');
     var score = 0;
     for (final item in items) {
       if (item.status == DebtStatus.resolved) continue;

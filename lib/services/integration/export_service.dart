@@ -17,6 +17,7 @@ import '../../models/agent_run.dart';
 import '../../models/finding.dart';
 import '../../models/qa_job.dart';
 import '../../utils/constants.dart';
+import '../logging/log_service.dart';
 
 /// Controls which sections to include in an export.
 class ExportSections {
@@ -320,6 +321,7 @@ class ExportService {
 
     final file = File(result);
     await file.writeAsBytes(data);
+    log.i('ExportService', 'Export completed (path=$result, size=${data.length} bytes)');
     return result;
   }
 

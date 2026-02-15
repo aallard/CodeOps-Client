@@ -12,6 +12,7 @@ import '../../database/database.dart' as db;
 import '../../models/project.dart';
 import '../cloud/api_exceptions.dart';
 import '../cloud/project_api.dart';
+import '../logging/log_service.dart';
 
 /// Current state of a sync operation.
 enum SyncState {
@@ -49,6 +50,7 @@ class SyncService {
   /// Returns the synced project list on success. Falls back to
   /// locally cached data on network/timeout errors.
   Future<List<Project>> syncProjects(String teamId) async {
+    log.i('SyncService', 'Sync started (table=projects, teamId=$teamId)');
     try {
       final projects = await _projectApi.getTeamProjects(
         teamId,
@@ -97,10 +99,13 @@ class SyncService {
             ),
           );
 
+      log.i('SyncService', 'Sync completed (table=projects, count=${projects.length})');
       return projects;
     } on NetworkException {
+      log.w('SyncService', 'Sync failed (offline), using local cache');
       return _readLocalProjects(teamId);
     } on TimeoutException {
+      log.w('SyncService', 'Sync failed (timeout), using local cache');
       return _readLocalProjects(teamId);
     }
   }

@@ -9,6 +9,7 @@ import 'dart:convert';
 import 'package:dio/dio.dart';
 
 import '../../models/jira_models.dart';
+import '../logging/log_service.dart';
 
 /// Jira Cloud REST API client.
 ///
@@ -397,6 +398,7 @@ class JiraService {
               e.response?.headers.value('retry-after') ?? '',
             ) ??
             5;
+        log.w('JiraService', '429 rate limited on $path, retrying after ${retryAfter}s');
         await Future<void>.delayed(Duration(seconds: retryAfter));
         return _dio.request<T>(
           path,
@@ -405,6 +407,7 @@ class JiraService {
           options: Options(method: method),
         );
       }
+      log.e('JiraService', 'Request failed: $method $path', e);
       rethrow;
     }
   }

@@ -13,6 +13,7 @@ import '../../models/enums.dart';
 import '../../utils/constants.dart';
 import '../agent/persona_manager.dart';
 import '../agent/report_parser.dart';
+import '../logging/log_service.dart';
 import 'agent_dispatcher.dart';
 
 // ---------------------------------------------------------------------------
@@ -105,6 +106,8 @@ class VeraManager {
     required Map<AgentType, ParsedReport> agentReports,
     required JobMode mode,
   }) async {
+    log.i('VeraManager', 'Consolidation started (jobId=$jobId, agents=${agentReports.length})');
+
     // Collect all findings across agents.
     final allFindings = <ParsedFinding>[];
     for (final report in agentReports.values) {
@@ -113,6 +116,7 @@ class VeraManager {
 
     // Deduplicate.
     final deduplicated = deduplicateFindings(allFindings);
+    log.d('VeraManager', 'Deduplication: ${allFindings.length} input -> ${deduplicated.length} output findings');
 
     // Severity counts.
     final criticalCount =
@@ -149,6 +153,8 @@ class VeraManager {
       lowCount: lowCount,
       agentScores: agentScores,
     );
+
+    log.i('VeraManager', 'Consolidation completed (score=$healthScore, result=${overallResult.name}, findings=${deduplicated.length})');
 
     return VeraReport(
       healthScore: healthScore,

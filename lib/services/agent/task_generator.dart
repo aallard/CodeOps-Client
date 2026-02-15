@@ -14,6 +14,7 @@ import '../../models/enums.dart';
 import '../../models/finding.dart';
 import '../../models/remediation_task.dart';
 import '../cloud/task_api.dart';
+import '../logging/log_service.dart';
 
 /// Groups findings by file path for task generation.
 class FindingGroup {
@@ -43,6 +44,7 @@ class TaskGenerator {
   }) async {
     if (findings.isEmpty) return [];
 
+    log.i('TaskGenerator', 'Generating tasks (${findings.length} findings)');
     final groups = groupByFile(findings);
     final taskPayloads = <Map<String, dynamic>>[];
     var taskNumber = 1;
@@ -65,6 +67,7 @@ class TaskGenerator {
       taskNumber++;
     }
 
+    log.i('TaskGenerator', 'Tasks generated (count=${taskPayloads.length})');
     return _taskApi.createTasksBatch(taskPayloads);
   }
 

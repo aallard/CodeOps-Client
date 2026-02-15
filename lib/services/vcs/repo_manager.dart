@@ -10,6 +10,7 @@ import 'package:drift/drift.dart';
 
 import '../../database/database.dart';
 import '../../models/vcs_models.dart';
+import '../logging/log_service.dart';
 import 'git_service.dart';
 
 /// Manages the local directory of cloned git repositories.
@@ -43,6 +44,7 @@ class RepoManager {
     required String localPath,
     String? projectId,
   }) async {
+    log.i('RepoManager', 'Registering repo (fullName=$repoFullName, path=$localPath)');
     await _database.into(_database.clonedRepos).insertOnConflictUpdate(
           ClonedReposCompanion.insert(
             repoFullName: repoFullName,
@@ -58,6 +60,7 @@ class RepoManager {
   ///
   /// Does NOT delete files on disk.
   Future<void> unregisterRepo(String repoFullName) async {
+    log.i('RepoManager', 'Unregistering repo (fullName=$repoFullName)');
     await (_database.delete(_database.clonedRepos)
           ..where((t) => t.repoFullName.equals(repoFullName)))
         .go();

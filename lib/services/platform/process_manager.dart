@@ -9,6 +9,8 @@ import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
 
+import '../logging/log_service.dart';
+
 // ---------------------------------------------------------------------------
 // ManagedProcess
 // ---------------------------------------------------------------------------
@@ -151,6 +153,7 @@ class ProcessManager {
       exitCodeCompleter: exitCodeCompleter,
     );
 
+    log.d('ProcessManager', 'Process spawned (executable=$executable, pid=${process.pid})');
     _active.add(managed);
 
     // Wire stdout line-by-line into the broadcast controller.
@@ -181,6 +184,7 @@ class ProcessManager {
 
   /// Kills a single [ManagedProcess] and removes it from the active list.
   Future<void> kill(ManagedProcess process) async {
+    log.w('ProcessManager', 'Killing process (pid=${process.pid})');
     await process.kill();
     _active.remove(process);
     process.dispose();

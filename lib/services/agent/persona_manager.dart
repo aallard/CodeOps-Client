@@ -14,6 +14,7 @@ import 'package:flutter/services.dart' show rootBundle;
 import '../../models/enums.dart';
 import '../cloud/directive_api.dart';
 import '../cloud/persona_api.dart';
+import '../logging/log_service.dart';
 
 // ---------------------------------------------------------------------------
 // PersonaManager
@@ -60,6 +61,7 @@ class PersonaManager {
     String? jiraTicketData,
     List<String>? specReferences,
   }) async {
+    log.i('PersonaManager', 'Assembling prompt (agent=${agentType.name}, mode=${mode.name})');
     final sections = <String>[];
 
     // 1. Persona (team override or built-in fallback).
@@ -86,7 +88,9 @@ class PersonaManager {
     // 4. Report format instructions.
     sections.add(_reportFormatInstructions);
 
-    return sections.join('\n\n---\n\n');
+    final result = sections.join('\n\n---\n\n');
+    log.d('PersonaManager', 'Prompt assembled (${sections.length} sections, ${result.length} chars)');
+    return result;
   }
 
   /// Loads the built-in persona markdown for [agentType] from bundled assets.

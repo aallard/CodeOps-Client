@@ -9,10 +9,13 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:window_manager/window_manager.dart';
 
 import 'app.dart';
+import 'services/logging/log_config.dart';
+import 'services/logging/log_service.dart';
 
 /// Application entry point.
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
+  await LogConfig.initialize();
 
   await windowManager.ensureInitialized();
 
@@ -29,6 +32,8 @@ void main() async {
     await windowManager.show();
     await windowManager.focus();
   });
+
+  log.i('App', 'CodeOps starting');
 
   runApp(const ProviderScope(child: CodeOpsApp()));
 }

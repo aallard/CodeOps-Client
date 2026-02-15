@@ -10,6 +10,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../models/dependency_scan.dart';
+import '../services/logging/log_service.dart';
 import '../models/enums.dart';
 import '../models/project.dart';
 import '../providers/dependency_providers.dart';
@@ -225,7 +226,7 @@ class _DependencyScanPageState extends ConsumerState<DependencyScanPage>
     List<DependencyVulnerability> vulns,
   ) {
     final report = DependencyScanner.formatDepReport(scan, vulns);
-    debugPrint(report);
+    log.d('DependencyScanPage', 'Export plan generated (${report.length} chars)');
   }
 }
 

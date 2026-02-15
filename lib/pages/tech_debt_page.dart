@@ -11,6 +11,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../models/enums.dart';
+import '../services/logging/log_service.dart';
 import '../models/project.dart';
 import '../models/tech_debt_item.dart';
 import '../providers/project_providers.dart';
@@ -279,7 +280,7 @@ class _SummaryPanel extends ConsumerWidget {
     if (items != null) {
       final report =
           TechDebtTracker.formatDebtReport(items, summary ?? {});
-      debugPrint(report);
+      log.d('TechDebtPage', 'Report generated (${report.length} chars)');
     }
   }
 }
@@ -660,7 +661,7 @@ class _DetailPanel extends ConsumerWidget {
         ref.invalidate(projectTechDebtProvider(projectId));
       }
     } catch (e) {
-      debugPrint('Failed to update status: $e');
+      log.w('TechDebtPage', 'Failed to update status', e);
     }
   }
 

@@ -11,6 +11,7 @@ import 'package:flutter/material.dart';
 import '../../models/jira_models.dart';
 import '../../models/remediation_task.dart';
 import '../../theme/colors.dart';
+import '../logging/log_service.dart';
 
 /// Converts between Jira Cloud API models and CodeOps internal models.
 class JiraMapper {
@@ -131,6 +132,7 @@ class JiraMapper {
   /// bulletList, orderedList, text, hardBreak.
   static String adfToMarkdown(String? adfJson) {
     if (adfJson == null || adfJson.isEmpty) return '';
+    log.d('JiraMapper', 'Converting ADF to markdown (${adfJson.length} chars)');
 
     try {
       final dynamic parsed = jsonDecode(adfJson);

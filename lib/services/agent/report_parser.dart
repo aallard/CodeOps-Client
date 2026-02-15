@@ -7,6 +7,7 @@
 library;
 
 import '../../models/enums.dart';
+import '../logging/log_service.dart';
 
 // ---------------------------------------------------------------------------
 // Data classes
@@ -185,10 +186,18 @@ class ReportParser {
   /// Returns a fully populated [ParsedReport]; missing sections will have
   /// `null` or empty values rather than throwing.
   ParsedReport parseReport(String markdown) {
+    final findings = parseFindings(markdown);
+    log.d('ReportParser', 'Parsed report (${findings.length} findings, ${markdown.length} chars)');
+    final missingSections = <String>[];
+    if (parseExecutiveSummary(markdown) == null) missingSections.add('executiveSummary');
+    if (parseMetrics(markdown) == null) missingSections.add('metrics');
+    if (missingSections.isNotEmpty) {
+      log.w('ReportParser', 'Missing sections: ${missingSections.join(', ')}');
+    }
     return ParsedReport(
       metadata: parseMetadata(markdown),
       executiveSummary: parseExecutiveSummary(markdown),
-      findings: parseFindings(markdown),
+      findings: findings,
       metrics: parseMetrics(markdown),
       rawMarkdown: markdown,
     );

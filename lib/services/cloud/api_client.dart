@@ -10,9 +10,11 @@ library;
 
 import 'package:dio/dio.dart';
 import 'package:flutter/foundation.dart';
+import 'package:uuid/uuid.dart';
 
 import '../../utils/constants.dart';
 import '../auth/secure_storage.dart';
+import '../logging/log_service.dart';
 import 'api_exceptions.dart';
 
 /// Centralized HTTP client for all CodeOps-Server API communication.
@@ -22,6 +24,7 @@ import 'api_exceptions.dart';
 class ApiClient {
   late final Dio _dio;
   final SecureStorageService _secureStorage;
+  static const _uuid = Uuid();
 
   /// Whether a token refresh is currently in progress.
   bool _isRefreshing = false;
@@ -55,12 +58,7 @@ class ApiClient {
       _authInterceptor(),
       _refreshInterceptor(),
       _errorInterceptor(),
-      if (kDebugMode)
-        LogInterceptor(
-          requestBody: true,
-          responseBody: true,
-          logPrint: (msg) => debugPrint('[API] $msg'),
-        ),
+      _loggingInterceptor(),
     ]);
   }
 
@@ -217,6 +215,46 @@ class ApiClient {
           );
         },
       );
+
+  /// Logs requests, responses, and errors with correlation IDs.
+  ///
+  /// Never logs request/response bodies, Authorization headers, or tokens.
+  InterceptorsWrapper _loggingInterceptor() {
+    const tag = 'ApiClient';
+    return InterceptorsWrapper(
+      onRequest: (options, handler) {
+        final correlationId = _uuid.v4().substring(0, 8);
+        options.extra['correlationId'] = correlationId;
+        options.extra['requestStart'] = DateTime.now().millisecondsSinceEpoch;
+        options.headers['X-Correlation-ID'] = correlationId;
+        log.d(tag,
+            '\u2192 ${options.method} ${options.uri} (correlationId=$correlationId)');
+        handler.next(options);
+      },
+      onResponse: (response, handler) {
+        final correlationId =
+            response.requestOptions.extra['correlationId'] ?? '?';
+        final startMs =
+            response.requestOptions.extra['requestStart'] as int? ?? 0;
+        final elapsed = DateTime.now().millisecondsSinceEpoch - startMs;
+        log.d(tag,
+            '\u2190 ${response.statusCode} ${response.requestOptions.method} '
+            '${response.requestOptions.uri} (${elapsed}ms) '
+            '(correlationId=$correlationId)');
+        handler.next(response);
+      },
+      onError: (error, handler) {
+        final correlationId =
+            error.requestOptions.extra['correlationId'] ?? '?';
+        final status = error.response?.statusCode ?? 0;
+        log.e(tag,
+            '\u2717 $status ${error.requestOptions.method} '
+            '${error.requestOptions.uri} (correlationId=$correlationId)',
+            error.error);
+        handler.next(error);
+      },
+    );
+  }
 
   /// Converts a [DioException] to a typed [ApiException].
   ApiException _mapError(DioException error) {

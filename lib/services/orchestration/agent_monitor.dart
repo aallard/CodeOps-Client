@@ -10,6 +10,7 @@ library;
 import 'dart:async';
 
 import '../../models/enums.dart';
+import '../logging/log_service.dart';
 import '../platform/process_manager.dart';
 
 // ---------------------------------------------------------------------------
@@ -205,7 +206,7 @@ class AgentMonitor {
     await stderrSubscription.cancel();
     stopwatch.stop();
 
-    return AgentMonitorResult(
+    final result = AgentMonitorResult(
       agentType: agentType,
       exitCode: exitCode,
       stdout: stdoutBuffer.toString(),
@@ -213,6 +214,16 @@ class AgentMonitor {
       elapsed: stopwatch.elapsed,
       status: status,
     );
+
+    if (status == AgentMonitorStatus.completed) {
+      log.i('AgentMonitor', 'Agent completed (type=${agentType.name}, exitCode=$exitCode, elapsed=${stopwatch.elapsed.inSeconds}s)');
+    } else if (status == AgentMonitorStatus.timedOut) {
+      log.w('AgentMonitor', 'Agent timed out (type=${agentType.name})');
+    } else {
+      log.e('AgentMonitor', 'Agent failed (type=${agentType.name}, exitCode=$exitCode)');
+    }
+
+    return result;
   }
 
   /// Monitors all provided agent processes concurrently.

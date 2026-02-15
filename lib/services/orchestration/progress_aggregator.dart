@@ -10,6 +10,7 @@ import 'dart:async';
 
 import '../../models/enums.dart';
 import '../agent/report_parser.dart';
+import '../logging/log_service.dart';
 
 // ---------------------------------------------------------------------------
 // AgentPhase
@@ -256,7 +257,9 @@ class ProgressAggregator {
   /// Emits a fresh [JobProgress] snapshot to the stream.
   void _emit() {
     if (!_controller.isClosed) {
-      _controller.add(_buildSnapshot());
+      final snapshot = _buildSnapshot();
+      log.d('ProgressAggregator', 'Progress: ${snapshot.completedCount}/${snapshot.totalCount} agents complete');
+      _controller.add(snapshot);
     }
   }
 }

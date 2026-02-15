@@ -8,6 +8,7 @@ import 'package:dio/dio.dart';
 
 import '../../models/vcs_models.dart';
 import '../../services/cloud/api_exceptions.dart';
+import '../logging/log_service.dart';
 import 'vcs_provider.dart';
 
 /// Implements [VcsProvider] against the GitHub REST API v3.
@@ -238,9 +239,14 @@ class GitHubProvider implements VcsProvider {
     final reset = response.headers.value('X-RateLimit-Reset');
     if (remaining != null) rateLimitRemaining = int.tryParse(remaining);
     if (reset != null) rateLimitReset = int.tryParse(reset);
+    log.d('GitHubProvider', 'Rate limit remaining: $rateLimitRemaining');
+    if (rateLimitRemaining != null && rateLimitRemaining! < 100) {
+      log.w('GitHubProvider', 'GitHub API rate limit low: $rateLimitRemaining remaining');
+    }
   }
 
   Never _mapDioException(DioException e) {
+    log.e('GitHubProvider', 'API error (status=${e.response?.statusCode})', e);
     final statusCode = e.response?.statusCode;
     final message = _extractMessage(e.response?.data) ?? e.message ?? 'Unknown error';
     switch (statusCode) {

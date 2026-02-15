@@ -7,6 +7,7 @@ library;
 import '../../models/agent_run.dart';
 import '../../models/enums.dart';
 import '../../utils/constants.dart';
+import '../logging/log_service.dart';
 
 /// Result of a health score calculation.
 class HealthResult {
@@ -72,6 +73,9 @@ class HealthCalculator {
     final compositeScore =
         totalWeight > 0 ? (totalWeightedScore / totalWeight).round() : 0;
     final clampedScore = compositeScore.clamp(0, 100);
+
+    log.i('HealthCalculator', 'Health score computed: $clampedScore (${completedRuns.length} agents)');
+    log.d('HealthCalculator', 'Per-agent scores: $agentScores');
 
     return HealthResult(
       score: clampedScore,

@@ -10,6 +10,7 @@ library;
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 
 import '../../utils/constants.dart';
+import '../logging/log_service.dart';
 
 /// Provides secure, encrypted key-value storage backed by the OS keychain.
 ///
@@ -68,12 +69,20 @@ class SecureStorageService {
   Future<String?> read(String key) async => _storage.read(key: key);
 
   /// Writes an arbitrary key-value pair to secure storage.
-  Future<void> write(String key, String value) async =>
-      _storage.write(key: key, value: value);
+  Future<void> write(String key, String value) async {
+    log.d('SecureStorage', 'Write key=$key');
+    return _storage.write(key: key, value: value);
+  }
 
   /// Deletes a specific key from secure storage.
-  Future<void> delete(String key) async => _storage.delete(key: key);
+  Future<void> delete(String key) async {
+    log.d('SecureStorage', 'Delete key=$key');
+    return _storage.delete(key: key);
+  }
 
   /// Clears ALL stored data. Called on logout.
-  Future<void> clearAll() async => _storage.deleteAll();
+  Future<void> clearAll() async {
+    log.d('SecureStorage', 'Clear all');
+    return _storage.deleteAll();
+  }
 }

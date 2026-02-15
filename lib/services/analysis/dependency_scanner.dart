@@ -6,6 +6,7 @@ library;
 
 import '../../models/dependency_scan.dart';
 import '../../models/enums.dart';
+import '../logging/log_service.dart';
 
 /// Analysis service for computing dependency health metrics.
 class DependencyScanner {
@@ -30,7 +31,9 @@ class DependencyScanner {
       if (vuln.status == VulnerabilityStatus.resolved) continue;
       deduction += _severityDeductions[vuln.severity] ?? 1;
     }
-    return (100 - deduction).clamp(0, 100);
+    final score = (100 - deduction).clamp(0, 100);
+    log.i('DependencyScanner', 'Scan results: total=${scan.totalDependencies ?? 0}, outdated=${scan.outdatedCount ?? 0}, vulnerable=${vulns.length}, score=$score');
+    return score;
   }
 
   /// Groups vulnerabilities by [Severity].
