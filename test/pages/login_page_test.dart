@@ -1,7 +1,7 @@
 // Widget tests for LoginPage.
 //
 // Verifies form rendering, validation errors, tab switching,
-// and login submission with mocked AuthService.
+// remember-me checkbox, and login submission with mocked AuthService.
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -168,6 +168,40 @@ void main() {
       await tester.pumpAndSettle();
 
       expect(find.byIcon(Icons.visibility_off_outlined), findsOneWidget);
+    });
+
+    testWidgets('shows remember me checkbox', (tester) async {
+      await tester.pumpWidget(createTestWidget());
+      await tester.pumpAndSettle();
+
+      expect(find.text('Remember me'), findsOneWidget);
+      expect(find.byType(Checkbox), findsOneWidget);
+    });
+
+    testWidgets('remember me checkbox toggles on tap', (tester) async {
+      await tester.pumpWidget(createTestWidget());
+      await tester.pumpAndSettle();
+
+      // Initially unchecked.
+      var checkbox =
+          tester.widget<Checkbox>(find.byType(Checkbox));
+      expect(checkbox.value, isFalse);
+
+      // Tap the label to toggle.
+      await tester.tap(find.text('Remember me'));
+      await tester.pumpAndSettle();
+
+      checkbox =
+          tester.widget<Checkbox>(find.byType(Checkbox));
+      expect(checkbox.value, isTrue);
+
+      // Tap checkbox itself to toggle back.
+      await tester.tap(find.byType(Checkbox));
+      await tester.pumpAndSettle();
+
+      checkbox =
+          tester.widget<Checkbox>(find.byType(Checkbox));
+      expect(checkbox.value, isFalse);
     });
   });
 }

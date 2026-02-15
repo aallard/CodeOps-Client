@@ -15,6 +15,7 @@ import '../providers/auth_providers.dart';
 import '../services/cloud/api_exceptions.dart';
 import '../services/logging/log_service.dart';
 import '../theme/colors.dart';
+import '../utils/constants.dart';
 import '../utils/string_utils.dart';
 
 /// Login and registration page.
@@ -49,6 +50,7 @@ class _LoginPageState extends ConsumerState<LoginPage>
   String? _errorMessage;
   bool _obscurePassword = true;
   bool _obscureConfirm = true;
+  bool _rememberMe = false;
 
   @override
   void initState() {
@@ -57,6 +59,23 @@ class _LoginPageState extends ConsumerState<LoginPage>
     _tabController.addListener(() {
       if (mounted) setState(() => _errorMessage = null);
     });
+    _restoreRememberedCredentials();
+  }
+
+  Future<void> _restoreRememberedCredentials() async {
+    final storage = ref.read(secureStorageProvider);
+    final remembered = await storage.read(AppConstants.keyRememberMe);
+    if (remembered == 'true') {
+      final email = await storage.read(AppConstants.keyRememberedEmail);
+      final password = await storage.read(AppConstants.keyRememberedPassword);
+      if (mounted) {
+        setState(() {
+          _rememberMe = true;
+          if (email != null) _signInEmailController.text = email;
+          if (password != null) _signInPasswordController.text = password;
+        });
+      }
+    }
   }
 
   @override
@@ -80,10 +99,22 @@ class _LoginPageState extends ConsumerState<LoginPage>
 
     try {
       final authService = ref.read(authServiceProvider);
-      final user = await authService.login(
-        _signInEmailController.text.trim(),
-        _signInPasswordController.text,
-      );
+      final email = _signInEmailController.text.trim();
+      final password = _signInPasswordController.text;
+      final user = await authService.login(email, password);
+
+      // Save or clear remembered credentials.
+      final storage = ref.read(secureStorageProvider);
+      if (_rememberMe) {
+        await storage.write(AppConstants.keyRememberMe, 'true');
+        await storage.write(AppConstants.keyRememberedEmail, email);
+        await storage.write(AppConstants.keyRememberedPassword, password);
+      } else {
+        await storage.delete(AppConstants.keyRememberMe);
+        await storage.delete(AppConstants.keyRememberedEmail);
+        await storage.delete(AppConstants.keyRememberedPassword);
+      }
+
       ref.read(currentUserProvider.notifier).state = user;
       if (mounted) context.go('/');
     } catch (e, st) {
@@ -298,7 +329,35 @@ class _LoginPageState extends ConsumerState<LoginPage>
                 return null;
               },
             ),
-            const SizedBox(height: 24),
+            const SizedBox(height: 8),
+            Row(
+              children: [
+                SizedBox(
+                  width: 20,
+                  height: 20,
+                  child: Checkbox(
+                    value: _rememberMe,
+                    onChanged: (v) =>
+                        setState(() => _rememberMe = v ?? false),
+                    activeColor: CodeOpsColors.primary,
+                    side: const BorderSide(color: CodeOpsColors.textTertiary),
+                  ),
+                ),
+                const SizedBox(width: 8),
+                GestureDetector(
+                  onTap: () =>
+                      setState(() => _rememberMe = !_rememberMe),
+                  child: const Text(
+                    'Remember me',
+                    style: TextStyle(
+                      fontSize: 13,
+                      color: CodeOpsColors.textSecondary,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 16),
             SizedBox(
               height: 44,
               child: ElevatedButton(

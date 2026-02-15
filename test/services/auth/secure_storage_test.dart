@@ -153,11 +153,37 @@ void main() {
     });
 
     test('clearAll deletes all stored data', () async {
+      when(() => mockStorage.read(key: any(named: 'key')))
+          .thenAnswer((_) async => null);
       when(() => mockStorage.deleteAll()).thenAnswer((_) async {});
 
       await service.clearAll();
 
       verify(() => mockStorage.deleteAll()).called(1);
+    });
+
+    test('clearAll preserves remember-me credentials', () async {
+      when(() => mockStorage.read(key: AppConstants.keyRememberMe))
+          .thenAnswer((_) async => 'true');
+      when(() => mockStorage.read(key: AppConstants.keyRememberedEmail))
+          .thenAnswer((_) async => 'user@example.com');
+      when(() => mockStorage.read(key: AppConstants.keyRememberedPassword))
+          .thenAnswer((_) async => 'secret');
+      when(() => mockStorage.deleteAll()).thenAnswer((_) async {});
+      when(() => mockStorage.write(key: any(named: 'key'), value: any(named: 'value')))
+          .thenAnswer((_) async {});
+
+      await service.clearAll();
+
+      verify(() => mockStorage.deleteAll()).called(1);
+      verify(() => mockStorage.write(
+          key: AppConstants.keyRememberMe, value: 'true')).called(1);
+      verify(() => mockStorage.write(
+          key: AppConstants.keyRememberedEmail, value: 'user@example.com'))
+          .called(1);
+      verify(() => mockStorage.write(
+          key: AppConstants.keyRememberedPassword, value: 'secret'))
+          .called(1);
     });
 
     test('round-trip: set then get returns same value', () async {

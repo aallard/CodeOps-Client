@@ -117,6 +117,15 @@ class AppConstants {
   /// Secure storage key for the GitHub Personal Access Token.
   static const String keyGitHubPat = 'github_pat';
 
+  /// Secure storage key for the "Remember Me" toggle state.
+  static const String keyRememberMe = 'remember_me';
+
+  /// Secure storage key for the remembered login email.
+  static const String keyRememberedEmail = 'remembered_email';
+
+  /// Secure storage key for the remembered login password.
+  static const String keyRememberedPassword = 'remembered_password';
+
   /// Default Claude model identifier.
   static const String defaultClaudeModel = 'claude-sonnet-4-20250514';
 

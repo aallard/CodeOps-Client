@@ -81,9 +81,29 @@ class SecureStorageService {
     return _storage.delete(key: key);
   }
 
-  /// Clears ALL stored data. Called on logout.
+  /// Clears session data on logout, preserving "Remember Me" credentials.
   Future<void> clearAll() async {
-    log.d('SecureStorage', 'Clear all');
-    return _storage.deleteAll();
+    log.d('SecureStorage', 'Clear all (preserving remember-me)');
+
+    // Preserve remember-me data across logout.
+    final rememberMe = await _storage.read(key: AppConstants.keyRememberMe);
+    final email = await _storage.read(key: AppConstants.keyRememberedEmail);
+    final password =
+        await _storage.read(key: AppConstants.keyRememberedPassword);
+
+    await _storage.deleteAll();
+
+    // Restore remembered credentials.
+    if (rememberMe != null) {
+      await _storage.write(key: AppConstants.keyRememberMe, value: rememberMe);
+    }
+    if (email != null) {
+      await _storage.write(
+          key: AppConstants.keyRememberedEmail, value: email);
+    }
+    if (password != null) {
+      await _storage.write(
+          key: AppConstants.keyRememberedPassword, value: password);
+    }
   }
 }

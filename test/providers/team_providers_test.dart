@@ -8,6 +8,8 @@ import 'package:codeops/providers/team_providers.dart';
 import 'package:codeops/services/cloud/team_api.dart';
 
 void main() {
+  TestWidgetsFlutterBinding.ensureInitialized();
+
   group('Team providers', () {
     test('teamApiProvider creates instance', () {
       final container = ProviderContainer();
