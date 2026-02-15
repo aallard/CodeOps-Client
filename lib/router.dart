@@ -22,7 +22,9 @@ import 'pages/jira_browser_page.dart';
 import 'pages/bug_investigator_page.dart';
 import 'pages/persona_editor_page.dart';
 import 'pages/personas_page.dart';
+import 'pages/dependency_scan_page.dart';
 import 'pages/placeholder_page.dart';
+import 'pages/tech_debt_page.dart';
 import 'pages/project_detail_page.dart';
 import 'pages/task_list_page.dart';
 import 'pages/task_manager_page.dart';
@@ -139,7 +141,7 @@ final GoRouter router = GoRouter(
           path: '/dependencies',
           name: 'dependencies',
           pageBuilder: (context, state) => const NoTransitionPage(
-            child: PlaceholderPage(title: 'Dependency Scan'),
+            child: DependencyScanPage(),
           ),
         ),
         // 10. Bug Investigator
@@ -173,7 +175,7 @@ final GoRouter router = GoRouter(
           path: '/tech-debt',
           name: 'techDebt',
           pageBuilder: (context, state) => const NoTransitionPage(
-            child: PlaceholderPage(title: 'Tech Debt'),
+            child: TechDebtPage(),
           ),
         ),
         // 14. Health Dashboard
