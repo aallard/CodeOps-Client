@@ -9,6 +9,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../models/directive.dart';
 import '../models/enums.dart';
 import '../services/cloud/directive_api.dart';
+import '../services/logging/log_service.dart';
 import 'auth_providers.dart';
 import 'team_providers.dart';
 
@@ -21,6 +22,7 @@ final directiveApiProvider = Provider<DirectiveApi>(
 final teamDirectivesProvider = FutureProvider<List<Directive>>((ref) async {
   final teamId = ref.watch(selectedTeamIdProvider);
   if (teamId == null) return [];
+  log.d('DirectiveProviders', 'Loading directives for teamId=$teamId');
   final directiveApi = ref.watch(directiveApiProvider);
   return directiveApi.getTeamDirectives(teamId);
 });
@@ -41,6 +43,7 @@ final projectDirectivesProvider =
 /// Fetches enabled directives for a project.
 final enabledDirectivesProvider =
     FutureProvider.family<List<Directive>, String>((ref, projectId) async {
+  log.d('DirectiveProviders', 'Loading enabled directives for projectId=$projectId');
   final directiveApi = ref.watch(directiveApiProvider);
   return directiveApi.getProjectEnabledDirectives(projectId);
 });

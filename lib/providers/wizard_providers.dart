@@ -11,6 +11,7 @@ import '../models/enums.dart';
 import '../models/jira_models.dart';
 import '../models/project.dart';
 import '../models/qa_job.dart';
+import '../services/logging/log_service.dart';
 import '../utils/constants.dart';
 import 'job_providers.dart';
 
@@ -335,6 +336,7 @@ class AuditWizardNotifier extends StateNotifier<AuditWizardState> {
 
   /// Records a launch error.
   void setLaunchError(String error) {
+    log.w('AuditWizard', 'Launch failed: $error');
     state = state.copyWith(isLaunching: false, launchError: error);
   }
 
@@ -467,6 +469,7 @@ final jobHistoryFiltersProvider = StateProvider<JobHistoryFilters>(
 
 /// Provider that wraps [myJobsProvider] for the history page.
 final jobHistoryProvider = FutureProvider<List<JobSummary>>((ref) async {
+  log.d('WizardProviders', 'Loading job history');
   final jobs = await ref.watch(myJobsProvider.future);
   return jobs;
 });
@@ -687,6 +690,7 @@ class BugInvestigatorWizardNotifier
 
   /// Records a launch error.
   void setLaunchError(String error) {
+    log.w('BugInvestigatorWizard', 'Launch failed: $error');
     state = state.copyWith(isLaunching: false, launchError: error);
   }
 

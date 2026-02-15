@@ -10,6 +10,7 @@ import '../models/health_snapshot.dart';
 import '../models/jira_models.dart';
 import '../services/auth/secure_storage.dart';
 import '../services/jira/jira_service.dart';
+import '../services/logging/log_service.dart';
 import 'auth_providers.dart';
 import 'task_providers.dart';
 import 'team_providers.dart';
@@ -34,6 +35,7 @@ final jiraConnectionsProvider =
     FutureProvider<List<JiraConnection>>((ref) async {
   final teamId = ref.watch(selectedTeamIdProvider);
   if (teamId == null) return [];
+  log.d('JiraProviders', 'Loading Jira connections for teamId=$teamId');
   final integrationApi = ref.watch(integrationApiProvider);
   return integrationApi.getTeamJiraConnections(teamId);
 });
@@ -52,7 +54,10 @@ final jiraServiceProvider = FutureProvider<JiraService?>((ref) async {
 
   final secureStorage = ref.watch(secureStorageProvider);
   final apiToken = await secureStorage.read(jiraTokenKey(connection.id));
-  if (apiToken == null) return null;
+  if (apiToken == null) {
+    log.w('JiraProviders', 'No API token found for Jira connection ${connection.id}');
+    return null;
+  }
 
   final service = JiraService();
   service.configure(
@@ -91,6 +96,7 @@ final jiraSearchResultsProvider =
   if (service == null) return null;
 
   final startAt = ref.watch(jiraSearchStartAtProvider);
+  log.d('JiraProviders', 'Searching Jira issues startAt=$startAt');
   return service.searchIssues(jql: jql, startAt: startAt);
 });
 

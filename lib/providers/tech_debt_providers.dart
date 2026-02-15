@@ -12,6 +12,7 @@ import '../models/enums.dart';
 import '../models/health_snapshot.dart';
 import '../models/tech_debt_item.dart';
 import '../services/cloud/tech_debt_api.dart';
+import '../services/logging/log_service.dart';
 import 'auth_providers.dart';
 
 /// Provides [TechDebtApi] singleton.
@@ -22,6 +23,7 @@ final techDebtApiProvider = Provider<TechDebtApi>(
 /// Fetches paginated tech debt items for a project.
 final projectTechDebtProvider = FutureProvider.family<
     PageResponse<TechDebtItem>, String>((ref, projectId) async {
+  log.d('TechDebtProviders', 'Loading tech debt for projectId=$projectId');
   final api = ref.watch(techDebtApiProvider);
   return api.getTechDebtForProject(projectId);
 });
@@ -53,6 +55,7 @@ final techDebtByCategoryProvider = FutureProvider.family<
 final debtSummaryProvider =
     FutureProvider.family<Map<String, dynamic>, String>(
   (ref, projectId) async {
+    log.d('TechDebtProviders', 'Loading debt summary for projectId=$projectId');
     final api = ref.watch(techDebtApiProvider);
     return api.getDebtSummary(projectId);
   },

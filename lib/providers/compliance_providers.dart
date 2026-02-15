@@ -12,6 +12,7 @@ import '../models/health_snapshot.dart';
 import '../models/project.dart';
 import '../models/specification.dart';
 import '../services/cloud/compliance_api.dart';
+import '../services/logging/log_service.dart';
 import 'auth_providers.dart';
 import 'wizard_providers.dart';
 
@@ -201,6 +202,7 @@ class ComplianceWizardNotifier extends StateNotifier<ComplianceWizardState> {
 
   /// Records a launch error.
   void setLaunchError(String error) {
+    log.w('ComplianceWizard', 'Launch failed: $error');
     state = state.copyWith(isLaunching: false, launchError: error);
   }
 
@@ -232,6 +234,7 @@ final complianceJobSpecsProvider = FutureProvider.autoDispose
 /// Fetches paginated compliance items for a job.
 final complianceJobItemsProvider = FutureProvider.autoDispose
     .family<PageResponse<ComplianceItem>, String>((ref, jobId) async {
+  log.d('ComplianceProviders', 'Loading compliance items for jobId=$jobId');
   final api = ref.watch(complianceApiProvider);
   return api.getComplianceItemsForJob(jobId);
 });
@@ -247,6 +250,7 @@ final complianceJobItemsByStatusProvider = FutureProvider.autoDispose
 /// Fetches the compliance summary for a job.
 final complianceSummaryProvider = FutureProvider.autoDispose
     .family<Map<String, dynamic>, String>((ref, jobId) async {
+  log.d('ComplianceProviders', 'Loading compliance summary for jobId=$jobId');
   final api = ref.watch(complianceApiProvider);
   return api.getComplianceSummary(jobId);
 });

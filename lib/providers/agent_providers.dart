@@ -8,6 +8,7 @@ library;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../models/agent_run.dart';
+import '../services/logging/log_service.dart';
 import '../models/enums.dart';
 import '../services/orchestration/agent_dispatcher.dart';
 import '../services/orchestration/agent_monitor.dart';
@@ -28,6 +29,7 @@ import 'job_providers.dart';
 /// Provides agent run data for a specific job.
 final agentRunsProvider =
     FutureProvider.family<List<AgentRun>, String>((ref, jobId) async {
+  log.d('AgentProviders', 'Loading agent runs for jobId=$jobId');
   final jobApi = ref.watch(jobApiProvider);
   return jobApi.getAgentRuns(jobId);
 });
@@ -47,6 +49,7 @@ final claudeCodeDetectorProvider = Provider<ClaudeCodeDetector>(
 /// Claude Code CLI availability status.
 final claudeCodeStatusProvider =
     FutureProvider<ClaudeCodeStatus>((ref) async {
+  log.d('AgentProviders', 'Validating Claude Code CLI status');
   final detector = ref.watch(claudeCodeDetectorProvider);
   return detector.validate();
 });

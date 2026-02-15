@@ -6,6 +6,7 @@ library;
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../services/logging/log_service.dart';
 import '../utils/constants.dart';
 
 /// Claude model selection.
@@ -24,10 +25,16 @@ final agentTimeoutMinutesProvider = StateProvider<int>(
 );
 
 /// Whether the app is in offline mode.
-final offlineModeProvider = StateProvider<bool>((ref) => false);
+final offlineModeProvider = StateProvider<bool>((ref) {
+  log.d('SettingsProviders', 'Initializing offline mode');
+  return false;
+});
 
 /// Current connectivity status.
-final connectivityProvider = StateProvider<bool>((ref) => true);
+final connectivityProvider = StateProvider<bool>((ref) {
+  log.d('SettingsProviders', 'Initializing connectivity status');
+  return true;
+});
 
 /// Whether the sidebar is collapsed (icon-only mode).
 final sidebarCollapsedProvider = StateProvider<bool>((ref) => false);

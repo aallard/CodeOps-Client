@@ -8,6 +8,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../models/health_snapshot.dart';
 import '../models/vcs_models.dart';
+import '../services/logging/log_service.dart';
 import '../services/vcs/git_service.dart';
 import '../services/vcs/github_provider.dart';
 import '../services/vcs/repo_manager.dart';
@@ -25,6 +26,7 @@ final githubConnectionsProvider =
     FutureProvider<List<GitHubConnection>>((ref) async {
   final teamId = ref.watch(selectedTeamIdProvider);
   if (teamId == null) return [];
+  log.d('GitHubProviders', 'Loading GitHub connections for teamId=$teamId');
   final integrationApi = ref.watch(integrationApiProvider);
   return integrationApi.getTeamGitHubConnections(teamId);
 });
@@ -74,7 +76,11 @@ final selectedRepoProvider = StateProvider<String?>((ref) => null);
 final githubOrgsProvider =
     FutureProvider<List<VcsOrganization>>((ref) async {
   final authenticated = ref.watch(vcsAuthenticatedProvider);
-  if (!authenticated) return [];
+  if (!authenticated) {
+    log.w('GitHubProviders', 'Skipping org fetch - not authenticated');
+    return [];
+  }
+  log.d('GitHubProviders', 'Loading GitHub organizations');
   final provider = ref.watch(vcsProviderProvider);
   return provider.getOrganizations();
 });

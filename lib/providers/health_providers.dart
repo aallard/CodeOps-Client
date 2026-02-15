@@ -10,6 +10,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../models/health_snapshot.dart';
 import '../services/cloud/health_monitor_api.dart';
 import '../services/cloud/metrics_api.dart';
+import '../services/logging/log_service.dart';
 import 'auth_providers.dart';
 import 'team_providers.dart';
 
@@ -22,6 +23,7 @@ final metricsApiProvider = Provider<MetricsApi>(
 final teamMetricsProvider = FutureProvider<TeamMetrics?>((ref) async {
   final teamId = ref.watch(selectedTeamIdProvider);
   if (teamId == null) return null;
+  log.d('HealthProviders', 'Loading team metrics for teamId=$teamId');
   final metricsApi = ref.watch(metricsApiProvider);
   return metricsApi.getTeamMetrics(teamId);
 });
@@ -82,6 +84,7 @@ final healthTrendRangeProvider = StateProvider<int>((ref) => 30);
 final latestSnapshotProvider =
     FutureProvider.family<HealthSnapshot?, String>(
   (ref, projectId) async {
+    log.d('HealthProviders', 'Loading latest snapshot for projectId=$projectId');
     final api = ref.watch(healthMonitorApiProvider);
     return api.getLatestSnapshot(projectId);
   },

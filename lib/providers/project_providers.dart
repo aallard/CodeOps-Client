@@ -11,6 +11,7 @@ import '../models/project.dart';
 import '../models/qa_job.dart';
 import '../services/cloud/project_api.dart';
 import '../services/data/sync_service.dart';
+import '../services/logging/log_service.dart';
 import 'auth_providers.dart';
 import 'health_providers.dart';
 import 'job_providers.dart';
@@ -108,6 +109,7 @@ class FavoriteProjectsNotifier extends StateNotifier<Set<String>> {
 final teamProjectsProvider = FutureProvider<List<Project>>((ref) async {
   final teamId = ref.watch(selectedTeamIdProvider);
   if (teamId == null) return [];
+  log.d('ProjectProviders', 'Loading projects for teamId=$teamId');
   final projectApi = ref.watch(projectApiProvider);
   return projectApi.getTeamProjects(teamId, includeArchived: true);
 });
@@ -116,6 +118,7 @@ final teamProjectsProvider = FutureProvider<List<Project>>((ref) async {
 final selectedProjectProvider = FutureProvider<Project?>((ref) async {
   final projectId = ref.watch(selectedProjectIdProvider);
   if (projectId == null) return null;
+  log.d('ProjectProviders', 'Loading selected project projectId=$projectId');
   final projectApi = ref.watch(projectApiProvider);
   return projectApi.getProject(projectId);
 });

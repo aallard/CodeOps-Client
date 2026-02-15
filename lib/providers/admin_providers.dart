@@ -9,6 +9,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../models/health_snapshot.dart';
 import '../models/user.dart';
 import '../services/cloud/admin_api.dart';
+import '../services/logging/log_service.dart';
 import '../utils/constants.dart';
 import 'auth_providers.dart';
 import 'team_providers.dart';
@@ -49,6 +50,7 @@ final auditLogActionFilterProvider = StateProvider<String?>((ref) => null);
 final adminUsersProvider = FutureProvider<PageResponse<User>>((ref) async {
   final adminApi = ref.watch(adminApiProvider);
   final page = ref.watch(adminUserPageProvider);
+  log.d('AdminProviders', 'Loading admin users page=$page');
   return adminApi.getAllUsers(page: page, size: AppConstants.defaultPageSize);
 });
 
@@ -69,6 +71,7 @@ final systemSettingsProvider =
 /// Fetches team usage statistics.
 final usageStatsProvider =
     FutureProvider<Map<String, dynamic>>((ref) async {
+  log.d('AdminProviders', 'Loading usage stats');
   final adminApi = ref.watch(adminApiProvider);
   return adminApi.getUsageStats();
 });
@@ -80,6 +83,7 @@ final teamAuditLogProvider =
   final teamId = ref.watch(selectedTeamIdProvider);
   if (teamId == null) return PageResponse.empty();
   final page = ref.watch(auditLogPageProvider);
+  log.d('AdminProviders', 'Loading team audit log teamId=$teamId page=$page');
   return adminApi.getTeamAuditLog(
     teamId,
     page: page,

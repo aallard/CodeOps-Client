@@ -9,6 +9,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../models/user.dart';
 import '../services/auth/auth_service.dart';
 import '../services/cloud/user_api.dart';
+import '../services/logging/log_service.dart';
 import 'auth_providers.dart';
 
 /// Provides [UserApi] for user endpoints.
@@ -19,7 +20,11 @@ final userApiProvider = Provider<UserApi>(
 /// Fetches the current user profile. Auto-refreshes on auth state change.
 final currentUserProfileProvider = FutureProvider<User?>((ref) async {
   final authState = ref.watch(authStateProvider).valueOrNull;
-  if (authState != AuthState.authenticated) return null;
+  if (authState != AuthState.authenticated) {
+    log.w('UserProviders', 'Skipping profile fetch - not authenticated');
+    return null;
+  }
+  log.d('UserProviders', 'Loading current user profile');
   final userApi = ref.watch(userApiProvider);
   return userApi.getCurrentUser();
 });

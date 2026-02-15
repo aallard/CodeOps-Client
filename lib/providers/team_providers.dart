@@ -8,6 +8,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../models/team.dart';
 import '../services/cloud/team_api.dart';
+import '../services/logging/log_service.dart';
 import 'auth_providers.dart';
 
 /// Provides [TeamApi] for team endpoints.
@@ -17,6 +18,7 @@ final teamApiProvider = Provider<TeamApi>(
 
 /// Fetches all teams for the current user.
 final teamsProvider = FutureProvider<List<Team>>((ref) async {
+  log.d('TeamProviders', 'Loading teams');
   final teamApi = ref.watch(teamApiProvider);
   return teamApi.getTeams();
 });
@@ -36,6 +38,7 @@ final selectedTeamProvider = FutureProvider<Team?>((ref) async {
 final teamMembersProvider = FutureProvider<List<TeamMember>>((ref) async {
   final teamId = ref.watch(selectedTeamIdProvider);
   if (teamId == null) return [];
+  log.d('TeamProviders', 'Loading team members for teamId=$teamId');
   final teamApi = ref.watch(teamApiProvider);
   return teamApi.getTeamMembers(teamId);
 });

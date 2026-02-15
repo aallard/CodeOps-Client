@@ -12,6 +12,7 @@ import '../models/enums.dart';
 import '../models/health_snapshot.dart';
 import '../services/analysis/dependency_scanner.dart';
 import '../services/cloud/dependency_api.dart';
+import '../services/logging/log_service.dart';
 import 'auth_providers.dart';
 
 /// Provides [DependencyApi] singleton.
@@ -23,6 +24,7 @@ final dependencyApiProvider = Provider<DependencyApi>(
 final projectScansProvider =
     FutureProvider.family<PageResponse<DependencyScan>, String>(
   (ref, projectId) async {
+    log.d('DependencyProviders', 'Loading scans for projectId=$projectId');
     final api = ref.watch(dependencyApiProvider);
     return api.getScansForProject(projectId);
   },
@@ -38,6 +40,7 @@ final latestScanProvider =
 /// Fetches paginated vulnerabilities for a scan.
 final scanVulnerabilitiesProvider = FutureProvider.family<
     PageResponse<DependencyVulnerability>, String>((ref, scanId) async {
+  log.d('DependencyProviders', 'Loading vulnerabilities for scanId=$scanId');
   final api = ref.watch(dependencyApiProvider);
   return api.getVulnerabilities(scanId);
 });

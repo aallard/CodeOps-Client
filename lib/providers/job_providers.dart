@@ -14,6 +14,7 @@ import '../models/qa_job.dart';
 import '../services/cloud/finding_api.dart';
 import '../services/cloud/job_api.dart';
 import '../services/cloud/report_api.dart';
+import '../services/logging/log_service.dart';
 import 'auth_providers.dart';
 
 /// Provides [JobApi] for job endpoints.
@@ -40,6 +41,7 @@ final projectJobsProvider = FutureProvider.family<PageResponse<JobSummary>,
 
 /// Fetches recent jobs started by the current user.
 final myJobsProvider = FutureProvider<List<JobSummary>>((ref) async {
+  log.d('JobProviders', 'Loading my jobs');
   final jobApi = ref.watch(jobApiProvider);
   return jobApi.getMyJobs();
 });
@@ -47,6 +49,7 @@ final myJobsProvider = FutureProvider<List<JobSummary>>((ref) async {
 /// Fetches a specific job by ID.
 final jobDetailProvider =
     FutureProvider.family<QaJob, String>((ref, jobId) async {
+  log.d('JobProviders', 'Loading job detail for jobId=$jobId');
   final jobApi = ref.watch(jobApiProvider);
   return jobApi.getJob(jobId);
 });

@@ -11,6 +11,7 @@ import '../models/enums.dart';
 import '../models/finding.dart';
 import '../models/health_snapshot.dart';
 import '../services/cloud/finding_api.dart';
+import '../services/logging/log_service.dart';
 import 'auth_providers.dart';
 
 /// Provides [FindingApi] for finding endpoints.
@@ -21,6 +22,7 @@ final findingApiProvider = Provider<FindingApi>(
 /// Fetches paginated findings for a job.
 final jobFindingsProvider = FutureProvider.family<PageResponse<Finding>,
     ({String jobId, int page})>((ref, params) async {
+  log.d('FindingProviders', 'Loading findings jobId=${params.jobId} page=${params.page}');
   final findingApi = ref.watch(findingApiProvider);
   return findingApi.getJobFindings(params.jobId, page: params.page);
 });
@@ -39,6 +41,7 @@ final findingAgentFilterProvider =
 /// Fetches finding severity counts for a job.
 final findingSeverityCountsProvider =
     FutureProvider.family<Map<String, dynamic>, String>((ref, jobId) async {
+  log.d('FindingProviders', 'Loading severity counts for jobId=$jobId');
   final findingApi = ref.watch(findingApiProvider);
   return findingApi.getFindingCounts(jobId);
 });

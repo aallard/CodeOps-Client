@@ -9,6 +9,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../models/enums.dart';
 import '../models/persona.dart';
 import '../services/cloud/persona_api.dart';
+import '../services/logging/log_service.dart';
 import 'auth_providers.dart';
 import 'team_providers.dart';
 
@@ -21,12 +22,14 @@ final personaApiProvider = Provider<PersonaApi>(
 final teamPersonasProvider = FutureProvider<List<Persona>>((ref) async {
   final teamId = ref.watch(selectedTeamIdProvider);
   if (teamId == null) return [];
+  log.d('PersonaProviders', 'Loading team personas for teamId=$teamId');
   final personaApi = ref.watch(personaApiProvider);
   return personaApi.getTeamPersonas(teamId);
 });
 
 /// Fetches system-level personas (built-in, read-only).
 final systemPersonasProvider = FutureProvider<List<Persona>>((ref) async {
+  log.d('PersonaProviders', 'Loading system personas');
   final personaApi = ref.watch(personaApiProvider);
   return personaApi.getSystemPersonas();
 });

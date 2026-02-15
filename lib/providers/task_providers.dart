@@ -11,6 +11,7 @@ import '../models/enums.dart';
 import '../models/remediation_task.dart';
 import '../services/cloud/integration_api.dart';
 import '../services/cloud/task_api.dart';
+import '../services/logging/log_service.dart';
 import 'auth_providers.dart';
 
 // ---------------------------------------------------------------------------
@@ -34,12 +35,14 @@ final taskApiProvider = Provider<TaskApi>(
 /// Fetches remediation tasks for a job.
 final jobTasksProvider =
     FutureProvider.family<List<RemediationTask>, String>((ref, jobId) async {
+  log.d('TaskProviders', 'Loading tasks for jobId=$jobId');
   final taskApi = ref.watch(taskApiProvider);
   return taskApi.getTasksForJob(jobId);
 });
 
 /// Fetches remediation tasks assigned to the current user.
 final myTasksProvider = FutureProvider<List<RemediationTask>>((ref) async {
+  log.d('TaskProviders', 'Loading my assigned tasks');
   final taskApi = ref.watch(taskApiProvider);
   return taskApi.getAssignedTasks();
 });

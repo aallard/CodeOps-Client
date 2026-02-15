@@ -8,6 +8,7 @@ library;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../database/database.dart' hide User;
+import '../services/logging/log_service.dart';
 import '../models/user.dart';
 import '../services/auth/auth_service.dart';
 import '../services/auth/secure_storage.dart';
@@ -43,6 +44,7 @@ final authServiceProvider = Provider<AuthService>((ref) {
 
 /// Provides the current [AuthState] as a stream.
 final authStateProvider = StreamProvider<AuthState>((ref) {
+  log.d('AuthProviders', 'Subscribing to auth state stream');
   final authService = ref.watch(authServiceProvider);
   return authService.authStateStream;
 });
