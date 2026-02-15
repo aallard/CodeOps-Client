@@ -66,11 +66,12 @@ class ProjectApi {
     String teamId, {
     bool includeArchived = false,
   }) async {
-    final response = await _client.get<List<dynamic>>(
+    final response = await _client.get<Map<String, dynamic>>(
       '/projects/team/$teamId',
-      queryParameters: {'includeArchived': includeArchived},
+      queryParameters: {'includeArchived': includeArchived, 'size': 100},
     );
-    return response.data!
+    final content = response.data!['content'] as List<dynamic>;
+    return content
         .map((e) => Project.fromJson(e as Map<String, dynamic>))
         .toList();
   }

@@ -63,8 +63,9 @@ class TaskApi {
   /// Fetches all remediation tasks for a job.
   Future<List<RemediationTask>> getTasksForJob(String jobId) async {
     final response =
-        await _client.get<List<dynamic>>('/tasks/job/$jobId');
-    return response.data!
+        await _client.get<Map<String, dynamic>>('/tasks/job/$jobId');
+    final content = response.data!['content'] as List<dynamic>;
+    return content
         .map((e) => RemediationTask.fromJson(e as Map<String, dynamic>))
         .toList();
   }
@@ -98,8 +99,9 @@ class TaskApi {
   /// Fetches remediation tasks assigned to the current user.
   Future<List<RemediationTask>> getAssignedTasks() async {
     final response =
-        await _client.get<List<dynamic>>('/tasks/assigned-to-me');
-    return response.data!
+        await _client.get<Map<String, dynamic>>('/tasks/assigned-to-me');
+    final content = response.data!['content'] as List<dynamic>;
+    return content
         .map((e) => RemediationTask.fromJson(e as Map<String, dynamic>))
         .toList();
   }

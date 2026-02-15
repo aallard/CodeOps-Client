@@ -116,8 +116,9 @@ class JobApi {
 
   /// Fetches recent jobs started by the current user.
   Future<List<JobSummary>> getMyJobs() async {
-    final response = await _client.get<List<dynamic>>('/jobs/mine');
-    return response.data!
+    final response = await _client.get<Map<String, dynamic>>('/jobs/mine');
+    final content = response.data!['content'] as List<dynamic>;
+    return content
         .map((e) => JobSummary.fromJson(e as Map<String, dynamic>))
         .toList();
   }

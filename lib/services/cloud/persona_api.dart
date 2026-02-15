@@ -83,8 +83,9 @@ class PersonaApi {
   /// Fetches all personas for a team.
   Future<List<Persona>> getTeamPersonas(String teamId) async {
     final response =
-        await _client.get<List<dynamic>>('/personas/team/$teamId');
-    return response.data!
+        await _client.get<Map<String, dynamic>>('/personas/team/$teamId');
+    final content = response.data!['content'] as List<dynamic>;
+    return content
         .map((e) => Persona.fromJson(e as Map<String, dynamic>))
         .toList();
   }
