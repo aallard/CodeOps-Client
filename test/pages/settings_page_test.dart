@@ -123,5 +123,25 @@ void main() {
       expect(find.text('In-App'), findsOneWidget);
       expect(find.text('Email'), findsOneWidget);
     });
+
+    testWidgets('appearance section shows compact mode toggle', (tester) async {
+      await tester.pumpWidget(createWidget());
+      await tester.pumpAndSettle();
+
+      await tester.tap(find.text('Appearance'));
+      await tester.pumpAndSettle();
+
+      expect(find.text('Compact mode'), findsOneWidget);
+    });
+
+    testWidgets('about section shows auto-update toggle', (tester) async {
+      await tester.pumpWidget(createWidget());
+      await tester.pumpAndSettle();
+
+      await tester.tap(find.text('About'));
+      await tester.pumpAndSettle();
+
+      expect(find.text('Automatic updates'), findsOneWidget);
+    });
   });
 }
