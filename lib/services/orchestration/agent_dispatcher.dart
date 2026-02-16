@@ -223,7 +223,7 @@ class AgentDispatcher {
     final arguments = <String>[
       '--print',
       '--output-format',
-      'json',
+      'stream-json',
       '--max-turns',
       effectiveMaxTurns.toString(),
       '--model',

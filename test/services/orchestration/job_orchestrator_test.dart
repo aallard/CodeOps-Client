@@ -1,8 +1,10 @@
 // Tests for JobOrchestrator.
 //
 // Verifies the cancel flow (kills agents, updates server, emits event),
-// activeJobId state management, and lifecycleStream broadcast behavior.
+// activeJobId state management, lifecycleStream broadcast behavior,
+// and stream-json NDJSON parsing for real-time progress updates.
 import 'dart:async';
+import 'dart:convert';
 
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
@@ -553,6 +555,119 @@ void main() {
       final event = AgentPhaseProgress(progress: progress);
       expect(event.progress.completedCount, 1);
       expect(event.progress.totalCount, 3);
+    });
+  });
+
+  // ---------------------------------------------------------------------------
+  // extractResultFromStreamJson
+  // ---------------------------------------------------------------------------
+
+  group('extractResultFromStreamJson', () {
+    test('extracts result text from stream-json NDJSON output', () {
+      final output = [
+        jsonEncode({'type': 'system', 'subtype': 'init', 'session_id': 'abc'}),
+        jsonEncode({'type': 'assistant', 'message': {'content': 'hello'}}),
+        jsonEncode({'type': 'tool_use', 'tool': {'name': 'Read'}}),
+        jsonEncode({
+          'type': 'result',
+          'subtype': 'success',
+          'result': '# Security Report\n\nAll good.',
+          'num_turns': 3,
+        }),
+      ].join('\n');
+
+      final result = JobOrchestrator.extractResultFromStreamJson(output);
+      expect(result, '# Security Report\n\nAll good.');
+    });
+
+    test('falls back to raw output when no result event found', () {
+      const rawMarkdown = '# Report\n\nSome markdown content.';
+      final result = JobOrchestrator.extractResultFromStreamJson(rawMarkdown);
+      expect(result, rawMarkdown);
+    });
+
+    test('falls back to raw output for plain text', () {
+      const plainText = 'This is not JSON at all.';
+      final result = JobOrchestrator.extractResultFromStreamJson(plainText);
+      expect(result, plainText);
+    });
+
+    test('handles empty output', () {
+      final result = JobOrchestrator.extractResultFromStreamJson('');
+      expect(result, '');
+    });
+
+    test('ignores non-result JSON events', () {
+      final output = [
+        jsonEncode({'type': 'assistant', 'message': {'content': 'hi'}}),
+        jsonEncode({'type': 'tool_use', 'tool': {'name': 'Bash'}}),
+      ].join('\n');
+
+      final result = JobOrchestrator.extractResultFromStreamJson(output);
+      expect(result, output);
+    });
+
+    test('handles result event with null result field', () {
+      final output = jsonEncode({'type': 'result', 'subtype': 'error'});
+      final result = JobOrchestrator.extractResultFromStreamJson(output);
+      // Falls back to the raw output since result field is null.
+      expect(result, output);
+    });
+
+    test('handles mixed JSON and non-JSON lines', () {
+      final output = [
+        'some random text',
+        jsonEncode({'type': 'assistant', 'message': {}}),
+        'another random line',
+        jsonEncode({
+          'type': 'result',
+          'result': '# Report\nFindings here.',
+        }),
+      ].join('\n');
+
+      final result = JobOrchestrator.extractResultFromStreamJson(output);
+      expect(result, '# Report\nFindings here.');
+    });
+  });
+
+  // ---------------------------------------------------------------------------
+  // toolDisplayName
+  // ---------------------------------------------------------------------------
+
+  group('toolDisplayName', () {
+    test('maps Read to "Reading file..."', () {
+      expect(JobOrchestrator.toolDisplayName('Read'), 'Reading file...');
+    });
+
+    test('maps Write to "Writing file..."', () {
+      expect(JobOrchestrator.toolDisplayName('Write'), 'Writing file...');
+    });
+
+    test('maps Edit to "Editing file..."', () {
+      expect(JobOrchestrator.toolDisplayName('Edit'), 'Editing file...');
+    });
+
+    test('maps Bash to "Running command..."', () {
+      expect(JobOrchestrator.toolDisplayName('Bash'), 'Running command...');
+    });
+
+    test('maps Glob to "Searching files..."', () {
+      expect(JobOrchestrator.toolDisplayName('Glob'), 'Searching files...');
+    });
+
+    test('maps Grep to "Searching code..."', () {
+      expect(JobOrchestrator.toolDisplayName('Grep'), 'Searching code...');
+    });
+
+    test('maps Task to "Delegating task..."', () {
+      expect(JobOrchestrator.toolDisplayName('Task'), 'Delegating task...');
+    });
+
+    test('maps unknown tool to generic message', () {
+      expect(
+        JobOrchestrator.toolDisplayName('CustomTool'),
+        'Using CustomTool...',
+      );
     });
   });
 }

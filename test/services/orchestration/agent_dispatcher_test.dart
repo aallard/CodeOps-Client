@@ -153,7 +153,7 @@ void main() {
             arguments: [
               '--print',
               '--output-format',
-              'json',
+              'stream-json',
               '--max-turns',
               '50',
               '--model',

@@ -7,6 +7,7 @@
 library;
 
 import 'dart:async';
+import 'dart:convert';
 import 'dart:io';
 
 import '../../models/enums.dart';
@@ -283,11 +284,29 @@ class JobOrchestrator {
 
       final agentReports = <AgentType, ParsedReport>{};
       final agentStartTimes = <AgentType, DateTime>{};
+      final agentTurnCounts = <AgentType, int>{};
+      final agentResultTexts = <AgentType, String>{};
 
       // Subscribe to progress updates and forward them.
       final progressSubscription = _progress.progressStream.listen((snapshot) {
         _lifecycleController.add(AgentPhaseProgress(progress: snapshot));
       });
+
+      // Periodic timer to update elapsed times for running agents.
+      final elapsedTimer = Timer.periodic(
+        const Duration(seconds: 1),
+        (_) {
+          for (final entry in agentStartTimes.entries) {
+            final runId = agentRunIdsByType[entry.key];
+            if (runId != null) {
+              _agentProgress?.updateElapsed(
+                runId,
+                DateTime.now().difference(entry.value),
+              );
+            }
+          }
+        },
+      );
 
       // Listen for dispatch events.
       final dispatchStream = _dispatcher.dispatchAll(
@@ -355,13 +374,16 @@ class JobOrchestrator {
                 lastOutputLine: line,
               ),
             );
-            // Feed output to agent progress notifier.
+            // Parse stream-json NDJSON events for real-time progress.
             final outputRunId = agentRunIdsByType[agentType];
             if (outputRunId != null) {
-              _agentProgress?.appendOutput(outputRunId, line);
-              _agentProgress?.updateElapsed(
-                outputRunId,
-                _elapsedSince(agentStartTimes[agentType]),
+              _parseStreamJsonEvent(
+                line,
+                agentType: agentType,
+                runId: outputRunId,
+                turnCounts: agentTurnCounts,
+                resultTexts: agentResultTexts,
+                startTimes: agentStartTimes,
               );
             }
 
@@ -380,7 +402,10 @@ class JobOrchestrator {
               ),
             );
 
-            final parsedReport = _parser.parseReport(output);
+            // Extract the result markdown from stream-json output.
+            final resultText = agentResultTexts[agentType] ??
+                extractResultFromStreamJson(output);
+            final parsedReport = _parser.parseReport(resultText);
             agentReports[agentType] = parsedReport;
 
             // Report live findings for real-time UI.
@@ -400,7 +425,7 @@ class JobOrchestrator {
               final reportResponse = await _reportApi.uploadAgentReport(
                 jobId,
                 agentType,
-                output,
+                resultText,
               );
               final s3Key = reportResponse['s3Key'] as String?;
 
@@ -505,6 +530,7 @@ class JobOrchestrator {
         }
       }
 
+      elapsedTimer.cancel();
       await progressSubscription.cancel();
 
       if (_cancelling) {
@@ -685,4 +711,129 @@ class JobOrchestrator {
     }
     return AgentResult.pass;
   }
+
+  /// Parses a single stream-json NDJSON line and updates agent progress.
+  ///
+  /// Each line is expected to be a JSON object with a `type` field.
+  /// Recognized types: `assistant` (turn counting), `tool_use` (activity
+  /// tracking), and `result` (final output text extraction).
+  void _parseStreamJsonEvent(
+    String line, {
+    required AgentType agentType,
+    required String runId,
+    required Map<AgentType, int> turnCounts,
+    required Map<AgentType, String> resultTexts,
+    required Map<AgentType, DateTime> startTimes,
+  }) {
+    try {
+      final json = jsonDecode(line.trim()) as Map<String, dynamic>;
+      final type = json['type'] as String?;
+
+      switch (type) {
+        case 'assistant':
+          // Each assistant message represents one agentic turn.
+          final count = (turnCounts[agentType] ?? 0) + 1;
+          turnCounts[agentType] = count;
+          _agentProgress?.updateProgress(runId, currentTurn: count);
+          _agentProgress?.updateActivity(runId, 'Thinking...');
+          _agentProgress?.appendOutput(runId, '[Turn $count] Assistant responding');
+
+        case 'tool_use':
+          // Extract tool name for activity display.
+          String? toolName;
+          if (json['tool'] is Map) {
+            toolName = (json['tool'] as Map)['name'] as String?;
+          }
+          toolName ??= json['name'] as String?;
+
+          if (toolName != null) {
+            final activity = toolDisplayName(toolName);
+            _agentProgress?.updateActivity(runId, activity);
+            _agentProgress?.appendOutput(runId, '  → $activity');
+
+            // Track file analysis from Read/Glob tool calls.
+            if (toolName == 'Read' || toolName == 'Glob') {
+              String? filePath;
+              final input = (json['tool'] is Map)
+                  ? (json['tool'] as Map)['input']
+                  : json['input'];
+              if (input is Map) {
+                filePath = (input['file_path'] ?? input['pattern']) as String?;
+              }
+              if (filePath != null) {
+                _agentProgress?.incrementFilesAnalyzed(runId, filePath);
+              }
+            }
+          }
+
+        case 'tool_result':
+          _agentProgress?.updateActivity(runId, 'Processing result...');
+
+        case 'result':
+          // Store the final result text for report parsing.
+          final resultText = json['result'] as String?;
+          if (resultText != null) {
+            resultTexts[agentType] = resultText;
+          }
+          // Use num_turns from the result event for accurate final count.
+          final numTurns = json['num_turns'] as int?;
+          if (numTurns != null) {
+            turnCounts[agentType] = numTurns;
+            _agentProgress?.updateProgress(runId, currentTurn: numTurns);
+          }
+          _agentProgress?.updateActivity(runId, 'Finalizing...');
+      }
+
+      _agentProgress?.updateElapsed(
+        runId,
+        _elapsedSince(startTimes[agentType]),
+      );
+    } catch (_) {
+      // Non-JSON line or parse error — skip silently.
+      // Append raw line to output for debugging.
+      _agentProgress?.appendOutput(runId, line);
+      _agentProgress?.updateElapsed(
+        runId,
+        _elapsedSince(startTimes[agentType]),
+      );
+    }
+  }
+
+  /// Extracts the final result text from stream-json NDJSON output.
+  ///
+  /// Scans backwards through the output lines looking for a `result` event.
+  /// Falls back to the raw output if no result event is found (for backwards
+  /// compatibility with non-stream-json output).
+  static String extractResultFromStreamJson(String output) {
+    final lines = output.split('\n');
+    for (final line in lines.reversed) {
+      final trimmed = line.trim();
+      if (trimmed.isEmpty) continue;
+      try {
+        final json = jsonDecode(trimmed) as Map<String, dynamic>;
+        if (json['type'] == 'result') {
+          return json['result'] as String? ?? output;
+        }
+      } catch (_) {
+        continue;
+      }
+    }
+    // Fallback: not stream-json format or no result event found.
+    return output;
+  }
+
+  /// Maps a Claude Code tool name to a human-readable activity description.
+  static String toolDisplayName(String toolName) => switch (toolName) {
+        'Read' => 'Reading file...',
+        'Write' => 'Writing file...',
+        'Edit' => 'Editing file...',
+        'Bash' => 'Running command...',
+        'Glob' => 'Searching files...',
+        'Grep' => 'Searching code...',
+        'Task' => 'Delegating task...',
+        'WebFetch' => 'Fetching web content...',
+        'WebSearch' => 'Searching web...',
+        'NotebookEdit' => 'Editing notebook...',
+        _ => 'Using $toolName...',
+      };
 }
