@@ -4,6 +4,7 @@
 /// Reads `projectId` from GoRouter path parameters.
 library;
 
+import 'package:file_picker/file_picker.dart';
 import 'package:fl_chart/fl_chart.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -17,6 +18,7 @@ import '../models/qa_job.dart';
 import '../providers/directive_providers.dart';
 import '../providers/github_providers.dart';
 import '../providers/health_providers.dart';
+import '../providers/project_local_config_providers.dart';
 import '../providers/project_providers.dart';
 import '../theme/colors.dart';
 import '../utils/constants.dart';
@@ -1096,6 +1098,7 @@ class _SettingsDialogState extends ConsumerState<_SettingsDialog> {
   late final TextEditingController _defaultBranchController;
   late final TextEditingController _jiraProjectKeyController;
   late final TextEditingController _techStackController;
+  late final TextEditingController _localWorkingDirController;
   String? _selectedGitHubConnectionId;
   String? _selectedJiraConnectionId;
   bool _submitting = false;
@@ -1116,8 +1119,20 @@ class _SettingsDialogState extends ConsumerState<_SettingsDialog> {
         TextEditingController(text: widget.project.jiraProjectKey ?? '');
     _techStackController =
         TextEditingController(text: widget.project.techStack ?? '');
+    _localWorkingDirController = TextEditingController();
     _selectedGitHubConnectionId = widget.project.githubConnectionId;
     _selectedJiraConnectionId = widget.project.jiraConnectionId;
+
+    // Load local working directory from local DB.
+    _loadLocalConfig();
+  }
+
+  Future<void> _loadLocalConfig() async {
+    final config =
+        await ref.read(projectLocalConfigProvider(widget.project.id).future);
+    if (config != null && mounted) {
+      _localWorkingDirController.text = config.localWorkingDir ?? '';
+    }
   }
 
   @override
@@ -1129,6 +1144,7 @@ class _SettingsDialogState extends ConsumerState<_SettingsDialog> {
     _defaultBranchController.dispose();
     _jiraProjectKeyController.dispose();
     _techStackController.dispose();
+    _localWorkingDirController.dispose();
     super.dispose();
   }
 
@@ -1161,6 +1177,45 @@ class _SettingsDialogState extends ConsumerState<_SettingsDialog> {
               TextFormField(
                 controller: _techStackController,
                 decoration: const InputDecoration(labelText: 'Tech Stack'),
+              ),
+              const SizedBox(height: 16),
+              const Text(
+                'Local Directory',
+                style: TextStyle(
+                  color: CodeOpsColors.textSecondary,
+                  fontWeight: FontWeight.w600,
+                  fontSize: 13,
+                ),
+              ),
+              const SizedBox(height: 8),
+              Row(
+                children: [
+                  Expanded(
+                    child: TextFormField(
+                      controller: _localWorkingDirController,
+                      decoration: const InputDecoration(
+                        labelText: 'Working Directory',
+                        hintText: '/path/to/project/source',
+                      ),
+                    ),
+                  ),
+                  const SizedBox(width: 8),
+                  IconButton(
+                    icon: const Icon(Icons.folder_open),
+                    tooltip: 'Browse',
+                    onPressed: () async {
+                      final selected =
+                          await FilePicker.platform.getDirectoryPath(
+                        dialogTitle: 'Select working directory',
+                        initialDirectory:
+                            _localWorkingDirController.text.trim(),
+                      );
+                      if (selected != null && mounted) {
+                        _localWorkingDirController.text = selected;
+                      }
+                    },
+                  ),
+                ],
               ),
               const SizedBox(height: 12),
               githubConnectionsAsync.when(
@@ -1277,6 +1332,14 @@ class _SettingsDialogState extends ConsumerState<_SettingsDialog> {
         techStack: _techStackController.text.trim().isEmpty
             ? null
             : _techStackController.text.trim(),
+      );
+
+      // Save local working directory to the local DB.
+      final localDir = _localWorkingDirController.text.trim();
+      await saveProjectLocalWorkingDir(
+        ref,
+        widget.project.id,
+        localDir.isEmpty ? null : localDir,
       );
 
       ref.invalidate(projectProvider(widget.project.id));

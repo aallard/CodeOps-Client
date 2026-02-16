@@ -4,12 +4,14 @@
 /// at the top. Provides filtering, sorting, and a create project dialog.
 library;
 
+import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../models/project.dart';
 import '../providers/github_providers.dart';
+import '../providers/project_local_config_providers.dart';
 import '../providers/project_providers.dart';
 import '../providers/team_providers.dart';
 import '../theme/colors.dart';
@@ -400,6 +402,7 @@ class _CreateProjectDialogState extends ConsumerState<_CreateProjectDialog> {
   late final TextEditingController _jiraLabelsController;
   late final TextEditingController _jiraComponentController;
   late final TextEditingController _techStackController;
+  late final TextEditingController _localWorkingDirController;
 
   String? _selectedGitHubConnectionId;
   String? _selectedJiraConnectionId;
@@ -418,6 +421,7 @@ class _CreateProjectDialogState extends ConsumerState<_CreateProjectDialog> {
     _jiraLabelsController = TextEditingController();
     _jiraComponentController = TextEditingController();
     _techStackController = TextEditingController();
+    _localWorkingDirController = TextEditingController();
   }
 
   @override
@@ -432,6 +436,7 @@ class _CreateProjectDialogState extends ConsumerState<_CreateProjectDialog> {
     _jiraLabelsController.dispose();
     _jiraComponentController.dispose();
     _techStackController.dispose();
+    _localWorkingDirController.dispose();
     super.dispose();
   }
 
@@ -487,6 +492,45 @@ class _CreateProjectDialogState extends ConsumerState<_CreateProjectDialog> {
                     labelText: 'Tech Stack',
                     hintText: 'e.g. Spring Boot, React',
                   ),
+                ),
+                const SizedBox(height: 16),
+                const Text(
+                  'Local Directory',
+                  style: TextStyle(
+                    color: CodeOpsColors.textSecondary,
+                    fontWeight: FontWeight.w600,
+                    fontSize: 13,
+                  ),
+                ),
+                const SizedBox(height: 8),
+                Row(
+                  children: [
+                    Expanded(
+                      child: TextFormField(
+                        controller: _localWorkingDirController,
+                        decoration: const InputDecoration(
+                          labelText: 'Working Directory',
+                          hintText: '/path/to/project/source',
+                        ),
+                      ),
+                    ),
+                    const SizedBox(width: 8),
+                    IconButton(
+                      icon: const Icon(Icons.folder_open),
+                      tooltip: 'Browse',
+                      onPressed: () async {
+                        final selected =
+                            await FilePicker.platform.getDirectoryPath(
+                          dialogTitle: 'Select working directory',
+                          initialDirectory:
+                              _localWorkingDirController.text.trim(),
+                        );
+                        if (selected != null && mounted) {
+                          _localWorkingDirController.text = selected;
+                        }
+                      },
+                    ),
+                  ],
                 ),
                 const SizedBox(height: 16),
                 const Text(
@@ -713,6 +757,12 @@ class _CreateProjectDialogState extends ConsumerState<_CreateProjectDialog> {
             ? null
             : _techStackController.text.trim(),
       );
+
+      // Save local working directory to the local DB if provided.
+      final localDir = _localWorkingDirController.text.trim();
+      if (localDir.isNotEmpty) {
+        await saveProjectLocalWorkingDir(ref, project.id, localDir);
+      }
 
       ref.invalidate(teamProjectsProvider);
 

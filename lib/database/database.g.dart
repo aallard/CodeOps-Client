@@ -11616,6 +11616,216 @@ class AgentFilesCompanion extends UpdateCompanion<AgentFile> {
   }
 }
 
+class $ProjectLocalConfigTable extends ProjectLocalConfig
+    with TableInfo<$ProjectLocalConfigTable, ProjectLocalConfigData> {
+  @override
+  final GeneratedDatabase attachedDatabase;
+  final String? _alias;
+  $ProjectLocalConfigTable(this.attachedDatabase, [this._alias]);
+  static const VerificationMeta _projectIdMeta =
+      const VerificationMeta('projectId');
+  @override
+  late final GeneratedColumn<String> projectId = GeneratedColumn<String>(
+      'project_id', aliasedName, false,
+      type: DriftSqlType.string, requiredDuringInsert: true);
+  static const VerificationMeta _localWorkingDirMeta =
+      const VerificationMeta('localWorkingDir');
+  @override
+  late final GeneratedColumn<String> localWorkingDir = GeneratedColumn<String>(
+      'local_working_dir', aliasedName, true,
+      type: DriftSqlType.string, requiredDuringInsert: false);
+  @override
+  List<GeneratedColumn> get $columns => [projectId, localWorkingDir];
+  @override
+  String get aliasedName => _alias ?? actualTableName;
+  @override
+  String get actualTableName => $name;
+  static const String $name = 'project_local_config';
+  @override
+  VerificationContext validateIntegrity(
+      Insertable<ProjectLocalConfigData> instance,
+      {bool isInserting = false}) {
+    final context = VerificationContext();
+    final data = instance.toColumns(true);
+    if (data.containsKey('project_id')) {
+      context.handle(_projectIdMeta,
+          projectId.isAcceptableOrUnknown(data['project_id']!, _projectIdMeta));
+    } else if (isInserting) {
+      context.missing(_projectIdMeta);
+    }
+    if (data.containsKey('local_working_dir')) {
+      context.handle(
+          _localWorkingDirMeta,
+          localWorkingDir.isAcceptableOrUnknown(
+              data['local_working_dir']!, _localWorkingDirMeta));
+    }
+    return context;
+  }
+
+  @override
+  Set<GeneratedColumn> get $primaryKey => {projectId};
+  @override
+  ProjectLocalConfigData map(Map<String, dynamic> data, {String? tablePrefix}) {
+    final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
+    return ProjectLocalConfigData(
+      projectId: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}project_id'])!,
+      localWorkingDir: attachedDatabase.typeMapping.read(
+          DriftSqlType.string, data['${effectivePrefix}local_working_dir']),
+    );
+  }
+
+  @override
+  $ProjectLocalConfigTable createAlias(String alias) {
+    return $ProjectLocalConfigTable(attachedDatabase, alias);
+  }
+}
+
+class ProjectLocalConfigData extends DataClass
+    implements Insertable<ProjectLocalConfigData> {
+  /// Project UUID primary key (references [Projects.id]).
+  final String projectId;
+
+  /// Absolute path to the project source code on this machine.
+  final String? localWorkingDir;
+  const ProjectLocalConfigData({required this.projectId, this.localWorkingDir});
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    map['project_id'] = Variable<String>(projectId);
+    if (!nullToAbsent || localWorkingDir != null) {
+      map['local_working_dir'] = Variable<String>(localWorkingDir);
+    }
+    return map;
+  }
+
+  ProjectLocalConfigCompanion toCompanion(bool nullToAbsent) {
+    return ProjectLocalConfigCompanion(
+      projectId: Value(projectId),
+      localWorkingDir: localWorkingDir == null && nullToAbsent
+          ? const Value.absent()
+          : Value(localWorkingDir),
+    );
+  }
+
+  factory ProjectLocalConfigData.fromJson(Map<String, dynamic> json,
+      {ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return ProjectLocalConfigData(
+      projectId: serializer.fromJson<String>(json['projectId']),
+      localWorkingDir: serializer.fromJson<String?>(json['localWorkingDir']),
+    );
+  }
+  @override
+  Map<String, dynamic> toJson({ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return <String, dynamic>{
+      'projectId': serializer.toJson<String>(projectId),
+      'localWorkingDir': serializer.toJson<String?>(localWorkingDir),
+    };
+  }
+
+  ProjectLocalConfigData copyWith(
+          {String? projectId,
+          Value<String?> localWorkingDir = const Value.absent()}) =>
+      ProjectLocalConfigData(
+        projectId: projectId ?? this.projectId,
+        localWorkingDir: localWorkingDir.present
+            ? localWorkingDir.value
+            : this.localWorkingDir,
+      );
+  ProjectLocalConfigData copyWithCompanion(ProjectLocalConfigCompanion data) {
+    return ProjectLocalConfigData(
+      projectId: data.projectId.present ? data.projectId.value : this.projectId,
+      localWorkingDir: data.localWorkingDir.present
+          ? data.localWorkingDir.value
+          : this.localWorkingDir,
+    );
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('ProjectLocalConfigData(')
+          ..write('projectId: $projectId, ')
+          ..write('localWorkingDir: $localWorkingDir')
+          ..write(')'))
+        .toString();
+  }
+
+  @override
+  int get hashCode => Object.hash(projectId, localWorkingDir);
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      (other is ProjectLocalConfigData &&
+          other.projectId == this.projectId &&
+          other.localWorkingDir == this.localWorkingDir);
+}
+
+class ProjectLocalConfigCompanion
+    extends UpdateCompanion<ProjectLocalConfigData> {
+  final Value<String> projectId;
+  final Value<String?> localWorkingDir;
+  final Value<int> rowid;
+  const ProjectLocalConfigCompanion({
+    this.projectId = const Value.absent(),
+    this.localWorkingDir = const Value.absent(),
+    this.rowid = const Value.absent(),
+  });
+  ProjectLocalConfigCompanion.insert({
+    required String projectId,
+    this.localWorkingDir = const Value.absent(),
+    this.rowid = const Value.absent(),
+  }) : projectId = Value(projectId);
+  static Insertable<ProjectLocalConfigData> custom({
+    Expression<String>? projectId,
+    Expression<String>? localWorkingDir,
+    Expression<int>? rowid,
+  }) {
+    return RawValuesInsertable({
+      if (projectId != null) 'project_id': projectId,
+      if (localWorkingDir != null) 'local_working_dir': localWorkingDir,
+      if (rowid != null) 'rowid': rowid,
+    });
+  }
+
+  ProjectLocalConfigCompanion copyWith(
+      {Value<String>? projectId,
+      Value<String?>? localWorkingDir,
+      Value<int>? rowid}) {
+    return ProjectLocalConfigCompanion(
+      projectId: projectId ?? this.projectId,
+      localWorkingDir: localWorkingDir ?? this.localWorkingDir,
+      rowid: rowid ?? this.rowid,
+    );
+  }
+
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    if (projectId.present) {
+      map['project_id'] = Variable<String>(projectId.value);
+    }
+    if (localWorkingDir.present) {
+      map['local_working_dir'] = Variable<String>(localWorkingDir.value);
+    }
+    if (rowid.present) {
+      map['rowid'] = Variable<int>(rowid.value);
+    }
+    return map;
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('ProjectLocalConfigCompanion(')
+          ..write('projectId: $projectId, ')
+          ..write('localWorkingDir: $localWorkingDir, ')
+          ..write('rowid: $rowid')
+          ..write(')'))
+        .toString();
+  }
+}
+
 abstract class _$CodeOpsDatabase extends GeneratedDatabase {
   _$CodeOpsDatabase(QueryExecutor e) : super(e);
   $CodeOpsDatabaseManager get managers => $CodeOpsDatabaseManager(this);
@@ -11646,6 +11856,8 @@ abstract class _$CodeOpsDatabase extends GeneratedDatabase {
   late final $AgentDefinitionsTable agentDefinitions =
       $AgentDefinitionsTable(this);
   late final $AgentFilesTable agentFiles = $AgentFilesTable(this);
+  late final $ProjectLocalConfigTable projectLocalConfig =
+      $ProjectLocalConfigTable(this);
   @override
   Iterable<TableInfo<Table, Object?>> get allTables =>
       allSchemaEntities.whereType<TableInfo<Table, Object?>>();
@@ -11670,7 +11882,8 @@ abstract class _$CodeOpsDatabase extends GeneratedDatabase {
         clonedRepos,
         anthropicModels,
         agentDefinitions,
-        agentFiles
+        agentFiles,
+        projectLocalConfig
       ];
 }
 
@@ -16872,6 +17085,140 @@ typedef $$AgentFilesTableProcessedTableManager = ProcessedTableManager<
     (AgentFile, BaseReferences<_$CodeOpsDatabase, $AgentFilesTable, AgentFile>),
     AgentFile,
     PrefetchHooks Function()>;
+typedef $$ProjectLocalConfigTableCreateCompanionBuilder
+    = ProjectLocalConfigCompanion Function({
+  required String projectId,
+  Value<String?> localWorkingDir,
+  Value<int> rowid,
+});
+typedef $$ProjectLocalConfigTableUpdateCompanionBuilder
+    = ProjectLocalConfigCompanion Function({
+  Value<String> projectId,
+  Value<String?> localWorkingDir,
+  Value<int> rowid,
+});
+
+class $$ProjectLocalConfigTableFilterComposer
+    extends Composer<_$CodeOpsDatabase, $ProjectLocalConfigTable> {
+  $$ProjectLocalConfigTableFilterComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnFilters<String> get projectId => $composableBuilder(
+      column: $table.projectId, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<String> get localWorkingDir => $composableBuilder(
+      column: $table.localWorkingDir,
+      builder: (column) => ColumnFilters(column));
+}
+
+class $$ProjectLocalConfigTableOrderingComposer
+    extends Composer<_$CodeOpsDatabase, $ProjectLocalConfigTable> {
+  $$ProjectLocalConfigTableOrderingComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnOrderings<String> get projectId => $composableBuilder(
+      column: $table.projectId, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<String> get localWorkingDir => $composableBuilder(
+      column: $table.localWorkingDir,
+      builder: (column) => ColumnOrderings(column));
+}
+
+class $$ProjectLocalConfigTableAnnotationComposer
+    extends Composer<_$CodeOpsDatabase, $ProjectLocalConfigTable> {
+  $$ProjectLocalConfigTableAnnotationComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  GeneratedColumn<String> get projectId =>
+      $composableBuilder(column: $table.projectId, builder: (column) => column);
+
+  GeneratedColumn<String> get localWorkingDir => $composableBuilder(
+      column: $table.localWorkingDir, builder: (column) => column);
+}
+
+class $$ProjectLocalConfigTableTableManager extends RootTableManager<
+    _$CodeOpsDatabase,
+    $ProjectLocalConfigTable,
+    ProjectLocalConfigData,
+    $$ProjectLocalConfigTableFilterComposer,
+    $$ProjectLocalConfigTableOrderingComposer,
+    $$ProjectLocalConfigTableAnnotationComposer,
+    $$ProjectLocalConfigTableCreateCompanionBuilder,
+    $$ProjectLocalConfigTableUpdateCompanionBuilder,
+    (
+      ProjectLocalConfigData,
+      BaseReferences<_$CodeOpsDatabase, $ProjectLocalConfigTable,
+          ProjectLocalConfigData>
+    ),
+    ProjectLocalConfigData,
+    PrefetchHooks Function()> {
+  $$ProjectLocalConfigTableTableManager(
+      _$CodeOpsDatabase db, $ProjectLocalConfigTable table)
+      : super(TableManagerState(
+          db: db,
+          table: table,
+          createFilteringComposer: () =>
+              $$ProjectLocalConfigTableFilterComposer($db: db, $table: table),
+          createOrderingComposer: () =>
+              $$ProjectLocalConfigTableOrderingComposer($db: db, $table: table),
+          createComputedFieldComposer: () =>
+              $$ProjectLocalConfigTableAnnotationComposer(
+                  $db: db, $table: table),
+          updateCompanionCallback: ({
+            Value<String> projectId = const Value.absent(),
+            Value<String?> localWorkingDir = const Value.absent(),
+            Value<int> rowid = const Value.absent(),
+          }) =>
+              ProjectLocalConfigCompanion(
+            projectId: projectId,
+            localWorkingDir: localWorkingDir,
+            rowid: rowid,
+          ),
+          createCompanionCallback: ({
+            required String projectId,
+            Value<String?> localWorkingDir = const Value.absent(),
+            Value<int> rowid = const Value.absent(),
+          }) =>
+              ProjectLocalConfigCompanion.insert(
+            projectId: projectId,
+            localWorkingDir: localWorkingDir,
+            rowid: rowid,
+          ),
+          withReferenceMapper: (p0) => p0
+              .map((e) => (e.readTable(table), BaseReferences(db, table, e)))
+              .toList(),
+          prefetchHooksCallback: null,
+        ));
+}
+
+typedef $$ProjectLocalConfigTableProcessedTableManager = ProcessedTableManager<
+    _$CodeOpsDatabase,
+    $ProjectLocalConfigTable,
+    ProjectLocalConfigData,
+    $$ProjectLocalConfigTableFilterComposer,
+    $$ProjectLocalConfigTableOrderingComposer,
+    $$ProjectLocalConfigTableAnnotationComposer,
+    $$ProjectLocalConfigTableCreateCompanionBuilder,
+    $$ProjectLocalConfigTableUpdateCompanionBuilder,
+    (
+      ProjectLocalConfigData,
+      BaseReferences<_$CodeOpsDatabase, $ProjectLocalConfigTable,
+          ProjectLocalConfigData>
+    ),
+    ProjectLocalConfigData,
+    PrefetchHooks Function()>;
 
 class $CodeOpsDatabaseManager {
   final _$CodeOpsDatabase _db;
@@ -16917,4 +17264,6 @@ class $CodeOpsDatabaseManager {
       $$AgentDefinitionsTableTableManager(_db, _db.agentDefinitions);
   $$AgentFilesTableTableManager get agentFiles =>
       $$AgentFilesTableTableManager(_db, _db.agentFiles);
+  $$ProjectLocalConfigTableTableManager get projectLocalConfig =>
+      $$ProjectLocalConfigTableTableManager(_db, _db.projectLocalConfig);
 }

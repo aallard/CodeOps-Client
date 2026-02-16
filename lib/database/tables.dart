@@ -739,6 +739,21 @@ class AgentDefinitions extends Table {
   Set<Column> get primaryKey => {id};
 }
 
+/// Local configuration for projects stored only on this machine.
+///
+/// Holds per-project settings like the local working directory path
+/// that differ between developer machines and are never sent to the server.
+class ProjectLocalConfig extends Table {
+  /// Project UUID primary key (references [Projects.id]).
+  TextColumn get projectId => text()();
+
+  /// Absolute path to the project source code on this machine.
+  TextColumn get localWorkingDir => text().nullable()();
+
+  @override
+  Set<Column> get primaryKey => {projectId};
+}
+
 /// Files attached to an agent definition (personas, prompts, etc.).
 class AgentFiles extends Table {
   /// UUID primary key.

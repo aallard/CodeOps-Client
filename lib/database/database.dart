@@ -38,6 +38,7 @@ part 'database.g.dart';
   AnthropicModels,
   AgentDefinitions,
   AgentFiles,
+  ProjectLocalConfig,
 ])
 class CodeOpsDatabase extends _$CodeOpsDatabase {
   /// Creates a [CodeOpsDatabase] with the given [QueryExecutor].
@@ -49,7 +50,7 @@ class CodeOpsDatabase extends _$CodeOpsDatabase {
   }
 
   @override
-  int get schemaVersion => 5;
+  int get schemaVersion => 6;
 
   @override
   MigrationStrategy get migration => MigrationStrategy(
@@ -71,6 +72,9 @@ class CodeOpsDatabase extends _$CodeOpsDatabase {
             await m.createTable(anthropicModels);
             await m.createTable(agentDefinitions);
             await m.createTable(agentFiles);
+          }
+          if (from < 6) {
+            await m.createTable(projectLocalConfig);
           }
         },
       );
