@@ -46,7 +46,7 @@ class LogConfig {
   static Future<void> initialize() async {
     if (kDebugMode) {
       minimumLevel = LogLevel.debug;
-      enableFileLogging = false;
+      enableFileLogging = true;
       enableConsoleColors = true;
     } else {
       minimumLevel = LogLevel.info;
