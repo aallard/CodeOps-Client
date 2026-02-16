@@ -21,6 +21,7 @@ import '../utils/constants.dart';
 import '../widgets/settings/agents_tab.dart';
 import '../widgets/settings/api_key_tab.dart';
 import '../widgets/settings/general_settings_tab.dart';
+import '../widgets/shared/markdown_editor_dialog.dart';
 
 /// The application settings page.
 class SettingsPage extends ConsumerStatefulWidget {
@@ -439,6 +440,26 @@ class _AgentConfigSection extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final editingFile = ref.watch(editingAgentFileProvider);
+
+    // When a file is being edited, show the inline editor instead of tabs.
+    if (editingFile != null) {
+      return MarkdownEditorPanel(
+        key: ValueKey(editingFile.id),
+        fileName: editingFile.fileName,
+        fileType: editingFile.fileType,
+        initialContent: editingFile.contentMd ?? '',
+        onSave: (content, fileName, fileType) async {
+          final service = ref.read(agentConfigServiceProvider);
+          await service.updateFile(editingFile.id,
+              contentMd: content, fileName: fileName, fileType: fileType);
+          ref.invalidate(selectedAgentFilesProvider);
+        },
+        onClose: () =>
+            ref.read(editingAgentFileProvider.notifier).state = null,
+      );
+    }
+
     final selectedTab = ref.watch(agentConfigTabProvider);
 
     return Column(

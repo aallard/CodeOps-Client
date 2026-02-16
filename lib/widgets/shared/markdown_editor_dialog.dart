@@ -1,4 +1,4 @@
-/// Full-screen modal dialog for viewing and editing markdown files.
+/// Inline editor for viewing and editing markdown files.
 ///
 /// Supports view mode (rendered markdown) and edit mode (split-pane
 /// with live preview). Prompts for unsaved changes on close.
@@ -13,8 +13,11 @@ import '../../theme/colors.dart';
 typedef OnSaveCallback = Future<void> Function(
     String content, String fileName, String fileType);
 
-/// A full-screen dialog for viewing and editing markdown content.
-class MarkdownEditorDialog extends StatefulWidget {
+/// An inline panel for viewing and editing markdown content.
+///
+/// Renders within its parent's constraints (not as a full-screen dialog).
+/// Use [onClose] to handle the close action.
+class MarkdownEditorPanel extends StatefulWidget {
   /// The display file name.
   final String fileName;
 
@@ -27,20 +30,24 @@ class MarkdownEditorDialog extends StatefulWidget {
   /// Called when the user saves changes.
   final OnSaveCallback onSave;
 
-  /// Creates a [MarkdownEditorDialog].
-  const MarkdownEditorDialog({
+  /// Called when the user closes the editor.
+  final VoidCallback onClose;
+
+  /// Creates a [MarkdownEditorPanel].
+  const MarkdownEditorPanel({
     super.key,
     required this.fileName,
     required this.fileType,
     required this.initialContent,
     required this.onSave,
+    required this.onClose,
   });
 
   @override
-  State<MarkdownEditorDialog> createState() => _MarkdownEditorDialogState();
+  State<MarkdownEditorPanel> createState() => _MarkdownEditorPanelState();
 }
 
-class _MarkdownEditorDialogState extends State<MarkdownEditorDialog> {
+class _MarkdownEditorPanelState extends State<MarkdownEditorPanel> {
   late final TextEditingController _contentController;
   late final TextEditingController _nameController;
   late String _fileType;
@@ -90,8 +97,11 @@ class _MarkdownEditorDialogState extends State<MarkdownEditorDialog> {
     }
   }
 
-  Future<bool> _onWillPop() async {
-    if (!_dirty) return true;
+  Future<void> _handleClose() async {
+    if (!_dirty) {
+      widget.onClose();
+      return;
+    }
 
     final result = await showDialog<bool>(
       context: context,
@@ -112,50 +122,45 @@ class _MarkdownEditorDialogState extends State<MarkdownEditorDialog> {
       ),
     );
 
-    return result ?? false;
+    if (result == true) {
+      widget.onClose();
+    }
   }
 
   @override
   Widget build(BuildContext context) {
-    return PopScope(
-      canPop: !_dirty,
-      onPopInvokedWithResult: (didPop, _) async {
-        if (!didPop) {
-          final shouldPop = await _onWillPop();
-          if (shouldPop && context.mounted) {
-            Navigator.pop(context);
-          }
-        }
-      },
-      child: Dialog.fullscreen(
-        child: Scaffold(
-          appBar: AppBar(
-            backgroundColor: CodeOpsColors.surface,
-            leading: IconButton(
-              icon: const Icon(Icons.close),
-              onPressed: () async {
-                if (_dirty) {
-                  final shouldPop = await _onWillPop();
-                  if (!shouldPop || !context.mounted) return;
-                }
-                if (context.mounted) Navigator.pop(context);
-              },
-            ),
-            title: SizedBox(
-              width: 300,
-              child: TextField(
-                controller: _nameController,
-                style: const TextStyle(fontSize: 14),
-                decoration: const InputDecoration(
-                  border: InputBorder.none,
-                  hintText: 'File name',
-                ),
-                onChanged: (_) {
-                  if (!_dirty) setState(() => _dirty = true);
-                },
+    return Column(
+      children: [
+        // Header bar.
+        Container(
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+          decoration: const BoxDecoration(
+            color: CodeOpsColors.surface,
+            border: Border(bottom: BorderSide(color: CodeOpsColors.border)),
+          ),
+          child: Row(
+            children: [
+              IconButton(
+                icon: const Icon(Icons.close),
+                onPressed: _handleClose,
+                tooltip: 'Close',
               ),
-            ),
-            actions: [
+              const SizedBox(width: 8),
+              SizedBox(
+                width: 300,
+                child: TextField(
+                  controller: _nameController,
+                  style: const TextStyle(fontSize: 14),
+                  decoration: const InputDecoration(
+                    border: InputBorder.none,
+                    hintText: 'File name',
+                  ),
+                  onChanged: (_) {
+                    if (!_dirty) setState(() => _dirty = true);
+                  },
+                ),
+              ),
+              const Spacer(),
               // File type dropdown.
               DropdownButton<String>(
                 value: _fileType,
@@ -202,12 +207,15 @@ class _MarkdownEditorDialogState extends State<MarkdownEditorDialog> {
                       )
                     : const Text('Save'),
               ),
-              const SizedBox(width: 16),
+              const SizedBox(width: 8),
             ],
           ),
-          body: _editing ? _buildEditMode() : _buildViewMode(),
         ),
-      ),
+        // Content area.
+        Expanded(
+          child: _editing ? _buildEditMode() : _buildViewMode(),
+        ),
+      ],
     );
   }
 

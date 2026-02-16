@@ -13,7 +13,6 @@ import '../../database/database.dart';
 import '../../providers/agent_config_providers.dart';
 import '../../theme/colors.dart';
 import '../../utils/constants.dart';
-import '../shared/markdown_editor_dialog.dart';
 import '../shared/temperature_help_dialog.dart';
 import 'agent_file_row.dart';
 
@@ -553,20 +552,7 @@ class _AgentDetailPanelState extends ConsumerState<AgentDetailPanel> {
   }
 
   void _openFileEditor(AgentFile file) {
-    showDialog<void>(
-      context: context,
-      builder: (_) => MarkdownEditorDialog(
-        fileName: file.fileName,
-        fileType: file.fileType,
-        initialContent: file.contentMd ?? '',
-        onSave: (content, fileName, fileType) async {
-          final service = ref.read(agentConfigServiceProvider);
-          await service.updateFile(file.id,
-              contentMd: content, fileName: fileName, fileType: fileType);
-          ref.invalidate(selectedAgentFilesProvider);
-        },
-      ),
-    );
+    ref.read(editingAgentFileProvider.notifier).state = file;
   }
 
   Future<void> _deleteFile(String fileId) async {

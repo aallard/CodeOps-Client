@@ -91,3 +91,8 @@ final agentConfigTabProvider = StateProvider<int>((ref) => 0);
 
 /// Search query for filtering agents in the agents tab.
 final agentSearchQueryProvider = StateProvider<String>((ref) => '');
+
+/// Tracks the [AgentFile] currently open in the inline markdown editor.
+///
+/// When non-null, the agent config section shows the editor instead of tabs.
+final editingAgentFileProvider = StateProvider<AgentFile?>((ref) => null);
