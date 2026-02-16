@@ -52,9 +52,26 @@ class ClaudeCodeDetector {
   /// Creates a [ClaudeCodeDetector].
   const ClaudeCodeDetector();
 
-  /// Returns `true` if the `claude` executable is found on the system PATH.
+  /// Common installation paths to check when `which`/`where` fails.
   ///
-  /// Runs `which claude` on macOS/Linux or `where.exe claude` on Windows.
+  /// Desktop apps on macOS don't inherit the user's shell PATH, so
+  /// Homebrew and npm-installed binaries won't be found by `which`.
+  static final List<String> _fallbackPaths = [
+    if (!Platform.isWindows) ...[
+      '/opt/homebrew/bin/claude', // Homebrew on Apple Silicon
+      '/usr/local/bin/claude', // Homebrew on Intel Mac
+      '${Platform.environment['HOME']}/.npm/bin/claude',
+      '${Platform.environment['HOME']}/.local/bin/claude',
+      '${Platform.environment['HOME']}/.nvm/versions/node/current/bin/claude',
+    ],
+    if (Platform.isWindows) ...[
+      '${Platform.environment['LOCALAPPDATA']}\\Programs\\claude\\claude.exe',
+      '${Platform.environment['APPDATA']}\\npm\\claude.cmd',
+    ],
+  ];
+
+  /// Returns `true` if the `claude` executable is found on the system PATH
+  /// or at a known installation location.
   Future<bool> isInstalled() async {
     try {
       final path = await getExecutablePath();
@@ -67,11 +84,14 @@ class ClaudeCodeDetector {
   /// Returns the installed Claude Code CLI version string, or `null` if the
   /// CLI is not installed or the version cannot be determined.
   ///
-  /// Runs `claude --version` and parses the first semantic version token
-  /// from the output (e.g. `"1.2.3"` from `"claude v1.2.3"`).
+  /// Runs `claude --version` using the resolved executable path and parses
+  /// the first semantic version token from the output.
   Future<String?> getVersion() async {
     try {
-      final result = await Process.run('claude', const ['--version']);
+      final path = await getExecutablePath();
+      if (path == null) return null;
+
+      final result = await Process.run(path, const ['--version']);
       if (result.exitCode != 0) return null;
 
       final output = (result.stdout as String).trim();
@@ -88,22 +108,35 @@ class ClaudeCodeDetector {
   /// Returns the absolute filesystem path to the `claude` executable, or
   /// `null` if it is not found.
   ///
-  /// Runs `which claude` on macOS/Linux or `where.exe claude` on Windows.
+  /// First tries `which`/`where.exe`, then probes common installation paths.
   Future<String?> getExecutablePath() async {
+    // Try system PATH first.
     try {
       final executable = Platform.isWindows ? 'where.exe' : 'which';
       final result = await Process.run(executable, const ['claude']);
-      if (result.exitCode != 0) return null;
-
-      final output = (result.stdout as String).trim();
-      if (output.isEmpty) return null;
-
-      // `where.exe` may return multiple lines; take the first.
-      final firstLine = output.split('\n').first.trim();
-      return firstLine.isNotEmpty ? firstLine : null;
+      if (result.exitCode == 0) {
+        final output = (result.stdout as String).trim();
+        if (output.isNotEmpty) {
+          final firstLine = output.split('\n').first.trim();
+          if (firstLine.isNotEmpty) return firstLine;
+        }
+      }
     } catch (_) {
-      return null;
+      // which/where not available or failed — fall through.
     }
+
+    // Probe common installation paths.
+    for (final candidate in _fallbackPaths) {
+      try {
+        if (await File(candidate).exists()) {
+          return candidate;
+        }
+      } catch (_) {
+        continue;
+      }
+    }
+
+    return null;
   }
 
   /// Validates the Claude Code CLI installation.
