@@ -144,6 +144,12 @@ final repoSearchResultsProvider =
 /// Fetches branches for a repository by full name.
 final repoBranchesProvider =
     FutureProvider.family<List<VcsBranch>, String>((ref, fullName) async {
+  final authenticated = ref.watch(vcsAuthenticatedProvider);
+  if (!authenticated) {
+    log.w('GitHubProviders',
+        'Skipping branch fetch - not authenticated');
+    return [];
+  }
   final provider = ref.watch(vcsProviderProvider);
   return provider.getBranches(fullName);
 });
@@ -152,6 +158,8 @@ final repoBranchesProvider =
 final repoPullRequestsProvider =
     FutureProvider.family<List<VcsPullRequest>, String>(
         (ref, fullName) async {
+  final authenticated = ref.watch(vcsAuthenticatedProvider);
+  if (!authenticated) return [];
   final provider = ref.watch(vcsProviderProvider);
   return provider.getPullRequests(fullName);
 });
@@ -159,6 +167,8 @@ final repoPullRequestsProvider =
 /// Fetches commit history for a repository by full name.
 final repoCommitsProvider =
     FutureProvider.family<List<VcsCommit>, String>((ref, fullName) async {
+  final authenticated = ref.watch(vcsAuthenticatedProvider);
+  if (!authenticated) return [];
   final provider = ref.watch(vcsProviderProvider);
   return provider.getCommitHistory(fullName);
 });
@@ -166,6 +176,8 @@ final repoCommitsProvider =
 /// Fetches workflow runs for a repository by full name.
 final repoWorkflowsProvider =
     FutureProvider.family<List<WorkflowRun>, String>((ref, fullName) async {
+  final authenticated = ref.watch(vcsAuthenticatedProvider);
+  if (!authenticated) return [];
   final provider = ref.watch(vcsProviderProvider);
   return provider.getWorkflowRuns(fullName);
 });
@@ -232,6 +244,8 @@ final githubReadmeProvider =
     FutureProvider.autoDispose<String?>((ref) async {
   final repo = ref.watch(selectedGithubRepoProvider);
   if (repo == null) return null;
+  final authenticated = ref.watch(vcsAuthenticatedProvider);
+  if (!authenticated) return null;
   final provider = ref.watch(vcsProviderProvider);
   if (provider is GitHubProvider) {
     return provider.getReadmeContent(repo.fullName);
@@ -244,6 +258,8 @@ final githubRepoBranchesProvider =
     FutureProvider.autoDispose<List<VcsBranch>>((ref) async {
   final repo = ref.watch(selectedGithubRepoProvider);
   if (repo == null) return [];
+  final authenticated = ref.watch(vcsAuthenticatedProvider);
+  if (!authenticated) return [];
   final provider = ref.watch(vcsProviderProvider);
   return provider.getBranches(repo.fullName);
 });
@@ -253,6 +269,8 @@ final githubRepoPullRequestsProvider =
     FutureProvider.autoDispose<List<VcsPullRequest>>((ref) async {
   final repo = ref.watch(selectedGithubRepoProvider);
   if (repo == null) return [];
+  final authenticated = ref.watch(vcsAuthenticatedProvider);
+  if (!authenticated) return [];
   final provider = ref.watch(vcsProviderProvider);
   return provider.getPullRequests(repo.fullName);
 });
@@ -262,6 +280,8 @@ final githubRepoCommitsProvider =
     FutureProvider.autoDispose<List<VcsCommit>>((ref) async {
   final repo = ref.watch(selectedGithubRepoProvider);
   if (repo == null) return [];
+  final authenticated = ref.watch(vcsAuthenticatedProvider);
+  if (!authenticated) return [];
   final provider = ref.watch(vcsProviderProvider);
   return provider.getCommitHistory(repo.fullName);
 });
