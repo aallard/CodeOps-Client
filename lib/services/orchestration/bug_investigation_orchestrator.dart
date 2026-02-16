@@ -39,6 +39,7 @@ class BugInvestigationOrchestrator {
   Future<String?> launchInvestigation({
     required Project project,
     required String branch,
+    required String projectPath,
     required JiraIssue issue,
     required List<JiraComment> comments,
     required List<AgentType> selectedAgents,
@@ -87,7 +88,7 @@ class BugInvestigationOrchestrator {
     _jobOrchestrator.executeJob(
       projectId: project.id,
       projectName: project.name,
-      projectPath: project.repoFullName ?? project.name,
+      projectPath: projectPath,
       teamId: project.teamId,
       branch: branch,
       mode: JobMode.bugInvestigate,

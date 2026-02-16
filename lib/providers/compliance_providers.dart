@@ -40,6 +40,9 @@ class ComplianceWizardState {
   /// The selected branch name.
   final String? selectedBranch;
 
+  /// Local filesystem path to the project repository.
+  final String? localPath;
+
   /// Specification files uploaded for this compliance job.
   final List<SpecFile> specFiles;
 
@@ -63,6 +66,7 @@ class ComplianceWizardState {
     this.currentStep = 0,
     this.selectedProject,
     this.selectedBranch,
+    this.localPath,
     this.specFiles = const [],
     this.selectedAgents = const {},
     this.config = const JobConfig(),
@@ -76,6 +80,7 @@ class ComplianceWizardState {
     int? currentStep,
     Project? selectedProject,
     String? selectedBranch,
+    String? localPath,
     List<SpecFile>? specFiles,
     Set<AgentType>? selectedAgents,
     JobConfig? config,
@@ -83,11 +88,13 @@ class ComplianceWizardState {
     bool? isLaunching,
     String? launchError,
     bool clearLaunchError = false,
+    bool clearLocalPath = false,
   }) {
     return ComplianceWizardState(
       currentStep: currentStep ?? this.currentStep,
       selectedProject: selectedProject ?? this.selectedProject,
       selectedBranch: selectedBranch ?? this.selectedBranch,
+      localPath: clearLocalPath ? null : (localPath ?? this.localPath),
       specFiles: specFiles ?? this.specFiles,
       selectedAgents: selectedAgents ?? this.selectedAgents,
       config: config ?? this.config,
@@ -133,11 +140,19 @@ class ComplianceWizardNotifier extends StateNotifier<ComplianceWizardState> {
     state = state.copyWith(currentStep: step);
   }
 
+  /// Sets the local filesystem path for the project repository.
+  void setLocalPath(String path) {
+    state = state.copyWith(localPath: path);
+  }
+
   /// Sets the selected project and initializes the branch.
+  ///
+  /// Also attempts to auto-detect the local repository path.
   void selectProject(Project project) {
     state = state.copyWith(
       selectedProject: project,
       selectedBranch: project.defaultBranch ?? 'main',
+      localPath: detectLocalProjectPath(project.name),
     );
   }
 

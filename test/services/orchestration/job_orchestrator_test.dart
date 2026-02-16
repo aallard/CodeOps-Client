@@ -234,6 +234,32 @@ void main() {
   });
 
   // ---------------------------------------------------------------------------
+  // executeJob — path validation
+  // ---------------------------------------------------------------------------
+
+  group('executeJob path validation', () {
+    test('throws StateError when projectPath does not exist', () async {
+      expect(
+        () => orchestrator.executeJob(
+          projectId: 'proj-1',
+          projectName: 'Test Project',
+          projectPath: '/nonexistent/path/that/does/not/exist',
+          teamId: 'team-1',
+          branch: 'main',
+          mode: JobMode.audit,
+          selectedAgents: [AgentType.security],
+          config: const AgentDispatchConfig(),
+        ),
+        throwsA(isA<StateError>().having(
+          (e) => e.message,
+          'message',
+          contains('Project directory does not exist'),
+        )),
+      );
+    });
+  });
+
+  // ---------------------------------------------------------------------------
   // executeJob — early cancellation before agent dispatch
   // ---------------------------------------------------------------------------
 
@@ -330,7 +356,7 @@ void main() {
       final result = await orchestrator.executeJob(
         projectId: 'proj-1',
         projectName: 'Test Project',
-        projectPath: '/tmp/test',
+        projectPath: '/tmp',
         teamId: 'team-1',
         branch: 'main',
         mode: JobMode.audit,
@@ -366,7 +392,7 @@ void main() {
         () => orchestrator.executeJob(
           projectId: 'proj-1',
           projectName: 'Test Project',
-          projectPath: '/tmp/test',
+          projectPath: '/tmp',
           teamId: 'team-1',
           branch: 'main',
           mode: JobMode.audit,
@@ -428,7 +454,7 @@ void main() {
         () => orchestrator.executeJob(
           projectId: 'proj-1',
           projectName: 'Test Project',
-          projectPath: '/tmp/test',
+          projectPath: '/tmp',
           teamId: 'team-1',
           branch: 'main',
           mode: JobMode.audit,

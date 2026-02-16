@@ -5,6 +5,8 @@
 /// job/project data.
 library;
 
+import 'dart:io';
+
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../models/enums.dart';
@@ -14,6 +16,36 @@ import '../models/qa_job.dart';
 import '../services/logging/log_service.dart';
 import '../utils/constants.dart';
 import 'job_providers.dart';
+
+// ---------------------------------------------------------------------------
+// Local path detection
+// ---------------------------------------------------------------------------
+
+/// Attempts to auto-detect the local filesystem path for a project by
+/// checking common clone locations under the user's home directory.
+///
+/// Returns the first path that exists as a directory, or `null` if no
+/// match is found.
+String? detectLocalProjectPath(String projectName) {
+  final home = Platform.environment['HOME'] ?? '';
+  if (home.isEmpty) return null;
+
+  final candidates = [
+    '$home/Documents/GitHub/$projectName',
+    '$home/Developer/$projectName',
+    '$home/Projects/$projectName',
+    '$home/repos/$projectName',
+    '$home/src/$projectName',
+    '$home/$projectName',
+  ];
+
+  for (final candidate in candidates) {
+    if (Directory(candidate).existsSync()) {
+      return candidate;
+    }
+  }
+  return null;
+}
 
 // ---------------------------------------------------------------------------
 // JobConfig
@@ -215,6 +247,12 @@ class AuditWizardState {
   /// The selected branch name.
   final String? selectedBranch;
 
+  /// Local filesystem path to the project repository.
+  ///
+  /// This is the working directory used by Claude Code agent subprocesses.
+  /// Must be a valid directory that contains the cloned repository.
+  final String? localPath;
+
   /// The set of selected agent types.
   final Set<AgentType> selectedAgents;
 
@@ -232,6 +270,7 @@ class AuditWizardState {
     this.currentStep = 0,
     this.selectedProject,
     this.selectedBranch,
+    this.localPath,
     this.selectedAgents = const {},
     this.config = const JobConfig(),
     this.isLaunching = false,
@@ -243,15 +282,18 @@ class AuditWizardState {
     int? currentStep,
     Project? selectedProject,
     String? selectedBranch,
+    String? localPath,
     Set<AgentType>? selectedAgents,
     JobConfig? config,
     bool? isLaunching,
     String? launchError,
+    bool clearLocalPath = false,
   }) {
     return AuditWizardState(
       currentStep: currentStep ?? this.currentStep,
       selectedProject: selectedProject ?? this.selectedProject,
       selectedBranch: selectedBranch ?? this.selectedBranch,
+      localPath: clearLocalPath ? null : (localPath ?? this.localPath),
       selectedAgents: selectedAgents ?? this.selectedAgents,
       config: config ?? this.config,
       isLaunching: isLaunching ?? this.isLaunching,
@@ -267,6 +309,11 @@ class AuditWizardNotifier extends StateNotifier<AuditWizardState> {
       : super(AuditWizardState(
           selectedAgents: AgentType.values.toSet(),
         ));
+
+  /// Sets the local filesystem path for the project repository.
+  void setLocalPath(String path) {
+    state = state.copyWith(localPath: path);
+  }
 
   /// Moves to the next step.
   void nextStep() {
@@ -286,10 +333,14 @@ class AuditWizardNotifier extends StateNotifier<AuditWizardState> {
   }
 
   /// Sets the selected project and initializes the branch.
+  ///
+  /// Also attempts to auto-detect the local repository path by checking
+  /// common clone locations.
   void selectProject(Project project) {
     state = state.copyWith(
       selectedProject: project,
       selectedBranch: project.defaultBranch ?? 'main',
+      localPath: detectLocalProjectPath(project.name),
     );
   }
 
@@ -548,6 +599,9 @@ class BugInvestigatorWizardState {
   /// The selected branch name.
   final String? selectedBranch;
 
+  /// Local filesystem path to the project repository.
+  final String? localPath;
+
   /// The set of selected agent types.
   final Set<AgentType> selectedAgents;
 
@@ -570,6 +624,7 @@ class BugInvestigatorWizardState {
     this.selectedComments = const [],
     this.selectedProject,
     this.selectedBranch,
+    this.localPath,
     this.selectedAgents = const {},
     this.config = const JobConfig(),
     this.additionalContext = '',
@@ -584,12 +639,14 @@ class BugInvestigatorWizardState {
     List<JiraComment>? selectedComments,
     Project? selectedProject,
     String? selectedBranch,
+    String? localPath,
     Set<AgentType>? selectedAgents,
     JobConfig? config,
     String? additionalContext,
     bool? isLaunching,
     String? launchError,
     bool clearLaunchError = false,
+    bool clearLocalPath = false,
   }) {
     return BugInvestigatorWizardState(
       currentStep: currentStep ?? this.currentStep,
@@ -597,6 +654,7 @@ class BugInvestigatorWizardState {
       selectedComments: selectedComments ?? this.selectedComments,
       selectedProject: selectedProject ?? this.selectedProject,
       selectedBranch: selectedBranch ?? this.selectedBranch,
+      localPath: clearLocalPath ? null : (localPath ?? this.localPath),
       selectedAgents: selectedAgents ?? this.selectedAgents,
       config: config ?? this.config,
       additionalContext: additionalContext ?? this.additionalContext,
@@ -641,11 +699,19 @@ class BugInvestigatorWizardNotifier
     );
   }
 
+  /// Sets the local filesystem path for the project repository.
+  void setLocalPath(String path) {
+    state = state.copyWith(localPath: path);
+  }
+
   /// Sets the selected project and initializes the branch.
+  ///
+  /// Also attempts to auto-detect the local repository path.
   void selectProject(Project project) {
     state = state.copyWith(
       selectedProject: project,
       selectedBranch: project.defaultBranch ?? 'main',
+      localPath: detectLocalProjectPath(project.name),
     );
   }
 

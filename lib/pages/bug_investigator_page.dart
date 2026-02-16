@@ -85,6 +85,7 @@ class _BugInvestigatorPageState extends ConsumerState<BugInvestigatorPage> {
         icon: Icons.settings_outlined,
         isValid: wizardState.selectedProject != null &&
             wizardState.selectedBranch != null &&
+            wizardState.localPath != null &&
             wizardState.selectedAgents.isNotEmpty,
         content: _ConfigureStep(
           wizardState: wizardState,
@@ -160,6 +161,7 @@ class _BugInvestigatorPageState extends ConsumerState<BugInvestigatorPage> {
       final jobId = await orchestrator.launchInvestigation(
         project: project,
         branch: wizardState.selectedBranch ?? 'main',
+        projectPath: wizardState.localPath!,
         issue: issue,
         comments: wizardState.selectedComments,
         selectedAgents: wizardState.selectedAgents.toList(),
@@ -281,8 +283,10 @@ class _ConfigureStep extends StatelessWidget {
           SourceStep(
             selectedProject: wizardState.selectedProject,
             selectedBranch: wizardState.selectedBranch,
+            localPath: wizardState.localPath,
             onProjectSelected: notifier.selectProject,
             onBranchSelected: notifier.selectBranch,
+            onLocalPathSelected: notifier.setLocalPath,
           ),
           const SizedBox(height: 24),
 

@@ -50,12 +50,15 @@ class _ComplianceWizardPageState extends ConsumerState<ComplianceWizardPage> {
         subtitle: 'Project & branch',
         icon: Icons.folder_outlined,
         isValid: wizardState.selectedProject != null &&
-            wizardState.selectedBranch != null,
+            wizardState.selectedBranch != null &&
+            wizardState.localPath != null,
         content: SourceStep(
           selectedProject: wizardState.selectedProject,
           selectedBranch: wizardState.selectedBranch,
+          localPath: wizardState.localPath,
           onProjectSelected: notifier.selectProject,
           onBranchSelected: notifier.selectBranch,
+          onLocalPathSelected: notifier.setLocalPath,
         ),
       ),
       WizardStepDef(
@@ -173,7 +176,7 @@ class _ComplianceWizardPageState extends ConsumerState<ComplianceWizardPage> {
       orchestrator.executeJob(
         projectId: project.id,
         projectName: project.name,
-        projectPath: project.repoFullName ?? project.name,
+        projectPath: wizardState.localPath ?? project.name,
         teamId: project.teamId,
         branch: wizardState.selectedBranch ?? 'main',
         mode: JobMode.compliance,

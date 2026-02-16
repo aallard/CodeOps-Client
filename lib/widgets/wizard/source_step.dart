@@ -5,6 +5,7 @@
 /// Validation: project + branch must be selected.
 library;
 
+import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
@@ -22,19 +23,27 @@ class SourceStep extends ConsumerStatefulWidget {
   /// The currently selected branch.
   final String? selectedBranch;
 
+  /// The local filesystem path for the project repository.
+  final String? localPath;
+
   /// Called when a project is selected.
   final ValueChanged<Project> onProjectSelected;
 
   /// Called when a branch is selected.
   final ValueChanged<String> onBranchSelected;
 
+  /// Called when the local path is selected.
+  final ValueChanged<String>? onLocalPathSelected;
+
   /// Creates a [SourceStep].
   const SourceStep({
     super.key,
     this.selectedProject,
     this.selectedBranch,
+    this.localPath,
     required this.onProjectSelected,
     required this.onBranchSelected,
+    this.onLocalPathSelected,
   });
 
   @override
@@ -74,7 +83,9 @@ class _SourceStepState extends ConsumerState<SourceStep> {
           _SelectedProjectCard(
             project: widget.selectedProject!,
             selectedBranch: widget.selectedBranch ?? 'main',
+            localPath: widget.localPath,
             onBranchSelected: widget.onBranchSelected,
+            onLocalPathSelected: widget.onLocalPathSelected,
           ),
           const SizedBox(height: 16),
           const Divider(color: CodeOpsColors.divider),
@@ -152,16 +163,32 @@ class _SourceStepState extends ConsumerState<SourceStep> {
 class _SelectedProjectCard extends StatelessWidget {
   final Project project;
   final String selectedBranch;
+  final String? localPath;
   final ValueChanged<String> onBranchSelected;
+  final ValueChanged<String>? onLocalPathSelected;
 
   const _SelectedProjectCard({
     required this.project,
     required this.selectedBranch,
+    this.localPath,
     required this.onBranchSelected,
+    this.onLocalPathSelected,
   });
+
+  Future<void> _pickDirectory(BuildContext context) async {
+    final result = await FilePicker.platform.getDirectoryPath(
+      dialogTitle: 'Select project repository folder',
+      initialDirectory: localPath,
+    );
+    if (result != null) {
+      onLocalPathSelected?.call(result);
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
+    final hasPath = localPath != null && localPath!.isNotEmpty;
+
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
@@ -244,6 +271,63 @@ class _SelectedProjectCard extends StatelessWidget {
                     fontSize: 12,
                   ),
                 ),
+            ],
+          ),
+          const SizedBox(height: 8),
+          // Local path picker
+          Row(
+            children: [
+              Icon(
+                hasPath ? Icons.check_circle : Icons.warning_amber,
+                size: 14,
+                color: hasPath
+                    ? CodeOpsColors.success
+                    : CodeOpsColors.warning,
+              ),
+              const SizedBox(width: 6),
+              const Text(
+                'Local path:',
+                style: TextStyle(
+                  color: CodeOpsColors.textSecondary,
+                  fontSize: 12,
+                ),
+              ),
+              const SizedBox(width: 8),
+              Expanded(
+                child: hasPath
+                    ? Text(
+                        localPath!,
+                        style: const TextStyle(
+                          color: CodeOpsColors.textPrimary,
+                          fontSize: 12,
+                          fontFamily: 'monospace',
+                        ),
+                        overflow: TextOverflow.ellipsis,
+                      )
+                    : const Text(
+                        'Not set — required for agent execution',
+                        style: TextStyle(
+                          color: CodeOpsColors.warning,
+                          fontSize: 12,
+                          fontStyle: FontStyle.italic,
+                        ),
+                      ),
+              ),
+              const SizedBox(width: 8),
+              SizedBox(
+                height: 28,
+                child: OutlinedButton.icon(
+                  onPressed: () => _pickDirectory(context),
+                  icon: const Icon(Icons.folder_open, size: 14),
+                  label: Text(hasPath ? 'Change' : 'Browse'),
+                  style: OutlinedButton.styleFrom(
+                    foregroundColor: CodeOpsColors.textSecondary,
+                    side: const BorderSide(color: CodeOpsColors.border),
+                    padding: const EdgeInsets.symmetric(horizontal: 10),
+                    textStyle: const TextStyle(fontSize: 11),
+                  ),
+                ),
+              ),
             ],
           ),
         ],

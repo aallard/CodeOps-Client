@@ -7,6 +7,7 @@
 library;
 
 import 'dart:async';
+import 'dart:io';
 
 import '../../models/enums.dart';
 import '../../providers/agent_progress_notifier.dart';
@@ -216,6 +217,13 @@ class JobOrchestrator {
   }) async {
     _cancelling = false;
     String? jobId;
+
+    // Validate projectPath before starting the job lifecycle.
+    if (!Directory(projectPath).existsSync()) {
+      final error = 'Project directory does not exist: $projectPath';
+      log.e('JobOrchestrator', error);
+      throw StateError(error);
+    }
 
     try {
       // Step 1: Create job on server.

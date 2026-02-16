@@ -319,15 +319,14 @@ void main() {
       await subscription.asFuture<void>();
       await subscription.cancel();
 
-      // NOTE: AgentQueued events are emitted synchronously inside the
-      // dispatchAll IIFE *before* the stream is returned, which means
-      // they fire on the broadcast StreamController with no listener yet
-      // attached. Broadcast streams drop events that have no subscribers,
-      // so AgentQueued events are never received by the test listener.
-      //
-      // Verify instead via AgentStarted events (emitted after the async
-      // dispatchAgent call, when the listener IS active) that every
-      // requested agent was queued and launched.
+      // With single-subscription stream, AgentQueued events are buffered
+      // until the listener attaches, so they are received.
+      final queuedAgents =
+          events.whereType<AgentQueued>().map((e) => e.agentType).toList();
+
+      expect(queuedAgents, containsAll(agentTypes));
+      expect(queuedAgents.length, equals(agentTypes.length));
+
       final startedAgents =
           events.whereType<AgentStarted>().map((e) => e.agentType).toList();
 

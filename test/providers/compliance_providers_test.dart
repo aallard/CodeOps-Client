@@ -20,6 +20,7 @@ void main() {
       expect(state.currentStep, 0);
       expect(state.selectedProject, isNull);
       expect(state.selectedBranch, isNull);
+      expect(state.localPath, isNull);
       expect(state.specFiles, isEmpty);
       expect(state.additionalContext, '');
       expect(state.isLaunching, isFalse);
@@ -37,13 +38,24 @@ void main() {
         currentStep: 3,
         additionalContext: 'test context',
         isLaunching: true,
+        localPath: '/tmp/test',
       );
 
       expect(updated.currentStep, 3);
       expect(updated.additionalContext, 'test context');
       expect(updated.isLaunching, isTrue);
+      expect(updated.localPath, '/tmp/test');
       expect(updated.selectedProject, isNull);
       expect(updated.specFiles, isEmpty);
+    });
+
+    test('copyWith clearLocalPath clears the path', () {
+      final state = const ComplianceWizardState().copyWith(
+        localPath: '/tmp/project',
+      );
+      final updated = state.copyWith(clearLocalPath: true);
+
+      expect(updated.localPath, isNull);
     });
 
     test('copyWith clearLaunchError clears the error', () {
@@ -128,6 +140,19 @@ void main() {
 
       expect(state.selectedProject?.id, 'p1');
       expect(state.selectedBranch, 'develop');
+    });
+
+    test('setLocalPath updates localPath', () {
+      final container = ProviderContainer();
+      addTearDown(container.dispose);
+
+      container
+          .read(complianceWizardStateProvider.notifier)
+          .setLocalPath('/tmp/compliance-project');
+
+      expect(
+          container.read(complianceWizardStateProvider).localPath,
+          '/tmp/compliance-project');
     });
 
     test('selectProject defaults branch to main when null', () {

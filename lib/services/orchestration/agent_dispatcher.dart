@@ -270,7 +270,7 @@ class AgentDispatcher {
     String? jiraTicketData,
     List<String>? specReferences,
   }) {
-    final controller = StreamController<AgentDispatchEvent>.broadcast();
+    final controller = StreamController<AgentDispatchEvent>();
     _cancelled = false;
 
     () async {
