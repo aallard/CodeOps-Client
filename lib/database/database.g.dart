@@ -11826,6 +11826,831 @@ class ProjectLocalConfigCompanion
   }
 }
 
+class $ScribeTabsTable extends ScribeTabs
+    with TableInfo<$ScribeTabsTable, ScribeTab> {
+  @override
+  final GeneratedDatabase attachedDatabase;
+  final String? _alias;
+  $ScribeTabsTable(this.attachedDatabase, [this._alias]);
+  static const VerificationMeta _idMeta = const VerificationMeta('id');
+  @override
+  late final GeneratedColumn<String> id = GeneratedColumn<String>(
+      'id', aliasedName, false,
+      type: DriftSqlType.string, requiredDuringInsert: true);
+  static const VerificationMeta _titleMeta = const VerificationMeta('title');
+  @override
+  late final GeneratedColumn<String> title = GeneratedColumn<String>(
+      'title', aliasedName, false,
+      type: DriftSqlType.string, requiredDuringInsert: true);
+  static const VerificationMeta _filePathMeta =
+      const VerificationMeta('filePath');
+  @override
+  late final GeneratedColumn<String> filePath = GeneratedColumn<String>(
+      'file_path', aliasedName, true,
+      type: DriftSqlType.string, requiredDuringInsert: false);
+  static const VerificationMeta _contentMeta =
+      const VerificationMeta('content');
+  @override
+  late final GeneratedColumn<String> content = GeneratedColumn<String>(
+      'content', aliasedName, false,
+      type: DriftSqlType.string, requiredDuringInsert: true);
+  static const VerificationMeta _languageMeta =
+      const VerificationMeta('language');
+  @override
+  late final GeneratedColumn<String> language = GeneratedColumn<String>(
+      'language', aliasedName, false,
+      type: DriftSqlType.string, requiredDuringInsert: true);
+  static const VerificationMeta _isDirtyMeta =
+      const VerificationMeta('isDirty');
+  @override
+  late final GeneratedColumn<bool> isDirty = GeneratedColumn<bool>(
+      'is_dirty', aliasedName, false,
+      type: DriftSqlType.bool,
+      requiredDuringInsert: false,
+      defaultConstraints:
+          GeneratedColumn.constraintIsAlways('CHECK ("is_dirty" IN (0, 1))'),
+      defaultValue: const Constant(false));
+  static const VerificationMeta _cursorLineMeta =
+      const VerificationMeta('cursorLine');
+  @override
+  late final GeneratedColumn<int> cursorLine = GeneratedColumn<int>(
+      'cursor_line', aliasedName, false,
+      type: DriftSqlType.int,
+      requiredDuringInsert: false,
+      defaultValue: const Constant(0));
+  static const VerificationMeta _cursorColumnMeta =
+      const VerificationMeta('cursorColumn');
+  @override
+  late final GeneratedColumn<int> cursorColumn = GeneratedColumn<int>(
+      'cursor_column', aliasedName, false,
+      type: DriftSqlType.int,
+      requiredDuringInsert: false,
+      defaultValue: const Constant(0));
+  static const VerificationMeta _scrollOffsetMeta =
+      const VerificationMeta('scrollOffset');
+  @override
+  late final GeneratedColumn<double> scrollOffset = GeneratedColumn<double>(
+      'scroll_offset', aliasedName, false,
+      type: DriftSqlType.double,
+      requiredDuringInsert: false,
+      defaultValue: const Constant(0.0));
+  static const VerificationMeta _displayOrderMeta =
+      const VerificationMeta('displayOrder');
+  @override
+  late final GeneratedColumn<int> displayOrder = GeneratedColumn<int>(
+      'display_order', aliasedName, false,
+      type: DriftSqlType.int, requiredDuringInsert: true);
+  static const VerificationMeta _createdAtMeta =
+      const VerificationMeta('createdAt');
+  @override
+  late final GeneratedColumn<DateTime> createdAt = GeneratedColumn<DateTime>(
+      'created_at', aliasedName, false,
+      type: DriftSqlType.dateTime, requiredDuringInsert: true);
+  static const VerificationMeta _lastModifiedAtMeta =
+      const VerificationMeta('lastModifiedAt');
+  @override
+  late final GeneratedColumn<DateTime> lastModifiedAt =
+      GeneratedColumn<DateTime>('last_modified_at', aliasedName, false,
+          type: DriftSqlType.dateTime, requiredDuringInsert: true);
+  @override
+  List<GeneratedColumn> get $columns => [
+        id,
+        title,
+        filePath,
+        content,
+        language,
+        isDirty,
+        cursorLine,
+        cursorColumn,
+        scrollOffset,
+        displayOrder,
+        createdAt,
+        lastModifiedAt
+      ];
+  @override
+  String get aliasedName => _alias ?? actualTableName;
+  @override
+  String get actualTableName => $name;
+  static const String $name = 'scribe_tabs';
+  @override
+  VerificationContext validateIntegrity(Insertable<ScribeTab> instance,
+      {bool isInserting = false}) {
+    final context = VerificationContext();
+    final data = instance.toColumns(true);
+    if (data.containsKey('id')) {
+      context.handle(_idMeta, id.isAcceptableOrUnknown(data['id']!, _idMeta));
+    } else if (isInserting) {
+      context.missing(_idMeta);
+    }
+    if (data.containsKey('title')) {
+      context.handle(
+          _titleMeta, title.isAcceptableOrUnknown(data['title']!, _titleMeta));
+    } else if (isInserting) {
+      context.missing(_titleMeta);
+    }
+    if (data.containsKey('file_path')) {
+      context.handle(_filePathMeta,
+          filePath.isAcceptableOrUnknown(data['file_path']!, _filePathMeta));
+    }
+    if (data.containsKey('content')) {
+      context.handle(_contentMeta,
+          content.isAcceptableOrUnknown(data['content']!, _contentMeta));
+    } else if (isInserting) {
+      context.missing(_contentMeta);
+    }
+    if (data.containsKey('language')) {
+      context.handle(_languageMeta,
+          language.isAcceptableOrUnknown(data['language']!, _languageMeta));
+    } else if (isInserting) {
+      context.missing(_languageMeta);
+    }
+    if (data.containsKey('is_dirty')) {
+      context.handle(_isDirtyMeta,
+          isDirty.isAcceptableOrUnknown(data['is_dirty']!, _isDirtyMeta));
+    }
+    if (data.containsKey('cursor_line')) {
+      context.handle(
+          _cursorLineMeta,
+          cursorLine.isAcceptableOrUnknown(
+              data['cursor_line']!, _cursorLineMeta));
+    }
+    if (data.containsKey('cursor_column')) {
+      context.handle(
+          _cursorColumnMeta,
+          cursorColumn.isAcceptableOrUnknown(
+              data['cursor_column']!, _cursorColumnMeta));
+    }
+    if (data.containsKey('scroll_offset')) {
+      context.handle(
+          _scrollOffsetMeta,
+          scrollOffset.isAcceptableOrUnknown(
+              data['scroll_offset']!, _scrollOffsetMeta));
+    }
+    if (data.containsKey('display_order')) {
+      context.handle(
+          _displayOrderMeta,
+          displayOrder.isAcceptableOrUnknown(
+              data['display_order']!, _displayOrderMeta));
+    } else if (isInserting) {
+      context.missing(_displayOrderMeta);
+    }
+    if (data.containsKey('created_at')) {
+      context.handle(_createdAtMeta,
+          createdAt.isAcceptableOrUnknown(data['created_at']!, _createdAtMeta));
+    } else if (isInserting) {
+      context.missing(_createdAtMeta);
+    }
+    if (data.containsKey('last_modified_at')) {
+      context.handle(
+          _lastModifiedAtMeta,
+          lastModifiedAt.isAcceptableOrUnknown(
+              data['last_modified_at']!, _lastModifiedAtMeta));
+    } else if (isInserting) {
+      context.missing(_lastModifiedAtMeta);
+    }
+    return context;
+  }
+
+  @override
+  Set<GeneratedColumn> get $primaryKey => {id};
+  @override
+  ScribeTab map(Map<String, dynamic> data, {String? tablePrefix}) {
+    final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
+    return ScribeTab(
+      id: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}id'])!,
+      title: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}title'])!,
+      filePath: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}file_path']),
+      content: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}content'])!,
+      language: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}language'])!,
+      isDirty: attachedDatabase.typeMapping
+          .read(DriftSqlType.bool, data['${effectivePrefix}is_dirty'])!,
+      cursorLine: attachedDatabase.typeMapping
+          .read(DriftSqlType.int, data['${effectivePrefix}cursor_line'])!,
+      cursorColumn: attachedDatabase.typeMapping
+          .read(DriftSqlType.int, data['${effectivePrefix}cursor_column'])!,
+      scrollOffset: attachedDatabase.typeMapping
+          .read(DriftSqlType.double, data['${effectivePrefix}scroll_offset'])!,
+      displayOrder: attachedDatabase.typeMapping
+          .read(DriftSqlType.int, data['${effectivePrefix}display_order'])!,
+      createdAt: attachedDatabase.typeMapping
+          .read(DriftSqlType.dateTime, data['${effectivePrefix}created_at'])!,
+      lastModifiedAt: attachedDatabase.typeMapping.read(
+          DriftSqlType.dateTime, data['${effectivePrefix}last_modified_at'])!,
+    );
+  }
+
+  @override
+  $ScribeTabsTable createAlias(String alias) {
+    return $ScribeTabsTable(attachedDatabase, alias);
+  }
+}
+
+class ScribeTab extends DataClass implements Insertable<ScribeTab> {
+  /// UUID primary key.
+  final String id;
+
+  /// Display name (file name or "Untitled-N").
+  final String title;
+
+  /// Full file path on disk, or null if new/unsaved.
+  final String? filePath;
+
+  /// Editor content.
+  final String content;
+
+  /// Language identifier for syntax highlighting.
+  final String language;
+
+  /// Whether content has been modified since last save.
+  final bool isDirty;
+
+  /// Cursor line position (0-based).
+  final int cursorLine;
+
+  /// Cursor column position (0-based).
+  final int cursorColumn;
+
+  /// Scroll offset for restoring position on tab switch.
+  final double scrollOffset;
+
+  /// Tab display order (0-based).
+  final int displayOrder;
+
+  /// Creation timestamp.
+  final DateTime createdAt;
+
+  /// Last modification timestamp.
+  final DateTime lastModifiedAt;
+  const ScribeTab(
+      {required this.id,
+      required this.title,
+      this.filePath,
+      required this.content,
+      required this.language,
+      required this.isDirty,
+      required this.cursorLine,
+      required this.cursorColumn,
+      required this.scrollOffset,
+      required this.displayOrder,
+      required this.createdAt,
+      required this.lastModifiedAt});
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    map['id'] = Variable<String>(id);
+    map['title'] = Variable<String>(title);
+    if (!nullToAbsent || filePath != null) {
+      map['file_path'] = Variable<String>(filePath);
+    }
+    map['content'] = Variable<String>(content);
+    map['language'] = Variable<String>(language);
+    map['is_dirty'] = Variable<bool>(isDirty);
+    map['cursor_line'] = Variable<int>(cursorLine);
+    map['cursor_column'] = Variable<int>(cursorColumn);
+    map['scroll_offset'] = Variable<double>(scrollOffset);
+    map['display_order'] = Variable<int>(displayOrder);
+    map['created_at'] = Variable<DateTime>(createdAt);
+    map['last_modified_at'] = Variable<DateTime>(lastModifiedAt);
+    return map;
+  }
+
+  ScribeTabsCompanion toCompanion(bool nullToAbsent) {
+    return ScribeTabsCompanion(
+      id: Value(id),
+      title: Value(title),
+      filePath: filePath == null && nullToAbsent
+          ? const Value.absent()
+          : Value(filePath),
+      content: Value(content),
+      language: Value(language),
+      isDirty: Value(isDirty),
+      cursorLine: Value(cursorLine),
+      cursorColumn: Value(cursorColumn),
+      scrollOffset: Value(scrollOffset),
+      displayOrder: Value(displayOrder),
+      createdAt: Value(createdAt),
+      lastModifiedAt: Value(lastModifiedAt),
+    );
+  }
+
+  factory ScribeTab.fromJson(Map<String, dynamic> json,
+      {ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return ScribeTab(
+      id: serializer.fromJson<String>(json['id']),
+      title: serializer.fromJson<String>(json['title']),
+      filePath: serializer.fromJson<String?>(json['filePath']),
+      content: serializer.fromJson<String>(json['content']),
+      language: serializer.fromJson<String>(json['language']),
+      isDirty: serializer.fromJson<bool>(json['isDirty']),
+      cursorLine: serializer.fromJson<int>(json['cursorLine']),
+      cursorColumn: serializer.fromJson<int>(json['cursorColumn']),
+      scrollOffset: serializer.fromJson<double>(json['scrollOffset']),
+      displayOrder: serializer.fromJson<int>(json['displayOrder']),
+      createdAt: serializer.fromJson<DateTime>(json['createdAt']),
+      lastModifiedAt: serializer.fromJson<DateTime>(json['lastModifiedAt']),
+    );
+  }
+  @override
+  Map<String, dynamic> toJson({ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return <String, dynamic>{
+      'id': serializer.toJson<String>(id),
+      'title': serializer.toJson<String>(title),
+      'filePath': serializer.toJson<String?>(filePath),
+      'content': serializer.toJson<String>(content),
+      'language': serializer.toJson<String>(language),
+      'isDirty': serializer.toJson<bool>(isDirty),
+      'cursorLine': serializer.toJson<int>(cursorLine),
+      'cursorColumn': serializer.toJson<int>(cursorColumn),
+      'scrollOffset': serializer.toJson<double>(scrollOffset),
+      'displayOrder': serializer.toJson<int>(displayOrder),
+      'createdAt': serializer.toJson<DateTime>(createdAt),
+      'lastModifiedAt': serializer.toJson<DateTime>(lastModifiedAt),
+    };
+  }
+
+  ScribeTab copyWith(
+          {String? id,
+          String? title,
+          Value<String?> filePath = const Value.absent(),
+          String? content,
+          String? language,
+          bool? isDirty,
+          int? cursorLine,
+          int? cursorColumn,
+          double? scrollOffset,
+          int? displayOrder,
+          DateTime? createdAt,
+          DateTime? lastModifiedAt}) =>
+      ScribeTab(
+        id: id ?? this.id,
+        title: title ?? this.title,
+        filePath: filePath.present ? filePath.value : this.filePath,
+        content: content ?? this.content,
+        language: language ?? this.language,
+        isDirty: isDirty ?? this.isDirty,
+        cursorLine: cursorLine ?? this.cursorLine,
+        cursorColumn: cursorColumn ?? this.cursorColumn,
+        scrollOffset: scrollOffset ?? this.scrollOffset,
+        displayOrder: displayOrder ?? this.displayOrder,
+        createdAt: createdAt ?? this.createdAt,
+        lastModifiedAt: lastModifiedAt ?? this.lastModifiedAt,
+      );
+  ScribeTab copyWithCompanion(ScribeTabsCompanion data) {
+    return ScribeTab(
+      id: data.id.present ? data.id.value : this.id,
+      title: data.title.present ? data.title.value : this.title,
+      filePath: data.filePath.present ? data.filePath.value : this.filePath,
+      content: data.content.present ? data.content.value : this.content,
+      language: data.language.present ? data.language.value : this.language,
+      isDirty: data.isDirty.present ? data.isDirty.value : this.isDirty,
+      cursorLine:
+          data.cursorLine.present ? data.cursorLine.value : this.cursorLine,
+      cursorColumn: data.cursorColumn.present
+          ? data.cursorColumn.value
+          : this.cursorColumn,
+      scrollOffset: data.scrollOffset.present
+          ? data.scrollOffset.value
+          : this.scrollOffset,
+      displayOrder: data.displayOrder.present
+          ? data.displayOrder.value
+          : this.displayOrder,
+      createdAt: data.createdAt.present ? data.createdAt.value : this.createdAt,
+      lastModifiedAt: data.lastModifiedAt.present
+          ? data.lastModifiedAt.value
+          : this.lastModifiedAt,
+    );
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('ScribeTab(')
+          ..write('id: $id, ')
+          ..write('title: $title, ')
+          ..write('filePath: $filePath, ')
+          ..write('content: $content, ')
+          ..write('language: $language, ')
+          ..write('isDirty: $isDirty, ')
+          ..write('cursorLine: $cursorLine, ')
+          ..write('cursorColumn: $cursorColumn, ')
+          ..write('scrollOffset: $scrollOffset, ')
+          ..write('displayOrder: $displayOrder, ')
+          ..write('createdAt: $createdAt, ')
+          ..write('lastModifiedAt: $lastModifiedAt')
+          ..write(')'))
+        .toString();
+  }
+
+  @override
+  int get hashCode => Object.hash(
+      id,
+      title,
+      filePath,
+      content,
+      language,
+      isDirty,
+      cursorLine,
+      cursorColumn,
+      scrollOffset,
+      displayOrder,
+      createdAt,
+      lastModifiedAt);
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      (other is ScribeTab &&
+          other.id == this.id &&
+          other.title == this.title &&
+          other.filePath == this.filePath &&
+          other.content == this.content &&
+          other.language == this.language &&
+          other.isDirty == this.isDirty &&
+          other.cursorLine == this.cursorLine &&
+          other.cursorColumn == this.cursorColumn &&
+          other.scrollOffset == this.scrollOffset &&
+          other.displayOrder == this.displayOrder &&
+          other.createdAt == this.createdAt &&
+          other.lastModifiedAt == this.lastModifiedAt);
+}
+
+class ScribeTabsCompanion extends UpdateCompanion<ScribeTab> {
+  final Value<String> id;
+  final Value<String> title;
+  final Value<String?> filePath;
+  final Value<String> content;
+  final Value<String> language;
+  final Value<bool> isDirty;
+  final Value<int> cursorLine;
+  final Value<int> cursorColumn;
+  final Value<double> scrollOffset;
+  final Value<int> displayOrder;
+  final Value<DateTime> createdAt;
+  final Value<DateTime> lastModifiedAt;
+  final Value<int> rowid;
+  const ScribeTabsCompanion({
+    this.id = const Value.absent(),
+    this.title = const Value.absent(),
+    this.filePath = const Value.absent(),
+    this.content = const Value.absent(),
+    this.language = const Value.absent(),
+    this.isDirty = const Value.absent(),
+    this.cursorLine = const Value.absent(),
+    this.cursorColumn = const Value.absent(),
+    this.scrollOffset = const Value.absent(),
+    this.displayOrder = const Value.absent(),
+    this.createdAt = const Value.absent(),
+    this.lastModifiedAt = const Value.absent(),
+    this.rowid = const Value.absent(),
+  });
+  ScribeTabsCompanion.insert({
+    required String id,
+    required String title,
+    this.filePath = const Value.absent(),
+    required String content,
+    required String language,
+    this.isDirty = const Value.absent(),
+    this.cursorLine = const Value.absent(),
+    this.cursorColumn = const Value.absent(),
+    this.scrollOffset = const Value.absent(),
+    required int displayOrder,
+    required DateTime createdAt,
+    required DateTime lastModifiedAt,
+    this.rowid = const Value.absent(),
+  })  : id = Value(id),
+        title = Value(title),
+        content = Value(content),
+        language = Value(language),
+        displayOrder = Value(displayOrder),
+        createdAt = Value(createdAt),
+        lastModifiedAt = Value(lastModifiedAt);
+  static Insertable<ScribeTab> custom({
+    Expression<String>? id,
+    Expression<String>? title,
+    Expression<String>? filePath,
+    Expression<String>? content,
+    Expression<String>? language,
+    Expression<bool>? isDirty,
+    Expression<int>? cursorLine,
+    Expression<int>? cursorColumn,
+    Expression<double>? scrollOffset,
+    Expression<int>? displayOrder,
+    Expression<DateTime>? createdAt,
+    Expression<DateTime>? lastModifiedAt,
+    Expression<int>? rowid,
+  }) {
+    return RawValuesInsertable({
+      if (id != null) 'id': id,
+      if (title != null) 'title': title,
+      if (filePath != null) 'file_path': filePath,
+      if (content != null) 'content': content,
+      if (language != null) 'language': language,
+      if (isDirty != null) 'is_dirty': isDirty,
+      if (cursorLine != null) 'cursor_line': cursorLine,
+      if (cursorColumn != null) 'cursor_column': cursorColumn,
+      if (scrollOffset != null) 'scroll_offset': scrollOffset,
+      if (displayOrder != null) 'display_order': displayOrder,
+      if (createdAt != null) 'created_at': createdAt,
+      if (lastModifiedAt != null) 'last_modified_at': lastModifiedAt,
+      if (rowid != null) 'rowid': rowid,
+    });
+  }
+
+  ScribeTabsCompanion copyWith(
+      {Value<String>? id,
+      Value<String>? title,
+      Value<String?>? filePath,
+      Value<String>? content,
+      Value<String>? language,
+      Value<bool>? isDirty,
+      Value<int>? cursorLine,
+      Value<int>? cursorColumn,
+      Value<double>? scrollOffset,
+      Value<int>? displayOrder,
+      Value<DateTime>? createdAt,
+      Value<DateTime>? lastModifiedAt,
+      Value<int>? rowid}) {
+    return ScribeTabsCompanion(
+      id: id ?? this.id,
+      title: title ?? this.title,
+      filePath: filePath ?? this.filePath,
+      content: content ?? this.content,
+      language: language ?? this.language,
+      isDirty: isDirty ?? this.isDirty,
+      cursorLine: cursorLine ?? this.cursorLine,
+      cursorColumn: cursorColumn ?? this.cursorColumn,
+      scrollOffset: scrollOffset ?? this.scrollOffset,
+      displayOrder: displayOrder ?? this.displayOrder,
+      createdAt: createdAt ?? this.createdAt,
+      lastModifiedAt: lastModifiedAt ?? this.lastModifiedAt,
+      rowid: rowid ?? this.rowid,
+    );
+  }
+
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    if (id.present) {
+      map['id'] = Variable<String>(id.value);
+    }
+    if (title.present) {
+      map['title'] = Variable<String>(title.value);
+    }
+    if (filePath.present) {
+      map['file_path'] = Variable<String>(filePath.value);
+    }
+    if (content.present) {
+      map['content'] = Variable<String>(content.value);
+    }
+    if (language.present) {
+      map['language'] = Variable<String>(language.value);
+    }
+    if (isDirty.present) {
+      map['is_dirty'] = Variable<bool>(isDirty.value);
+    }
+    if (cursorLine.present) {
+      map['cursor_line'] = Variable<int>(cursorLine.value);
+    }
+    if (cursorColumn.present) {
+      map['cursor_column'] = Variable<int>(cursorColumn.value);
+    }
+    if (scrollOffset.present) {
+      map['scroll_offset'] = Variable<double>(scrollOffset.value);
+    }
+    if (displayOrder.present) {
+      map['display_order'] = Variable<int>(displayOrder.value);
+    }
+    if (createdAt.present) {
+      map['created_at'] = Variable<DateTime>(createdAt.value);
+    }
+    if (lastModifiedAt.present) {
+      map['last_modified_at'] = Variable<DateTime>(lastModifiedAt.value);
+    }
+    if (rowid.present) {
+      map['rowid'] = Variable<int>(rowid.value);
+    }
+    return map;
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('ScribeTabsCompanion(')
+          ..write('id: $id, ')
+          ..write('title: $title, ')
+          ..write('filePath: $filePath, ')
+          ..write('content: $content, ')
+          ..write('language: $language, ')
+          ..write('isDirty: $isDirty, ')
+          ..write('cursorLine: $cursorLine, ')
+          ..write('cursorColumn: $cursorColumn, ')
+          ..write('scrollOffset: $scrollOffset, ')
+          ..write('displayOrder: $displayOrder, ')
+          ..write('createdAt: $createdAt, ')
+          ..write('lastModifiedAt: $lastModifiedAt, ')
+          ..write('rowid: $rowid')
+          ..write(')'))
+        .toString();
+  }
+}
+
+class $ScribeSettingsTable extends ScribeSettings
+    with TableInfo<$ScribeSettingsTable, ScribeSetting> {
+  @override
+  final GeneratedDatabase attachedDatabase;
+  final String? _alias;
+  $ScribeSettingsTable(this.attachedDatabase, [this._alias]);
+  static const VerificationMeta _keyMeta = const VerificationMeta('key');
+  @override
+  late final GeneratedColumn<String> key = GeneratedColumn<String>(
+      'key', aliasedName, false,
+      type: DriftSqlType.string, requiredDuringInsert: true);
+  static const VerificationMeta _valueMeta = const VerificationMeta('value');
+  @override
+  late final GeneratedColumn<String> value = GeneratedColumn<String>(
+      'value', aliasedName, false,
+      type: DriftSqlType.string, requiredDuringInsert: true);
+  @override
+  List<GeneratedColumn> get $columns => [key, value];
+  @override
+  String get aliasedName => _alias ?? actualTableName;
+  @override
+  String get actualTableName => $name;
+  static const String $name = 'scribe_settings';
+  @override
+  VerificationContext validateIntegrity(Insertable<ScribeSetting> instance,
+      {bool isInserting = false}) {
+    final context = VerificationContext();
+    final data = instance.toColumns(true);
+    if (data.containsKey('key')) {
+      context.handle(
+          _keyMeta, key.isAcceptableOrUnknown(data['key']!, _keyMeta));
+    } else if (isInserting) {
+      context.missing(_keyMeta);
+    }
+    if (data.containsKey('value')) {
+      context.handle(
+          _valueMeta, value.isAcceptableOrUnknown(data['value']!, _valueMeta));
+    } else if (isInserting) {
+      context.missing(_valueMeta);
+    }
+    return context;
+  }
+
+  @override
+  Set<GeneratedColumn> get $primaryKey => {key};
+  @override
+  ScribeSetting map(Map<String, dynamic> data, {String? tablePrefix}) {
+    final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
+    return ScribeSetting(
+      key: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}key'])!,
+      value: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}value'])!,
+    );
+  }
+
+  @override
+  $ScribeSettingsTable createAlias(String alias) {
+    return $ScribeSettingsTable(attachedDatabase, alias);
+  }
+}
+
+class ScribeSetting extends DataClass implements Insertable<ScribeSetting> {
+  /// Setting key (e.g., 'editor_settings').
+  final String key;
+
+  /// Setting value (JSON string).
+  final String value;
+  const ScribeSetting({required this.key, required this.value});
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    map['key'] = Variable<String>(key);
+    map['value'] = Variable<String>(value);
+    return map;
+  }
+
+  ScribeSettingsCompanion toCompanion(bool nullToAbsent) {
+    return ScribeSettingsCompanion(
+      key: Value(key),
+      value: Value(value),
+    );
+  }
+
+  factory ScribeSetting.fromJson(Map<String, dynamic> json,
+      {ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return ScribeSetting(
+      key: serializer.fromJson<String>(json['key']),
+      value: serializer.fromJson<String>(json['value']),
+    );
+  }
+  @override
+  Map<String, dynamic> toJson({ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return <String, dynamic>{
+      'key': serializer.toJson<String>(key),
+      'value': serializer.toJson<String>(value),
+    };
+  }
+
+  ScribeSetting copyWith({String? key, String? value}) => ScribeSetting(
+        key: key ?? this.key,
+        value: value ?? this.value,
+      );
+  ScribeSetting copyWithCompanion(ScribeSettingsCompanion data) {
+    return ScribeSetting(
+      key: data.key.present ? data.key.value : this.key,
+      value: data.value.present ? data.value.value : this.value,
+    );
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('ScribeSetting(')
+          ..write('key: $key, ')
+          ..write('value: $value')
+          ..write(')'))
+        .toString();
+  }
+
+  @override
+  int get hashCode => Object.hash(key, value);
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      (other is ScribeSetting &&
+          other.key == this.key &&
+          other.value == this.value);
+}
+
+class ScribeSettingsCompanion extends UpdateCompanion<ScribeSetting> {
+  final Value<String> key;
+  final Value<String> value;
+  final Value<int> rowid;
+  const ScribeSettingsCompanion({
+    this.key = const Value.absent(),
+    this.value = const Value.absent(),
+    this.rowid = const Value.absent(),
+  });
+  ScribeSettingsCompanion.insert({
+    required String key,
+    required String value,
+    this.rowid = const Value.absent(),
+  })  : key = Value(key),
+        value = Value(value);
+  static Insertable<ScribeSetting> custom({
+    Expression<String>? key,
+    Expression<String>? value,
+    Expression<int>? rowid,
+  }) {
+    return RawValuesInsertable({
+      if (key != null) 'key': key,
+      if (value != null) 'value': value,
+      if (rowid != null) 'rowid': rowid,
+    });
+  }
+
+  ScribeSettingsCompanion copyWith(
+      {Value<String>? key, Value<String>? value, Value<int>? rowid}) {
+    return ScribeSettingsCompanion(
+      key: key ?? this.key,
+      value: value ?? this.value,
+      rowid: rowid ?? this.rowid,
+    );
+  }
+
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    if (key.present) {
+      map['key'] = Variable<String>(key.value);
+    }
+    if (value.present) {
+      map['value'] = Variable<String>(value.value);
+    }
+    if (rowid.present) {
+      map['rowid'] = Variable<int>(rowid.value);
+    }
+    return map;
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('ScribeSettingsCompanion(')
+          ..write('key: $key, ')
+          ..write('value: $value, ')
+          ..write('rowid: $rowid')
+          ..write(')'))
+        .toString();
+  }
+}
+
 abstract class _$CodeOpsDatabase extends GeneratedDatabase {
   _$CodeOpsDatabase(QueryExecutor e) : super(e);
   $CodeOpsDatabaseManager get managers => $CodeOpsDatabaseManager(this);
@@ -11858,6 +12683,8 @@ abstract class _$CodeOpsDatabase extends GeneratedDatabase {
   late final $AgentFilesTable agentFiles = $AgentFilesTable(this);
   late final $ProjectLocalConfigTable projectLocalConfig =
       $ProjectLocalConfigTable(this);
+  late final $ScribeTabsTable scribeTabs = $ScribeTabsTable(this);
+  late final $ScribeSettingsTable scribeSettings = $ScribeSettingsTable(this);
   @override
   Iterable<TableInfo<Table, Object?>> get allTables =>
       allSchemaEntities.whereType<TableInfo<Table, Object?>>();
@@ -11883,7 +12710,9 @@ abstract class _$CodeOpsDatabase extends GeneratedDatabase {
         anthropicModels,
         agentDefinitions,
         agentFiles,
-        projectLocalConfig
+        projectLocalConfig,
+        scribeTabs,
+        scribeSettings
       ];
 }
 
@@ -17219,6 +18048,410 @@ typedef $$ProjectLocalConfigTableProcessedTableManager = ProcessedTableManager<
     ),
     ProjectLocalConfigData,
     PrefetchHooks Function()>;
+typedef $$ScribeTabsTableCreateCompanionBuilder = ScribeTabsCompanion Function({
+  required String id,
+  required String title,
+  Value<String?> filePath,
+  required String content,
+  required String language,
+  Value<bool> isDirty,
+  Value<int> cursorLine,
+  Value<int> cursorColumn,
+  Value<double> scrollOffset,
+  required int displayOrder,
+  required DateTime createdAt,
+  required DateTime lastModifiedAt,
+  Value<int> rowid,
+});
+typedef $$ScribeTabsTableUpdateCompanionBuilder = ScribeTabsCompanion Function({
+  Value<String> id,
+  Value<String> title,
+  Value<String?> filePath,
+  Value<String> content,
+  Value<String> language,
+  Value<bool> isDirty,
+  Value<int> cursorLine,
+  Value<int> cursorColumn,
+  Value<double> scrollOffset,
+  Value<int> displayOrder,
+  Value<DateTime> createdAt,
+  Value<DateTime> lastModifiedAt,
+  Value<int> rowid,
+});
+
+class $$ScribeTabsTableFilterComposer
+    extends Composer<_$CodeOpsDatabase, $ScribeTabsTable> {
+  $$ScribeTabsTableFilterComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnFilters<String> get id => $composableBuilder(
+      column: $table.id, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<String> get title => $composableBuilder(
+      column: $table.title, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<String> get filePath => $composableBuilder(
+      column: $table.filePath, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<String> get content => $composableBuilder(
+      column: $table.content, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<String> get language => $composableBuilder(
+      column: $table.language, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<bool> get isDirty => $composableBuilder(
+      column: $table.isDirty, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<int> get cursorLine => $composableBuilder(
+      column: $table.cursorLine, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<int> get cursorColumn => $composableBuilder(
+      column: $table.cursorColumn, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<double> get scrollOffset => $composableBuilder(
+      column: $table.scrollOffset, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<int> get displayOrder => $composableBuilder(
+      column: $table.displayOrder, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<DateTime> get createdAt => $composableBuilder(
+      column: $table.createdAt, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<DateTime> get lastModifiedAt => $composableBuilder(
+      column: $table.lastModifiedAt,
+      builder: (column) => ColumnFilters(column));
+}
+
+class $$ScribeTabsTableOrderingComposer
+    extends Composer<_$CodeOpsDatabase, $ScribeTabsTable> {
+  $$ScribeTabsTableOrderingComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnOrderings<String> get id => $composableBuilder(
+      column: $table.id, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<String> get title => $composableBuilder(
+      column: $table.title, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<String> get filePath => $composableBuilder(
+      column: $table.filePath, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<String> get content => $composableBuilder(
+      column: $table.content, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<String> get language => $composableBuilder(
+      column: $table.language, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<bool> get isDirty => $composableBuilder(
+      column: $table.isDirty, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<int> get cursorLine => $composableBuilder(
+      column: $table.cursorLine, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<int> get cursorColumn => $composableBuilder(
+      column: $table.cursorColumn,
+      builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<double> get scrollOffset => $composableBuilder(
+      column: $table.scrollOffset,
+      builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<int> get displayOrder => $composableBuilder(
+      column: $table.displayOrder,
+      builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<DateTime> get createdAt => $composableBuilder(
+      column: $table.createdAt, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<DateTime> get lastModifiedAt => $composableBuilder(
+      column: $table.lastModifiedAt,
+      builder: (column) => ColumnOrderings(column));
+}
+
+class $$ScribeTabsTableAnnotationComposer
+    extends Composer<_$CodeOpsDatabase, $ScribeTabsTable> {
+  $$ScribeTabsTableAnnotationComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  GeneratedColumn<String> get id =>
+      $composableBuilder(column: $table.id, builder: (column) => column);
+
+  GeneratedColumn<String> get title =>
+      $composableBuilder(column: $table.title, builder: (column) => column);
+
+  GeneratedColumn<String> get filePath =>
+      $composableBuilder(column: $table.filePath, builder: (column) => column);
+
+  GeneratedColumn<String> get content =>
+      $composableBuilder(column: $table.content, builder: (column) => column);
+
+  GeneratedColumn<String> get language =>
+      $composableBuilder(column: $table.language, builder: (column) => column);
+
+  GeneratedColumn<bool> get isDirty =>
+      $composableBuilder(column: $table.isDirty, builder: (column) => column);
+
+  GeneratedColumn<int> get cursorLine => $composableBuilder(
+      column: $table.cursorLine, builder: (column) => column);
+
+  GeneratedColumn<int> get cursorColumn => $composableBuilder(
+      column: $table.cursorColumn, builder: (column) => column);
+
+  GeneratedColumn<double> get scrollOffset => $composableBuilder(
+      column: $table.scrollOffset, builder: (column) => column);
+
+  GeneratedColumn<int> get displayOrder => $composableBuilder(
+      column: $table.displayOrder, builder: (column) => column);
+
+  GeneratedColumn<DateTime> get createdAt =>
+      $composableBuilder(column: $table.createdAt, builder: (column) => column);
+
+  GeneratedColumn<DateTime> get lastModifiedAt => $composableBuilder(
+      column: $table.lastModifiedAt, builder: (column) => column);
+}
+
+class $$ScribeTabsTableTableManager extends RootTableManager<
+    _$CodeOpsDatabase,
+    $ScribeTabsTable,
+    ScribeTab,
+    $$ScribeTabsTableFilterComposer,
+    $$ScribeTabsTableOrderingComposer,
+    $$ScribeTabsTableAnnotationComposer,
+    $$ScribeTabsTableCreateCompanionBuilder,
+    $$ScribeTabsTableUpdateCompanionBuilder,
+    (ScribeTab, BaseReferences<_$CodeOpsDatabase, $ScribeTabsTable, ScribeTab>),
+    ScribeTab,
+    PrefetchHooks Function()> {
+  $$ScribeTabsTableTableManager(_$CodeOpsDatabase db, $ScribeTabsTable table)
+      : super(TableManagerState(
+          db: db,
+          table: table,
+          createFilteringComposer: () =>
+              $$ScribeTabsTableFilterComposer($db: db, $table: table),
+          createOrderingComposer: () =>
+              $$ScribeTabsTableOrderingComposer($db: db, $table: table),
+          createComputedFieldComposer: () =>
+              $$ScribeTabsTableAnnotationComposer($db: db, $table: table),
+          updateCompanionCallback: ({
+            Value<String> id = const Value.absent(),
+            Value<String> title = const Value.absent(),
+            Value<String?> filePath = const Value.absent(),
+            Value<String> content = const Value.absent(),
+            Value<String> language = const Value.absent(),
+            Value<bool> isDirty = const Value.absent(),
+            Value<int> cursorLine = const Value.absent(),
+            Value<int> cursorColumn = const Value.absent(),
+            Value<double> scrollOffset = const Value.absent(),
+            Value<int> displayOrder = const Value.absent(),
+            Value<DateTime> createdAt = const Value.absent(),
+            Value<DateTime> lastModifiedAt = const Value.absent(),
+            Value<int> rowid = const Value.absent(),
+          }) =>
+              ScribeTabsCompanion(
+            id: id,
+            title: title,
+            filePath: filePath,
+            content: content,
+            language: language,
+            isDirty: isDirty,
+            cursorLine: cursorLine,
+            cursorColumn: cursorColumn,
+            scrollOffset: scrollOffset,
+            displayOrder: displayOrder,
+            createdAt: createdAt,
+            lastModifiedAt: lastModifiedAt,
+            rowid: rowid,
+          ),
+          createCompanionCallback: ({
+            required String id,
+            required String title,
+            Value<String?> filePath = const Value.absent(),
+            required String content,
+            required String language,
+            Value<bool> isDirty = const Value.absent(),
+            Value<int> cursorLine = const Value.absent(),
+            Value<int> cursorColumn = const Value.absent(),
+            Value<double> scrollOffset = const Value.absent(),
+            required int displayOrder,
+            required DateTime createdAt,
+            required DateTime lastModifiedAt,
+            Value<int> rowid = const Value.absent(),
+          }) =>
+              ScribeTabsCompanion.insert(
+            id: id,
+            title: title,
+            filePath: filePath,
+            content: content,
+            language: language,
+            isDirty: isDirty,
+            cursorLine: cursorLine,
+            cursorColumn: cursorColumn,
+            scrollOffset: scrollOffset,
+            displayOrder: displayOrder,
+            createdAt: createdAt,
+            lastModifiedAt: lastModifiedAt,
+            rowid: rowid,
+          ),
+          withReferenceMapper: (p0) => p0
+              .map((e) => (e.readTable(table), BaseReferences(db, table, e)))
+              .toList(),
+          prefetchHooksCallback: null,
+        ));
+}
+
+typedef $$ScribeTabsTableProcessedTableManager = ProcessedTableManager<
+    _$CodeOpsDatabase,
+    $ScribeTabsTable,
+    ScribeTab,
+    $$ScribeTabsTableFilterComposer,
+    $$ScribeTabsTableOrderingComposer,
+    $$ScribeTabsTableAnnotationComposer,
+    $$ScribeTabsTableCreateCompanionBuilder,
+    $$ScribeTabsTableUpdateCompanionBuilder,
+    (ScribeTab, BaseReferences<_$CodeOpsDatabase, $ScribeTabsTable, ScribeTab>),
+    ScribeTab,
+    PrefetchHooks Function()>;
+typedef $$ScribeSettingsTableCreateCompanionBuilder = ScribeSettingsCompanion
+    Function({
+  required String key,
+  required String value,
+  Value<int> rowid,
+});
+typedef $$ScribeSettingsTableUpdateCompanionBuilder = ScribeSettingsCompanion
+    Function({
+  Value<String> key,
+  Value<String> value,
+  Value<int> rowid,
+});
+
+class $$ScribeSettingsTableFilterComposer
+    extends Composer<_$CodeOpsDatabase, $ScribeSettingsTable> {
+  $$ScribeSettingsTableFilterComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnFilters<String> get key => $composableBuilder(
+      column: $table.key, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<String> get value => $composableBuilder(
+      column: $table.value, builder: (column) => ColumnFilters(column));
+}
+
+class $$ScribeSettingsTableOrderingComposer
+    extends Composer<_$CodeOpsDatabase, $ScribeSettingsTable> {
+  $$ScribeSettingsTableOrderingComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnOrderings<String> get key => $composableBuilder(
+      column: $table.key, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<String> get value => $composableBuilder(
+      column: $table.value, builder: (column) => ColumnOrderings(column));
+}
+
+class $$ScribeSettingsTableAnnotationComposer
+    extends Composer<_$CodeOpsDatabase, $ScribeSettingsTable> {
+  $$ScribeSettingsTableAnnotationComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  GeneratedColumn<String> get key =>
+      $composableBuilder(column: $table.key, builder: (column) => column);
+
+  GeneratedColumn<String> get value =>
+      $composableBuilder(column: $table.value, builder: (column) => column);
+}
+
+class $$ScribeSettingsTableTableManager extends RootTableManager<
+    _$CodeOpsDatabase,
+    $ScribeSettingsTable,
+    ScribeSetting,
+    $$ScribeSettingsTableFilterComposer,
+    $$ScribeSettingsTableOrderingComposer,
+    $$ScribeSettingsTableAnnotationComposer,
+    $$ScribeSettingsTableCreateCompanionBuilder,
+    $$ScribeSettingsTableUpdateCompanionBuilder,
+    (
+      ScribeSetting,
+      BaseReferences<_$CodeOpsDatabase, $ScribeSettingsTable, ScribeSetting>
+    ),
+    ScribeSetting,
+    PrefetchHooks Function()> {
+  $$ScribeSettingsTableTableManager(
+      _$CodeOpsDatabase db, $ScribeSettingsTable table)
+      : super(TableManagerState(
+          db: db,
+          table: table,
+          createFilteringComposer: () =>
+              $$ScribeSettingsTableFilterComposer($db: db, $table: table),
+          createOrderingComposer: () =>
+              $$ScribeSettingsTableOrderingComposer($db: db, $table: table),
+          createComputedFieldComposer: () =>
+              $$ScribeSettingsTableAnnotationComposer($db: db, $table: table),
+          updateCompanionCallback: ({
+            Value<String> key = const Value.absent(),
+            Value<String> value = const Value.absent(),
+            Value<int> rowid = const Value.absent(),
+          }) =>
+              ScribeSettingsCompanion(
+            key: key,
+            value: value,
+            rowid: rowid,
+          ),
+          createCompanionCallback: ({
+            required String key,
+            required String value,
+            Value<int> rowid = const Value.absent(),
+          }) =>
+              ScribeSettingsCompanion.insert(
+            key: key,
+            value: value,
+            rowid: rowid,
+          ),
+          withReferenceMapper: (p0) => p0
+              .map((e) => (e.readTable(table), BaseReferences(db, table, e)))
+              .toList(),
+          prefetchHooksCallback: null,
+        ));
+}
+
+typedef $$ScribeSettingsTableProcessedTableManager = ProcessedTableManager<
+    _$CodeOpsDatabase,
+    $ScribeSettingsTable,
+    ScribeSetting,
+    $$ScribeSettingsTableFilterComposer,
+    $$ScribeSettingsTableOrderingComposer,
+    $$ScribeSettingsTableAnnotationComposer,
+    $$ScribeSettingsTableCreateCompanionBuilder,
+    $$ScribeSettingsTableUpdateCompanionBuilder,
+    (
+      ScribeSetting,
+      BaseReferences<_$CodeOpsDatabase, $ScribeSettingsTable, ScribeSetting>
+    ),
+    ScribeSetting,
+    PrefetchHooks Function()>;
 
 class $CodeOpsDatabaseManager {
   final _$CodeOpsDatabase _db;
@@ -17266,4 +18499,8 @@ class $CodeOpsDatabaseManager {
       $$AgentFilesTableTableManager(_db, _db.agentFiles);
   $$ProjectLocalConfigTableTableManager get projectLocalConfig =>
       $$ProjectLocalConfigTableTableManager(_db, _db.projectLocalConfig);
+  $$ScribeTabsTableTableManager get scribeTabs =>
+      $$ScribeTabsTableTableManager(_db, _db.scribeTabs);
+  $$ScribeSettingsTableTableManager get scribeSettings =>
+      $$ScribeSettingsTableTableManager(_db, _db.scribeSettings);
 }

@@ -120,6 +120,14 @@ class _Sidebar extends ConsumerWidget {
                   currentPath: currentPath,
                   collapsed: collapsed,
                 ),
+                _SectionHeader('DEVELOP', collapsed),
+                _NavItem(
+                  icon: Icons.edit_note,
+                  label: 'Scribe',
+                  path: '/scribe',
+                  currentPath: currentPath,
+                  collapsed: collapsed,
+                ),
                 _SectionHeader('ANALYZE', collapsed),
                 _NavItem(
                   icon: Icons.security,
@@ -638,6 +646,7 @@ class _TopBar extends StatelessWidget {
     final routes = <String, String>{
       '/projects': 'Projects',
       '/repos': 'GitHub Browser',
+      '/scribe': 'Scribe',
       '/audit': 'Audit Wizard',
       '/compliance': 'Compliance',
       '/dependencies': 'Dependencies',

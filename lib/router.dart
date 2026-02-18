@@ -31,6 +31,7 @@ import 'pages/project_detail_page.dart';
 import 'pages/task_list_page.dart';
 import 'pages/task_manager_page.dart';
 import 'pages/projects_page.dart';
+import 'pages/scribe_page.dart';
 import 'pages/settings_page.dart';
 import 'services/auth/auth_service.dart';
 import 'widgets/shell/navigation_shell.dart';
@@ -122,7 +123,15 @@ final GoRouter router = GoRouter(
             child: GitHubBrowserPage(),
           ),
         ),
-        // 7. Audit Wizard
+        // 7. Scribe
+        GoRoute(
+          path: '/scribe',
+          name: 'scribe',
+          pageBuilder: (context, state) => const NoTransitionPage(
+            child: ScribePage(),
+          ),
+        ),
+        // 8. Audit Wizard
         GoRoute(
           path: '/audit',
           name: 'audit',

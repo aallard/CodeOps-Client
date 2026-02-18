@@ -754,6 +754,70 @@ class ProjectLocalConfig extends Table {
   Set<Column> get primaryKey => {projectId};
 }
 
+/// Persisted Scribe editor tabs for session restoration.
+///
+/// Each row represents an open tab with its content, language,
+/// cursor position, and display order. Loaded on app start to
+/// restore the previous editing session.
+class ScribeTabs extends Table {
+  /// UUID primary key.
+  TextColumn get id => text()();
+
+  /// Display name (file name or "Untitled-N").
+  TextColumn get title => text()();
+
+  /// Full file path on disk, or null if new/unsaved.
+  TextColumn get filePath => text().nullable()();
+
+  /// Editor content.
+  TextColumn get content => text()();
+
+  /// Language identifier for syntax highlighting.
+  TextColumn get language => text()();
+
+  /// Whether content has been modified since last save.
+  BoolColumn get isDirty => boolean().withDefault(const Constant(false))();
+
+  /// Cursor line position (0-based).
+  IntColumn get cursorLine => integer().withDefault(const Constant(0))();
+
+  /// Cursor column position (0-based).
+  IntColumn get cursorColumn => integer().withDefault(const Constant(0))();
+
+  /// Scroll offset for restoring position on tab switch.
+  RealColumn get scrollOffset => real().withDefault(const Constant(0.0))();
+
+  /// Tab display order (0-based).
+  IntColumn get displayOrder => integer()();
+
+  /// Creation timestamp.
+  DateTimeColumn get createdAt => dateTime()();
+
+  /// Last modification timestamp.
+  DateTimeColumn get lastModifiedAt => dateTime()();
+
+  @override
+  Set<Column> get primaryKey => {id};
+}
+
+/// Persisted Scribe editor settings (key-value store).
+///
+/// Stores editor configuration as a single JSON blob so that
+/// settings survive app restarts.
+class ScribeSettings extends Table {
+  /// Setting key (e.g., 'editor_settings').
+  TextColumn get key => text()();
+
+  /// Setting value (JSON string).
+  TextColumn get value => text()();
+
+  @override
+  Set<Column> get primaryKey => {key};
+
+  @override
+  String get tableName => 'scribe_settings';
+}
+
 /// Files attached to an agent definition (personas, prompts, etc.).
 class AgentFiles extends Table {
   /// UUID primary key.

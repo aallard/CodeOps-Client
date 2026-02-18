@@ -245,4 +245,32 @@ class AppConstants {
 
   /// Default size for health score gauge widget.
   static const double gaugeDefaultSize = 120.0;
+
+  // -------------------------------------------------------------------------
+  // Scribe constants (CS-002)
+  // -------------------------------------------------------------------------
+
+  /// Default font size for the Scribe editor.
+  static const double scribeDefaultFontSize = 14.0;
+
+  /// Minimum font size for the Scribe editor.
+  static const double scribeMinFontSize = 12.0;
+
+  /// Maximum font size for the Scribe editor.
+  static const double scribeMaxFontSize = 24.0;
+
+  /// Default tab size for the Scribe editor.
+  static const int scribeDefaultTabSize = 2;
+
+  /// Height of the Scribe status bar in logical pixels.
+  static const double scribeStatusBarHeight = 28.0;
+
+  /// Height of the Scribe tab bar in logical pixels.
+  static const double scribeTabBarHeight = 36.0;
+
+  /// Minimum width of a Scribe tab in logical pixels.
+  static const double scribeTabMinWidth = 120.0;
+
+  /// Maximum width of a Scribe tab in logical pixels.
+  static const double scribeTabMaxWidth = 200.0;
 }

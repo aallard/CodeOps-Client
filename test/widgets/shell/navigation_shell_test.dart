@@ -72,7 +72,7 @@ Widget _createShell({
 void main() {
   group('NavigationShell', () {
     Future<void> setupSize(WidgetTester tester) async {
-      tester.view.physicalSize = const Size(1440, 900);
+      tester.view.physicalSize = const Size(1440, 1000);
       tester.view.devicePixelRatio = 1.0;
     }
 
@@ -91,6 +91,7 @@ void main() {
 
       expect(find.text('NAVIGATE'), findsOneWidget);
       expect(find.text('SOURCE'), findsOneWidget);
+      expect(find.text('DEVELOP'), findsOneWidget);
       expect(find.text('ANALYZE'), findsOneWidget);
       expect(find.text('MAINTAIN'), findsOneWidget);
       expect(find.text('MONITOR'), findsOneWidget);

@@ -20,7 +20,7 @@ void main() {
         return count;
       }
 
-      expect(countRoutes(router.configuration.routes), 24);
+      expect(countRoutes(router.configuration.routes), 25);
     });
 
     test('initial location is /login', () {
@@ -35,6 +35,7 @@ void main() {
         '/projects',
         '/projects/:id',
         '/repos',
+        '/scribe',
         '/audit',
         '/compliance',
         '/dependencies',
