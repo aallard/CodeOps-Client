@@ -78,9 +78,7 @@ Directives are reusable context documents — Markdown files that get injected i
 
 The assembly order is deterministic: built-in persona, overridden by team persona if one exists for that agent type, plus team directives, plus project directives, plus job-specific context (Jira ticket data, user notes, spec references). The result is a fully assembled prompt that gives each AI agent deep, specific context about the team's standards and the project's architecture, every time it runs.
 
-## The Control Plane — What We Are Building Now
-
-Everything described above exists today and is running in production as CodeOps v1.0. The Control Plane extends this foundation with six new backend services and their corresponding frontend modules, plus an MCP Gateway that ties everything together for AI agents. Together, these additions transform CodeOps from a maintenance command center into a full-spectrum development operations platform.
+## The Control Plane
 
 ### The Registry — Knowing What You Have
 
@@ -195,11 +193,8 @@ The **Control Plane** is a suite of add-on services that extend CodeOps with sel
 
 ---
 
-## Existing System — CodeOps v1.0
 
-The Control Plane builds on top of a fully functional, running platform. This section documents what exists today as verified by audits dated 2026-02-15 through 2026-02-17.
-
-### CodeOps-Server (COMPLETE)
+### CodeOps-Server
 
 - **Repository:** `~/Documents/Github/CodeOps-Server`
 - **Commit:** `cd57a0bc` (COC-019)
@@ -215,7 +210,7 @@ The Control Plane builds on top of a fully functional, running platform. This se
 - **API Prefix:** `/api/v1`
 - **Infrastructure:** Docker Compose with PostgreSQL 16-alpine, Redis 7-alpine, Kafka (Confluent 7.5), Zookeeper
 
-### CodeOps-Client (COMPLETE)
+### CodeOps-Client
 
 - **Repository:** `~/Documents/Github/CodeOps-Client`
 - **Commit:** `ad0bd82` (Fix paginated API response parsing and add post-login team auto-selection)
@@ -234,7 +229,7 @@ The Control Plane builds on top of a fully functional, running platform. This se
 - **Agent Engine:** 12 specialized AI agent types dispatched as Claude Code subprocesses, orchestrated by Vera (QA Manager persona)
 - **Window:** 1440×900 default, 1024×700 minimum
 
-### CodeOps-Registry (IN PROGRESS)
+### CodeOps-Registry
 
 - **Repository:** `~/Documents/Github/CodeOps-Registry`
 - **Commit:** `b7455933` (CR-007: ApiRouteService + InfraResourceService)
@@ -249,21 +244,21 @@ The Control Plane builds on top of a fully functional, running platform. This se
 ## System Architecture
 
 ```
-┌──────────────────────────────────────────────────────────────────────────────┐
-│                     CodeOps-Client (Flutter Native Desktop)                   │
-│                     macOS (primary) | Linux | Windows (future)                │
-│                                                                              │
-│  ┌──────────────────────────────────────────────────────────────────────┐    │
-│  │ Existing v1.0: Home, Projects, GitHub, Audit, Compliance, Bugs,     │    │
-│  │ Tasks, Tech Debt, Dependencies, Health, Personas, Directives,       │    │
-│  │ Settings, Admin (24 routes, 230 providers, 174 API methods)         │    │
-│  └──────────────────────────────────────────────────────────────────────┘    │
-│                                                                              │
-│  ┌────────┐ ┌────────┐ ┌────────┐ ┌────────┐ ┌────────┐ ┌────────┐        │
-│  │Registry│ │ Vault  │ │ Logger │ │Courier │ │DataLens│ │ Scribe │        │
-│  │  UI    │ │  UI    │ │  UI    │ │  UI    │ │  UI    │ │  UI    │        │
-│  └───┬────┘ └───┬────┘ └───┬────┘ └───┬────┘ └───┬────┘ └────────┘        │
-│      │          │          │          │          │       (local only)        │
+┌─────────────────────────────────────────────────────────────────────────────┐
+│                     CodeOps-Client (Flutter Native Desktop)                 │
+│                     macOS (primary) | Linux | Windows (future)              │
+│                                                                             │
+│  ┌──────────────────────────────────────────────────────────────────────┐   │
+│  │ Existing v1.0: Home, Projects, GitHub, Audit, Compliance, Bugs,      │   │
+│  │ Tasks, Tech Debt, Dependencies, Health, Personas, Directives,        │   │
+│  │ Settings, Admin (24 routes, 230 providers, 174 API methods)          │   │
+│  └──────────────────────────────────────────────────────────────────────┘   │
+│                                                                             │
+│  ┌────────┐ ┌────────┐ ┌────────┐ ┌────────┐ ┌────────┐ ┌────────┐          │
+│  │Registry│ │ Vault  │ │ Logger │ │Courier │ │DataLens│ │ Scribe │          │
+│  │  UI    │ │  UI    │ │  UI    │ │  UI    │ │  UI    │ │  UI    │          │
+│  └───┬────┘ └───┬────┘ └───┬────┘ └───┬────┘ └───┬────┘ └────────┘          │
+│      │          │          │          │          │      (local only)        │
 │  ┌───┴──────────┴──────────┴──────────┴──────────┘                          │
 │  │  MCP Dashboard UI                                                        │
 │  └──────────────────────────────────────────────────────────────────────────│
@@ -299,7 +294,7 @@ All Control Plane services validate JWTs issued by CodeOps-Server. No service is
 
 ## Service Inventory
 
-### Core Platform (Existing v1.0)
+### Core Platform 
 
 | Service | Port | DB Port | Database | Repository |
 |---------|------|---------|----------|------------|
