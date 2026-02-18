@@ -60,7 +60,7 @@ A dedicated dependency scanning workflow examines package manifests, identifies 
 
 ### Codebase Health Monitoring
 
-CodeOps supports scheduled monitoring — daily, weekly, or triggered by commits — that runs automated audits and compares results against previous snapshots. When a health score drops below a team-configured threshold, the system fires alerts through email, Microsoft Teams webhooks, and in-app notifications. This gives teams continuous visibility into quality trends without manual intervention.
+CodeOps supports scheduled monitoring — daily, weekly, or triggered by commits — that runs automated audits and compares results against previous snapshots. When a health score drops below a team-configured threshold, the system fires alerts through email, Microsoft Teams or Slack webhooks, and in-app notifications. This gives teams continuous visibility into quality trends without manual intervention.
 
 ### Source Control Management
 
