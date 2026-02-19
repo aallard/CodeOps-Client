@@ -1,7 +1,8 @@
 /// Tabbed detail panel for a Vault secret.
 ///
-/// Four tabs: **Info** (metadata fields), **Value** (reveal + copy),
-/// **Versions** (paginated list with destroy), **Metadata** (key-value CRUD).
+/// Five tabs: **Info** (metadata fields), **Value** (reveal + copy),
+/// **Versions** (paginated list with destroy), **Metadata** (key-value CRUD),
+/// **Rotation** (policy management and history).
 /// Action buttons along the top for update, edit, soft-delete, and
 /// permanent delete.
 library;
@@ -18,6 +19,7 @@ import '../../theme/colors.dart';
 import '../../utils/date_utils.dart';
 import '../shared/confirm_dialog.dart';
 import '../shared/error_panel.dart';
+import 'rotation_policy_panel.dart';
 import 'update_secret_dialog.dart';
 
 /// Displays full detail for a [SecretResponse] in a tabbed panel.
@@ -50,7 +52,7 @@ class _SecretDetailPanelState extends ConsumerState<SecretDetailPanel>
   @override
   void initState() {
     super.initState();
-    _tabController = TabController(length: 4, vsync: this);
+    _tabController = TabController(length: 5, vsync: this);
   }
 
   @override
@@ -89,6 +91,7 @@ class _SecretDetailPanelState extends ConsumerState<SecretDetailPanel>
               Tab(text: 'Value'),
               Tab(text: 'Versions'),
               Tab(text: 'Metadata'),
+              Tab(text: 'Rotation'),
             ],
           ),
           const Divider(height: 1, color: CodeOpsColors.border),
@@ -101,6 +104,10 @@ class _SecretDetailPanelState extends ConsumerState<SecretDetailPanel>
                 _ValueTab(secretId: secret.id),
                 _VersionsTab(secretId: secret.id),
                 _MetadataTab(
+                  secretId: secret.id,
+                  onMutated: widget.onMutated,
+                ),
+                RotationPolicyPanel(
                   secretId: secret.id,
                   onMutated: widget.onMutated,
                 ),
