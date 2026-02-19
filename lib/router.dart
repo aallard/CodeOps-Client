@@ -27,6 +27,7 @@ import 'pages/personas_page.dart';
 import 'pages/dependency_scan_page.dart';
 import 'pages/placeholder_page.dart';
 import 'pages/vault_dashboard_page.dart';
+import 'pages/vault_policies_page.dart';
 import 'pages/vault_secret_detail_page.dart';
 import 'pages/vault_secrets_page.dart';
 import 'pages/tech_debt_page.dart';
@@ -322,7 +323,7 @@ final GoRouter router = GoRouter(
           path: '/vault/policies',
           name: 'vault-policies',
           pageBuilder: (context, state) => const NoTransitionPage(
-            child: PlaceholderPage(title: 'Policies'),
+            child: VaultPoliciesPage(),
           ),
         ),
         // 29. Vault Transit
