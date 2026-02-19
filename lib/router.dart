@@ -27,6 +27,7 @@ import 'pages/personas_page.dart';
 import 'pages/dependency_scan_page.dart';
 import 'pages/placeholder_page.dart';
 import 'pages/vault_dashboard_page.dart';
+import 'pages/vault_dynamic_page.dart';
 import 'pages/vault_policies_page.dart';
 import 'pages/vault_transit_page.dart';
 import 'pages/vault_secret_detail_page.dart';
@@ -340,7 +341,7 @@ final GoRouter router = GoRouter(
           path: '/vault/dynamic',
           name: 'vault-dynamic',
           pageBuilder: (context, state) => const NoTransitionPage(
-            child: PlaceholderPage(title: 'Dynamic Secrets'),
+            child: VaultDynamicPage(),
           ),
         ),
         // 31. Vault Seal
