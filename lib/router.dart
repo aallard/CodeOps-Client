@@ -26,6 +26,7 @@ import 'pages/persona_editor_page.dart';
 import 'pages/personas_page.dart';
 import 'pages/dependency_scan_page.dart';
 import 'pages/placeholder_page.dart';
+import 'pages/vault_dashboard_page.dart';
 import 'pages/tech_debt_page.dart';
 import 'pages/project_detail_page.dart';
 import 'pages/task_list_page.dart';
@@ -292,7 +293,7 @@ final GoRouter router = GoRouter(
           path: '/vault',
           name: 'vault',
           pageBuilder: (context, state) => const NoTransitionPage(
-            child: PlaceholderPage(title: 'Vault'),
+            child: VaultDashboardPage(),
           ),
         ),
         // 26. Vault Secrets
