@@ -209,6 +209,49 @@ class _Sidebar extends ConsumerWidget {
                   currentPath: currentPath,
                   collapsed: collapsed,
                 ),
+                _SectionHeader('VAULT', collapsed),
+                _NavItem(
+                  icon: Icons.dashboard_outlined,
+                  label: 'Dashboard',
+                  path: '/vault',
+                  currentPath: currentPath,
+                  collapsed: collapsed,
+                ),
+                _NavItem(
+                  icon: Icons.key_outlined,
+                  label: 'Secrets',
+                  path: '/vault/secrets',
+                  currentPath: currentPath,
+                  collapsed: collapsed,
+                ),
+                _NavItem(
+                  icon: Icons.policy_outlined,
+                  label: 'Policies',
+                  path: '/vault/policies',
+                  currentPath: currentPath,
+                  collapsed: collapsed,
+                ),
+                _NavItem(
+                  icon: Icons.transform_outlined,
+                  label: 'Transit',
+                  path: '/vault/transit',
+                  currentPath: currentPath,
+                  collapsed: collapsed,
+                ),
+                _NavItem(
+                  icon: Icons.autorenew_outlined,
+                  label: 'Dynamic',
+                  path: '/vault/dynamic',
+                  currentPath: currentPath,
+                  collapsed: collapsed,
+                ),
+                _NavItem(
+                  icon: Icons.security_outlined,
+                  label: 'Seal',
+                  path: '/vault/seal',
+                  currentPath: currentPath,
+                  collapsed: collapsed,
+                ),
               ],
             ),
           ),
@@ -660,9 +703,16 @@ class _TopBar extends StatelessWidget {
       '/directives': 'Directives',
       '/settings': 'Settings',
       '/admin': 'Admin Hub',
+      '/vault': 'Vault',
+      '/vault/secrets': 'Secrets',
+      '/vault/policies': 'Policies',
+      '/vault/transit': 'Transit',
+      '/vault/dynamic': 'Dynamic Secrets',
+      '/vault/seal': 'Seal',
     };
     // Check exact match first, then prefix matches for parameterized routes
     if (routes.containsKey(path)) return routes[path]!;
+    if (path.startsWith('/vault/secrets/')) return 'Secret Detail';
     if (path.startsWith('/projects/')) return 'Project Detail';
     if (path.startsWith('/jobs/') && path.endsWith('/report')) return 'Job Report';
     if (path.startsWith('/jobs/') && path.endsWith('/findings')) {

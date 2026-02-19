@@ -1,4 +1,4 @@
-/// GoRouter configuration with all 24 application routes.
+/// GoRouter configuration with all 31 application routes.
 ///
 /// Uses an [AuthNotifier] listenable connected to [AuthService] for
 /// reactive auth state. Unauthenticated users are redirected to `/login`.
@@ -59,7 +59,7 @@ class AuthNotifier extends ChangeNotifier {
 /// [AuthService] updates this when auth state changes.
 final AuthNotifier authNotifier = AuthNotifier();
 
-/// The application router with all 24 routes.
+/// The application router with all 31 routes.
 final GoRouter router = GoRouter(
   initialLocation: '/login',
   refreshListenable: authNotifier,
@@ -285,6 +285,65 @@ final GoRouter router = GoRouter(
           name: 'admin',
           pageBuilder: (context, state) => const NoTransitionPage(
             child: AdminHubPage(),
+          ),
+        ),
+        // 25. Vault Dashboard
+        GoRoute(
+          path: '/vault',
+          name: 'vault',
+          pageBuilder: (context, state) => const NoTransitionPage(
+            child: PlaceholderPage(title: 'Vault'),
+          ),
+        ),
+        // 26. Vault Secrets
+        GoRoute(
+          path: '/vault/secrets',
+          name: 'vault-secrets',
+          pageBuilder: (context, state) => const NoTransitionPage(
+            child: PlaceholderPage(title: 'Secrets'),
+          ),
+        ),
+        // 27. Vault Secret Detail
+        GoRoute(
+          path: '/vault/secrets/:id',
+          name: 'vault-secret-detail',
+          pageBuilder: (context, state) {
+            final id = state.pathParameters['id']!;
+            return NoTransitionPage(
+              child: PlaceholderPage(title: 'Secret $id'),
+            );
+          },
+        ),
+        // 28. Vault Policies
+        GoRoute(
+          path: '/vault/policies',
+          name: 'vault-policies',
+          pageBuilder: (context, state) => const NoTransitionPage(
+            child: PlaceholderPage(title: 'Policies'),
+          ),
+        ),
+        // 29. Vault Transit
+        GoRoute(
+          path: '/vault/transit',
+          name: 'vault-transit',
+          pageBuilder: (context, state) => const NoTransitionPage(
+            child: PlaceholderPage(title: 'Transit'),
+          ),
+        ),
+        // 30. Vault Dynamic Secrets
+        GoRoute(
+          path: '/vault/dynamic',
+          name: 'vault-dynamic',
+          pageBuilder: (context, state) => const NoTransitionPage(
+            child: PlaceholderPage(title: 'Dynamic Secrets'),
+          ),
+        ),
+        // 31. Vault Seal
+        GoRoute(
+          path: '/vault/seal',
+          name: 'vault-seal',
+          pageBuilder: (context, state) => const NoTransitionPage(
+            child: PlaceholderPage(title: 'Seal'),
           ),
         ),
       ],

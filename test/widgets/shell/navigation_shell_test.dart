@@ -81,7 +81,9 @@ void main() {
     });
 
     testWidgets('renders sidebar section headers', (tester) async {
-      await setupSize(tester);
+      // Use taller viewport so VAULT section is visible
+      tester.view.physicalSize = const Size(1440, 2000);
+      tester.view.devicePixelRatio = 1.0;
       addTearDown(() {
         tester.view.resetPhysicalSize();
         tester.view.resetDevicePixelRatio();
@@ -96,6 +98,7 @@ void main() {
       expect(find.text('MAINTAIN'), findsOneWidget);
       expect(find.text('MONITOR'), findsOneWidget);
       expect(find.text('TEAM'), findsOneWidget);
+      expect(find.text('VAULT'), findsOneWidget);
     });
 
     testWidgets('renders nav items', (tester) async {
