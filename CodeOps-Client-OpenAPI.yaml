@@ -1,0 +1,3053 @@
+openapi: 3.0.3
+info:
+  title: CodeOps-Client Outbound API Surface
+  description: |
+    Documents all outbound HTTP API calls made by the CodeOps-Client Flutter desktop application.
+    This is NOT a server API spec — it catalogs the client's consumption of external APIs.
+
+    Target services:
+    - CodeOps-Server (localhost:8090, prefix /api/v1)
+    - CodeOps-Vault (localhost:8097, prefix /api/v1/vault)
+    - Anthropic API (api.anthropic.com)
+    - GitHub API (api.github.com) — see GitHubProvider, not included here
+    - Jira API (user-configured) — see JiraService, not included here
+  version: 1.0.0
+
+servers:
+  - url: http://localhost:8090/api/v1
+    description: CodeOps-Server (development)
+  - url: http://localhost:8097/api/v1/vault
+    description: CodeOps-Vault (development)
+
+security:
+  - bearerAuth: []
+
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+      description: JWT token obtained from POST /auth/login
+
+  schemas:
+    # --- Auth ---
+    LoginRequest:
+      type: object
+      required: [email, password]
+      properties:
+        email: { type: string, format: email }
+        password: { type: string }
+
+    RegisterRequest:
+      type: object
+      required: [email, password, displayName]
+      properties:
+        email: { type: string, format: email }
+        password: { type: string }
+        displayName: { type: string }
+
+    AuthResponse:
+      type: object
+      properties:
+        token: { type: string }
+        refreshToken: { type: string }
+        user: { $ref: '#/components/schemas/User' }
+
+    RefreshRequest:
+      type: object
+      required: [refreshToken]
+      properties:
+        refreshToken: { type: string }
+
+    ChangePasswordRequest:
+      type: object
+      required: [currentPassword, newPassword]
+      properties:
+        currentPassword: { type: string }
+        newPassword: { type: string }
+
+    # --- User ---
+    User:
+      type: object
+      properties:
+        id: { type: string, format: uuid }
+        email: { type: string, format: email }
+        displayName: { type: string }
+        avatarUrl: { type: string }
+        isActive: { type: boolean }
+        lastLoginAt: { type: string, format: date-time }
+        createdAt: { type: string, format: date-time }
+
+    # --- Team ---
+    Team:
+      type: object
+      properties:
+        id: { type: string, format: uuid }
+        name: { type: string }
+        description: { type: string }
+        ownerId: { type: string, format: uuid }
+        ownerName: { type: string }
+        teamsWebhookUrl: { type: string }
+        memberCount: { type: integer }
+        createdAt: { type: string, format: date-time }
+        updatedAt: { type: string, format: date-time }
+
+    TeamMember:
+      type: object
+      properties:
+        id: { type: string, format: uuid }
+        userId: { type: string, format: uuid }
+        displayName: { type: string }
+        email: { type: string }
+        avatarUrl: { type: string }
+        role: { type: string, enum: [OWNER, LEAD, MEMBER, VIEWER] }
+        joinedAt: { type: string, format: date-time }
+
+    Invitation:
+      type: object
+      properties:
+        id: { type: string, format: uuid }
+        email: { type: string }
+        role: { type: string, enum: [OWNER, LEAD, MEMBER, VIEWER] }
+        status: { type: string, enum: [PENDING, ACCEPTED, DECLINED, EXPIRED, CANCELLED] }
+        invitedByName: { type: string }
+        expiresAt: { type: string, format: date-time }
+        createdAt: { type: string, format: date-time }
+
+    # --- Project ---
+    Project:
+      type: object
+      properties:
+        id: { type: string, format: uuid }
+        teamId: { type: string, format: uuid }
+        name: { type: string }
+        description: { type: string }
+        githubConnectionId: { type: string, format: uuid }
+        repoUrl: { type: string }
+        repoFullName: { type: string }
+        defaultBranch: { type: string }
+        jiraConnectionId: { type: string, format: uuid }
+        jiraProjectKey: { type: string }
+        jiraDefaultIssueType: { type: string }
+        jiraLabels: { type: array, items: { type: string } }
+        jiraComponent: { type: string }
+        techStack: { type: string }
+        healthScore: { type: integer }
+        lastAuditAt: { type: string, format: date-time }
+        isArchived: { type: boolean }
+        createdAt: { type: string, format: date-time }
+        updatedAt: { type: string, format: date-time }
+
+    # --- Job ---
+    QaJob:
+      type: object
+      properties:
+        id: { type: string, format: uuid }
+        projectId: { type: string, format: uuid }
+        projectName: { type: string }
+        mode: { type: string, enum: [FULL_AUDIT, QUICK_SCAN, BUG_INVESTIGATE, COMPLIANCE_CHECK] }
+        status: { type: string, enum: [PENDING, RUNNING, COMPLETED, FAILED, CANCELLED] }
+        name: { type: string }
+        branch: { type: string }
+        configJson: { type: string }
+        summaryMd: { type: string }
+        overallResult: { type: string, enum: [PASS, WARN, FAIL] }
+        healthScore: { type: integer }
+        totalFindings: { type: integer }
+        criticalCount: { type: integer }
+        highCount: { type: integer }
+        mediumCount: { type: integer }
+        lowCount: { type: integer }
+        jiraTicketKey: { type: string }
+        startedBy: { type: string }
+        startedByName: { type: string }
+        startedAt: { type: string, format: date-time }
+        completedAt: { type: string, format: date-time }
+        createdAt: { type: string, format: date-time }
+
+    JobSummary:
+      type: object
+      properties:
+        id: { type: string, format: uuid }
+        projectName: { type: string }
+        mode: { type: string, enum: [FULL_AUDIT, QUICK_SCAN, BUG_INVESTIGATE, COMPLIANCE_CHECK] }
+        status: { type: string, enum: [PENDING, RUNNING, COMPLETED, FAILED, CANCELLED] }
+        name: { type: string }
+        overallResult: { type: string, enum: [PASS, WARN, FAIL] }
+        healthScore: { type: integer }
+        totalFindings: { type: integer }
+        criticalCount: { type: integer }
+        completedAt: { type: string, format: date-time }
+        createdAt: { type: string, format: date-time }
+
+    AgentRun:
+      type: object
+      properties:
+        id: { type: string, format: uuid }
+        jobId: { type: string, format: uuid }
+        agentType: { type: string, enum: [SECURITY, CODE_QUALITY, BUILD_HEALTH, COMPLETENESS, API_CONTRACT, TEST_COVERAGE, UI_UX, DOCUMENTATION, DATABASE, PERFORMANCE, DEPENDENCY, ARCHITECTURE] }
+        status: { type: string, enum: [PENDING, RUNNING, COMPLETED, FAILED, CANCELLED] }
+        result: { type: string, enum: [PASS, WARN, FAIL] }
+        reportS3Key: { type: string }
+        score: { type: integer }
+        findingsCount: { type: integer }
+        criticalCount: { type: integer }
+        highCount: { type: integer }
+        startedAt: { type: string, format: date-time }
+        completedAt: { type: string, format: date-time }
+
+    # --- Finding ---
+    Finding:
+      type: object
+      properties:
+        id: { type: string, format: uuid }
+        jobId: { type: string, format: uuid }
+        agentType: { type: string, enum: [SECURITY, CODE_QUALITY, BUILD_HEALTH, COMPLETENESS, API_CONTRACT, TEST_COVERAGE, UI_UX, DOCUMENTATION, DATABASE, PERFORMANCE, DEPENDENCY, ARCHITECTURE] }
+        severity: { type: string, enum: [CRITICAL, HIGH, MEDIUM, LOW] }
+        title: { type: string }
+        description: { type: string }
+        filePath: { type: string }
+        lineNumber: { type: integer }
+        recommendation: { type: string }
+        evidence: { type: string }
+        effortEstimate: { type: string, enum: [TRIVIAL, SMALL, MEDIUM, LARGE, EPIC] }
+        debtCategory: { type: string, enum: [CODE_SMELL, DESIGN_DEBT, TEST_DEBT, DOCUMENTATION_DEBT, DEPENDENCY_DEBT, INFRASTRUCTURE_DEBT] }
+        findingStatus: { type: string, enum: [OPEN, ACCEPTED, FALSE_POSITIVE, DEFERRED, FIXED] }
+        statusChangedBy: { type: string }
+        statusChangedAt: { type: string, format: date-time }
+        createdAt: { type: string, format: date-time }
+
+    # --- Task ---
+    RemediationTask:
+      type: object
+      properties:
+        id: { type: string, format: uuid }
+        jobId: { type: string, format: uuid }
+        taskNumber: { type: integer }
+        title: { type: string }
+        description: { type: string }
+        promptMd: { type: string }
+        promptS3Key: { type: string }
+        findingIds: { type: array, items: { type: string, format: uuid } }
+        priority: { type: string, enum: [CRITICAL, HIGH, MEDIUM, LOW] }
+        status: { type: string, enum: [PENDING, ASSIGNED, EXPORTED, JIRA_CREATED, COMPLETED] }
+        assignedTo: { type: string }
+        assignedToName: { type: string }
+        jiraKey: { type: string }
+        createdAt: { type: string, format: date-time }
+
+    # --- Persona ---
+    Persona:
+      type: object
+      properties:
+        id: { type: string, format: uuid }
+        name: { type: string }
+        agentType: { type: string, enum: [SECURITY, CODE_QUALITY, BUILD_HEALTH, COMPLETENESS, API_CONTRACT, TEST_COVERAGE, UI_UX, DOCUMENTATION, DATABASE, PERFORMANCE, DEPENDENCY, ARCHITECTURE] }
+        description: { type: string }
+        contentMd: { type: string }
+        scope: { type: string, enum: [SYSTEM, TEAM, USER] }
+        teamId: { type: string, format: uuid }
+        createdBy: { type: string }
+        createdByName: { type: string }
+        isDefault: { type: boolean }
+        version: { type: integer }
+        createdAt: { type: string, format: date-time }
+        updatedAt: { type: string, format: date-time }
+
+    # --- Directive ---
+    Directive:
+      type: object
+      properties:
+        id: { type: string, format: uuid }
+        name: { type: string }
+        description: { type: string }
+        contentMd: { type: string }
+        category: { type: string, enum: [ARCHITECTURE, STANDARDS, CONVENTIONS, CONTEXT, OTHER] }
+        scope: { type: string, enum: [SYSTEM, TEAM, USER] }
+        teamId: { type: string, format: uuid }
+        projectId: { type: string, format: uuid }
+        createdBy: { type: string }
+        createdByName: { type: string }
+        version: { type: integer }
+        createdAt: { type: string, format: date-time }
+        updatedAt: { type: string, format: date-time }
+
+    # --- Tech Debt ---
+    TechDebtItem:
+      type: object
+      properties:
+        id: { type: string, format: uuid }
+        projectId: { type: string, format: uuid }
+        category: { type: string, enum: [CODE_SMELL, DESIGN_DEBT, TEST_DEBT, DOCUMENTATION_DEBT, DEPENDENCY_DEBT, INFRASTRUCTURE_DEBT] }
+        title: { type: string }
+        description: { type: string }
+        filePath: { type: string }
+        effortEstimate: { type: string, enum: [TRIVIAL, SMALL, MEDIUM, LARGE, EPIC] }
+        businessImpact: { type: string, enum: [CRITICAL, HIGH, MEDIUM, LOW] }
+        status: { type: string, enum: [IDENTIFIED, PLANNED, IN_PROGRESS, RESOLVED] }
+        firstDetectedJobId: { type: string, format: uuid }
+        resolvedJobId: { type: string, format: uuid }
+        createdAt: { type: string, format: date-time }
+        updatedAt: { type: string, format: date-time }
+
+    # --- Health ---
+    HealthSnapshot:
+      type: object
+      properties:
+        id: { type: string, format: uuid }
+        projectId: { type: string, format: uuid }
+        jobId: { type: string, format: uuid }
+        healthScore: { type: integer }
+        findingsBySeverity: { type: string }
+        techDebtScore: { type: integer }
+        dependencyScore: { type: integer }
+        testCoveragePercent: { type: number, format: double }
+        capturedAt: { type: string, format: date-time }
+
+    # --- Dependency ---
+    DependencyScan:
+      type: object
+      properties:
+        id: { type: string, format: uuid }
+        projectId: { type: string, format: uuid }
+        jobId: { type: string, format: uuid }
+        manifestFile: { type: string }
+        totalDependencies: { type: integer }
+        outdatedCount: { type: integer }
+        vulnerableCount: { type: integer }
+        createdAt: { type: string, format: date-time }
+
+    # --- Compliance ---
+    ComplianceItem:
+      type: object
+      properties:
+        id: { type: string, format: uuid }
+        jobId: { type: string, format: uuid }
+        requirement: { type: string }
+        specId: { type: string, format: uuid }
+        specName: { type: string }
+        status: { type: string, enum: [COMPLIANT, NON_COMPLIANT, PARTIALLY_COMPLIANT, NOT_ASSESSED] }
+        evidence: { type: string }
+        agentType: { type: string }
+        notes: { type: string }
+        createdAt: { type: string, format: date-time }
+
+    # --- Integration ---
+    GitHubConnection:
+      type: object
+      properties:
+        id: { type: string, format: uuid }
+        teamId: { type: string, format: uuid }
+        name: { type: string }
+        accessToken: { type: string }
+        createdBy: { type: string }
+        createdAt: { type: string, format: date-time }
+
+    JiraConnection:
+      type: object
+      properties:
+        id: { type: string, format: uuid }
+        teamId: { type: string, format: uuid }
+        name: { type: string }
+        baseUrl: { type: string }
+        email: { type: string }
+        createdBy: { type: string }
+        createdAt: { type: string, format: date-time }
+
+    # --- Vault ---
+    SecretResponse:
+      type: object
+      properties:
+        id: { type: string, format: uuid }
+        teamId: { type: string, format: uuid }
+        path: { type: string }
+        name: { type: string }
+        description: { type: string }
+        secretType: { type: string, enum: [STATIC, DYNAMIC, REFERENCE] }
+        currentVersion: { type: integer }
+        maxVersions: { type: integer }
+        retentionDays: { type: integer }
+        expiresAt: { type: string, format: date-time }
+        lastAccessedAt: { type: string, format: date-time }
+        lastRotatedAt: { type: string, format: date-time }
+        ownerUserId: { type: string }
+        referenceArn: { type: string }
+        isActive: { type: boolean }
+        metadata: { type: object, additionalProperties: { type: string } }
+        createdAt: { type: string, format: date-time }
+        updatedAt: { type: string, format: date-time }
+
+    SecretValueResponse:
+      type: object
+      properties:
+        secretId: { type: string, format: uuid }
+        path: { type: string }
+        name: { type: string }
+        versionNumber: { type: integer }
+        value: { type: string }
+        createdAt: { type: string, format: date-time }
+
+    AccessPolicyResponse:
+      type: object
+      properties:
+        id: { type: string, format: uuid }
+        teamId: { type: string, format: uuid }
+        name: { type: string }
+        description: { type: string }
+        pathPattern: { type: string }
+        permissions: { type: array, items: { type: string, enum: [READ, WRITE, DELETE, LIST, ROTATE] } }
+        isDenyPolicy: { type: boolean }
+        isActive: { type: boolean }
+        createdByUserId: { type: string }
+        bindingCount: { type: integer }
+        createdAt: { type: string, format: date-time }
+        updatedAt: { type: string, format: date-time }
+
+    TransitKeyResponse:
+      type: object
+      properties:
+        id: { type: string, format: uuid }
+        teamId: { type: string, format: uuid }
+        name: { type: string }
+        description: { type: string }
+        currentVersion: { type: integer }
+        minDecryptionVersion: { type: integer }
+        algorithm: { type: string }
+        isDeletable: { type: boolean }
+        isExportable: { type: boolean }
+        isActive: { type: boolean }
+        createdByUserId: { type: string }
+        createdAt: { type: string, format: date-time }
+        updatedAt: { type: string, format: date-time }
+
+    SealStatusResponse:
+      type: object
+      properties:
+        status: { type: string, enum: [SEALED, UNSEALED, UNSEALING] }
+        totalShares: { type: integer }
+        threshold: { type: integer }
+        sharesProvided: { type: integer }
+        autoUnsealEnabled: { type: boolean }
+        sealedAt: { type: string, format: date-time }
+        unsealedAt: { type: string, format: date-time }
+
+    # --- Pagination ---
+    PageResponse:
+      type: object
+      properties:
+        content: { type: array, items: {} }
+        totalElements: { type: integer, format: int64 }
+        totalPages: { type: integer }
+        number: { type: integer }
+        size: { type: integer }
+
+paths:
+  # ========================================
+  # AUTH (4 endpoints)
+  # ========================================
+  /auth/login:
+    post:
+      tags: [Auth]
+      summary: Login
+      security: []
+      requestBody:
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/LoginRequest' }
+      responses:
+        '200':
+          description: Auth response with tokens
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/AuthResponse' }
+
+  /auth/register:
+    post:
+      tags: [Auth]
+      summary: Register new user
+      security: []
+      requestBody:
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/RegisterRequest' }
+      responses:
+        '200':
+          description: Auth response with tokens
+
+  /auth/refresh:
+    post:
+      tags: [Auth]
+      summary: Refresh JWT token
+      security: []
+      requestBody:
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/RefreshRequest' }
+      responses:
+        '200':
+          description: New auth tokens
+
+  /auth/change-password:
+    post:
+      tags: [Auth]
+      summary: Change password
+      requestBody:
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/ChangePasswordRequest' }
+      responses:
+        '200':
+          description: Password changed
+
+  # ========================================
+  # USERS (6 endpoints)
+  # ========================================
+  /users/me:
+    get:
+      tags: [Users]
+      summary: Get current user
+      responses:
+        '200':
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/User' }
+
+  /users/{id}:
+    get:
+      tags: [Users]
+      summary: Get user by ID
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: string, format: uuid }
+      responses:
+        '200':
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/User' }
+    put:
+      tags: [Users]
+      summary: Update user
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: string, format: uuid }
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                displayName: { type: string }
+                avatarUrl: { type: string }
+      responses:
+        '200':
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/User' }
+
+  /users/search:
+    get:
+      tags: [Users]
+      summary: Search users
+      parameters:
+        - name: q
+          in: query
+          required: true
+          schema: { type: string }
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: array
+                items: { $ref: '#/components/schemas/User' }
+
+  /users/{id}/deactivate:
+    put:
+      tags: [Users]
+      summary: Deactivate user
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: string, format: uuid }
+      responses:
+        '200':
+          description: User deactivated
+
+  /users/{id}/activate:
+    put:
+      tags: [Users]
+      summary: Activate user
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: string, format: uuid }
+      responses:
+        '200':
+          description: User activated
+
+  # ========================================
+  # TEAMS (12 endpoints)
+  # ========================================
+  /teams:
+    get:
+      tags: [Teams]
+      summary: List user's teams
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: array
+                items: { $ref: '#/components/schemas/Team' }
+    post:
+      tags: [Teams]
+      summary: Create team
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [name]
+              properties:
+                name: { type: string }
+                description: { type: string }
+                teamsWebhookUrl: { type: string }
+      responses:
+        '200':
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Team' }
+
+  /teams/{teamId}:
+    get:
+      tags: [Teams]
+      summary: Get team
+      parameters:
+        - name: teamId
+          in: path
+          required: true
+          schema: { type: string, format: uuid }
+      responses:
+        '200':
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Team' }
+    put:
+      tags: [Teams]
+      summary: Update team
+      parameters:
+        - name: teamId
+          in: path
+          required: true
+          schema: { type: string, format: uuid }
+      responses:
+        '200':
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Team' }
+    delete:
+      tags: [Teams]
+      summary: Delete team
+      parameters:
+        - name: teamId
+          in: path
+          required: true
+          schema: { type: string, format: uuid }
+      responses:
+        '204':
+          description: Team deleted
+
+  /teams/{teamId}/members:
+    get:
+      tags: [Teams]
+      summary: List team members
+      parameters:
+        - name: teamId
+          in: path
+          required: true
+          schema: { type: string, format: uuid }
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: array
+                items: { $ref: '#/components/schemas/TeamMember' }
+
+  /teams/{teamId}/members/{userId}/role:
+    put:
+      tags: [Teams]
+      summary: Update member role
+      parameters:
+        - name: teamId
+          in: path
+          required: true
+          schema: { type: string, format: uuid }
+        - name: userId
+          in: path
+          required: true
+          schema: { type: string, format: uuid }
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [role]
+              properties:
+                role: { type: string, enum: [OWNER, LEAD, MEMBER, VIEWER] }
+      responses:
+        '200':
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/TeamMember' }
+
+  /teams/{teamId}/members/{userId}:
+    delete:
+      tags: [Teams]
+      summary: Remove member
+      parameters:
+        - name: teamId
+          in: path
+          required: true
+          schema: { type: string, format: uuid }
+        - name: userId
+          in: path
+          required: true
+          schema: { type: string, format: uuid }
+      responses:
+        '204':
+          description: Member removed
+
+  /teams/{teamId}/invitations:
+    post:
+      tags: [Teams]
+      summary: Invite member
+      parameters:
+        - name: teamId
+          in: path
+          required: true
+          schema: { type: string, format: uuid }
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [email, role]
+              properties:
+                email: { type: string }
+                role: { type: string, enum: [OWNER, LEAD, MEMBER, VIEWER] }
+      responses:
+        '200':
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Invitation' }
+    get:
+      tags: [Teams]
+      summary: List team invitations
+      parameters:
+        - name: teamId
+          in: path
+          required: true
+          schema: { type: string, format: uuid }
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: array
+                items: { $ref: '#/components/schemas/Invitation' }
+
+  /teams/{teamId}/invitations/{invitationId}:
+    delete:
+      tags: [Teams]
+      summary: Cancel invitation
+      parameters:
+        - name: teamId
+          in: path
+          required: true
+          schema: { type: string, format: uuid }
+        - name: invitationId
+          in: path
+          required: true
+          schema: { type: string, format: uuid }
+      responses:
+        '204':
+          description: Invitation cancelled
+
+  /teams/invitations/{token}/accept:
+    post:
+      tags: [Teams]
+      summary: Accept invitation
+      parameters:
+        - name: token
+          in: path
+          required: true
+          schema: { type: string }
+      responses:
+        '200':
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Team' }
+
+  # ========================================
+  # PROJECTS (8 endpoints)
+  # ========================================
+  /projects/{teamId}:
+    post:
+      tags: [Projects]
+      summary: Create project
+      parameters:
+        - name: teamId
+          in: path
+          required: true
+          schema: { type: string, format: uuid }
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [name]
+              properties:
+                name: { type: string }
+                description: { type: string }
+                githubConnectionId: { type: string }
+                repoUrl: { type: string }
+                repoFullName: { type: string }
+                defaultBranch: { type: string }
+                jiraConnectionId: { type: string }
+                jiraProjectKey: { type: string }
+                jiraDefaultIssueType: { type: string }
+                jiraLabels: { type: array, items: { type: string } }
+                jiraComponent: { type: string }
+                techStack: { type: string }
+      responses:
+        '200':
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Project' }
+
+  /projects/team/{teamId}:
+    get:
+      tags: [Projects]
+      summary: List team projects
+      parameters:
+        - name: teamId
+          in: path
+          required: true
+          schema: { type: string, format: uuid }
+        - name: includeArchived
+          in: query
+          schema: { type: boolean, default: false }
+        - name: size
+          in: query
+          schema: { type: integer, default: 100 }
+      responses:
+        '200':
+          description: Paginated projects (content extracted)
+
+  /projects/team/{teamId}/paged:
+    get:
+      tags: [Projects]
+      summary: List team projects (paged)
+      parameters:
+        - name: teamId
+          in: path
+          required: true
+          schema: { type: string, format: uuid }
+        - name: page
+          in: query
+          schema: { type: integer, default: 0 }
+        - name: size
+          in: query
+          schema: { type: integer, default: 20 }
+        - name: includeArchived
+          in: query
+          schema: { type: boolean, default: false }
+      responses:
+        '200':
+          description: PageResponse of Project
+
+  /projects/{projectId}:
+    get:
+      tags: [Projects]
+      summary: Get project
+      parameters:
+        - name: projectId
+          in: path
+          required: true
+          schema: { type: string, format: uuid }
+      responses:
+        '200':
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Project' }
+    put:
+      tags: [Projects]
+      summary: Update project
+      parameters:
+        - name: projectId
+          in: path
+          required: true
+          schema: { type: string, format: uuid }
+      responses:
+        '200':
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Project' }
+    delete:
+      tags: [Projects]
+      summary: Delete project
+      parameters:
+        - name: projectId
+          in: path
+          required: true
+          schema: { type: string, format: uuid }
+      responses:
+        '204':
+          description: Project deleted
+
+  /projects/{projectId}/archive:
+    put:
+      tags: [Projects]
+      summary: Archive project
+      parameters:
+        - name: projectId
+          in: path
+          required: true
+          schema: { type: string, format: uuid }
+      responses:
+        '200':
+          description: Project archived
+
+  /projects/{projectId}/unarchive:
+    put:
+      tags: [Projects]
+      summary: Unarchive project
+      parameters:
+        - name: projectId
+          in: path
+          required: true
+          schema: { type: string, format: uuid }
+      responses:
+        '200':
+          description: Project unarchived
+
+  # ========================================
+  # JOBS (14 endpoints)
+  # ========================================
+  /jobs:
+    post:
+      tags: [Jobs]
+      summary: Create job
+      responses:
+        '200':
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/QaJob' }
+
+  /jobs/{jobId}:
+    get:
+      tags: [Jobs]
+      summary: Get job
+      parameters:
+        - name: jobId
+          in: path
+          required: true
+          schema: { type: string, format: uuid }
+      responses:
+        '200':
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/QaJob' }
+    put:
+      tags: [Jobs]
+      summary: Update job
+      parameters:
+        - name: jobId
+          in: path
+          required: true
+          schema: { type: string, format: uuid }
+      responses:
+        '200':
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/QaJob' }
+
+  /jobs/{jobId}/cancel:
+    put:
+      tags: [Jobs]
+      summary: Cancel job
+      parameters:
+        - name: jobId
+          in: path
+          required: true
+          schema: { type: string, format: uuid }
+      responses:
+        '200':
+          description: Job cancelled
+
+  /jobs/project/{projectId}:
+    get:
+      tags: [Jobs]
+      summary: List project jobs (paged)
+      parameters:
+        - name: projectId
+          in: path
+          required: true
+          schema: { type: string, format: uuid }
+        - name: page
+          in: query
+          schema: { type: integer }
+        - name: size
+          in: query
+          schema: { type: integer }
+      responses:
+        '200':
+          description: PageResponse of JobSummary
+
+  /jobs/mine:
+    get:
+      tags: [Jobs]
+      summary: List my jobs
+      responses:
+        '200':
+          description: List of JobSummary
+
+  /jobs/{jobId}/agent-runs:
+    get:
+      tags: [Jobs]
+      summary: Get agent runs for job
+      parameters:
+        - name: jobId
+          in: path
+          required: true
+          schema: { type: string, format: uuid }
+      responses:
+        '200':
+          description: List of AgentRun
+
+  /jobs/agent-runs:
+    post:
+      tags: [Jobs]
+      summary: Create agent runs batch
+      responses:
+        '200':
+          description: List of AgentRun
+
+  /jobs/agent-runs/{agentRunId}:
+    put:
+      tags: [Jobs]
+      summary: Update agent run
+      parameters:
+        - name: agentRunId
+          in: path
+          required: true
+          schema: { type: string, format: uuid }
+      responses:
+        '200':
+          description: Updated AgentRun
+
+  /jobs/{jobId}/investigation:
+    get:
+      tags: [Jobs]
+      summary: Get bug investigation
+      parameters:
+        - name: jobId
+          in: path
+          required: true
+          schema: { type: string, format: uuid }
+      responses:
+        '200':
+          description: BugInvestigation
+    post:
+      tags: [Jobs]
+      summary: Create bug investigation
+      parameters:
+        - name: jobId
+          in: path
+          required: true
+          schema: { type: string, format: uuid }
+      responses:
+        '200':
+          description: BugInvestigation
+
+  /jobs/investigations/{investigationId}:
+    put:
+      tags: [Jobs]
+      summary: Update investigation
+      parameters:
+        - name: investigationId
+          in: path
+          required: true
+          schema: { type: string, format: uuid }
+      responses:
+        '200':
+          description: Updated BugInvestigation
+
+  # ========================================
+  # FINDINGS (7 endpoints)
+  # ========================================
+  /findings/job/{jobId}:
+    get:
+      tags: [Findings]
+      summary: Get findings for job (paged)
+      parameters:
+        - name: jobId
+          in: path
+          required: true
+          schema: { type: string, format: uuid }
+        - name: page
+          in: query
+          schema: { type: integer }
+        - name: size
+          in: query
+          schema: { type: integer }
+      responses:
+        '200':
+          description: PageResponse of Finding
+
+  /findings/job/{jobId}/counts:
+    get:
+      tags: [Findings]
+      summary: Get finding severity counts
+      parameters:
+        - name: jobId
+          in: path
+          required: true
+          schema: { type: string, format: uuid }
+      responses:
+        '200':
+          description: Map of severity to count
+
+  /findings/{findingId}:
+    get:
+      tags: [Findings]
+      summary: Get finding
+      parameters:
+        - name: findingId
+          in: path
+          required: true
+          schema: { type: string, format: uuid }
+      responses:
+        '200':
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Finding' }
+
+  /findings/{findingId}/status:
+    put:
+      tags: [Findings]
+      summary: Update finding status
+      parameters:
+        - name: findingId
+          in: path
+          required: true
+          schema: { type: string, format: uuid }
+      responses:
+        '200':
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Finding' }
+
+  /findings/batch:
+    post:
+      tags: [Findings]
+      summary: Batch create findings
+      responses:
+        '200':
+          description: List of Finding
+
+  /findings/search:
+    get:
+      tags: [Findings]
+      summary: Search findings
+      parameters:
+        - name: jobId
+          in: query
+          required: true
+          schema: { type: string, format: uuid }
+        - name: q
+          in: query
+          schema: { type: string }
+        - name: page
+          in: query
+          schema: { type: integer }
+        - name: size
+          in: query
+          schema: { type: integer }
+      responses:
+        '200':
+          description: PageResponse of Finding
+
+  # ========================================
+  # TASKS (6 endpoints)
+  # ========================================
+  /tasks:
+    post:
+      tags: [Tasks]
+      summary: Create task
+      responses:
+        '200':
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/RemediationTask' }
+
+  /tasks/batch:
+    post:
+      tags: [Tasks]
+      summary: Batch create tasks
+      responses:
+        '200':
+          description: List of RemediationTask
+
+  /tasks/job/{jobId}:
+    get:
+      tags: [Tasks]
+      summary: Get tasks for job
+      parameters:
+        - name: jobId
+          in: path
+          required: true
+          schema: { type: string, format: uuid }
+      responses:
+        '200':
+          description: List of RemediationTask
+
+  /tasks/{taskId}:
+    get:
+      tags: [Tasks]
+      summary: Get task
+      parameters:
+        - name: taskId
+          in: path
+          required: true
+          schema: { type: string, format: uuid }
+      responses:
+        '200':
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/RemediationTask' }
+    put:
+      tags: [Tasks]
+      summary: Update task
+      parameters:
+        - name: taskId
+          in: path
+          required: true
+          schema: { type: string, format: uuid }
+      responses:
+        '200':
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/RemediationTask' }
+
+  /tasks/assigned-to-me:
+    get:
+      tags: [Tasks]
+      summary: Get my assigned tasks
+      responses:
+        '200':
+          description: List of RemediationTask
+
+  # ========================================
+  # PERSONAS (11 endpoints)
+  # ========================================
+  /personas:
+    post:
+      tags: [Personas]
+      summary: Create persona
+      responses:
+        '200':
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Persona' }
+
+  /personas/{personaId}:
+    get:
+      tags: [Personas]
+      summary: Get persona
+      parameters:
+        - name: personaId
+          in: path
+          required: true
+          schema: { type: string, format: uuid }
+      responses:
+        '200':
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Persona' }
+    put:
+      tags: [Personas]
+      summary: Update persona
+      parameters:
+        - name: personaId
+          in: path
+          required: true
+          schema: { type: string, format: uuid }
+      responses:
+        '200':
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Persona' }
+    delete:
+      tags: [Personas]
+      summary: Delete persona
+      parameters:
+        - name: personaId
+          in: path
+          required: true
+          schema: { type: string, format: uuid }
+      responses:
+        '204':
+          description: Persona deleted
+
+  /personas/team/{teamId}:
+    get:
+      tags: [Personas]
+      summary: Get team personas
+      parameters:
+        - name: teamId
+          in: path
+          required: true
+          schema: { type: string, format: uuid }
+      responses:
+        '200':
+          description: List of Persona
+
+  /personas/team/{teamId}/agent/{agentType}:
+    get:
+      tags: [Personas]
+      summary: Get team personas by agent type
+      parameters:
+        - name: teamId
+          in: path
+          required: true
+          schema: { type: string, format: uuid }
+        - name: agentType
+          in: path
+          required: true
+          schema: { type: string }
+      responses:
+        '200':
+          description: List of Persona
+
+  /personas/team/{teamId}/default/{agentType}:
+    get:
+      tags: [Personas]
+      summary: Get team default persona
+      parameters:
+        - name: teamId
+          in: path
+          required: true
+          schema: { type: string, format: uuid }
+        - name: agentType
+          in: path
+          required: true
+          schema: { type: string }
+      responses:
+        '200':
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Persona' }
+
+  /personas/{personaId}/set-default:
+    put:
+      tags: [Personas]
+      summary: Set persona as default
+      parameters:
+        - name: personaId
+          in: path
+          required: true
+          schema: { type: string, format: uuid }
+      responses:
+        '200':
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Persona' }
+
+  /personas/{personaId}/remove-default:
+    put:
+      tags: [Personas]
+      summary: Remove default status
+      parameters:
+        - name: personaId
+          in: path
+          required: true
+          schema: { type: string, format: uuid }
+      responses:
+        '200':
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Persona' }
+
+  /personas/system:
+    get:
+      tags: [Personas]
+      summary: Get system personas
+      responses:
+        '200':
+          description: List of Persona
+
+  /personas/mine:
+    get:
+      tags: [Personas]
+      summary: Get my personas
+      responses:
+        '200':
+          description: List of Persona
+
+  # ========================================
+  # DIRECTIVES (8 endpoints)
+  # ========================================
+  /directives:
+    post:
+      tags: [Directives]
+      summary: Create directive
+      responses:
+        '200':
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Directive' }
+
+  /directives/{directiveId}:
+    get:
+      tags: [Directives]
+      summary: Get directive
+      parameters:
+        - name: directiveId
+          in: path
+          required: true
+          schema: { type: string, format: uuid }
+      responses:
+        '200':
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Directive' }
+    put:
+      tags: [Directives]
+      summary: Update directive
+      parameters:
+        - name: directiveId
+          in: path
+          required: true
+          schema: { type: string, format: uuid }
+      responses:
+        '200':
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Directive' }
+    delete:
+      tags: [Directives]
+      summary: Delete directive
+      parameters:
+        - name: directiveId
+          in: path
+          required: true
+          schema: { type: string, format: uuid }
+      responses:
+        '204':
+          description: Directive deleted
+
+  /directives/team/{teamId}:
+    get:
+      tags: [Directives]
+      summary: Get team directives
+      parameters:
+        - name: teamId
+          in: path
+          required: true
+          schema: { type: string, format: uuid }
+      responses:
+        '200':
+          description: List of Directive
+
+  /directives/project/{projectId}:
+    get:
+      tags: [Directives]
+      summary: Get project directives
+      parameters:
+        - name: projectId
+          in: path
+          required: true
+          schema: { type: string, format: uuid }
+      responses:
+        '200':
+          description: List of Directive
+
+  /directives/team/{teamId}/category/{category}:
+    get:
+      tags: [Directives]
+      summary: Get directives by category
+      parameters:
+        - name: teamId
+          in: path
+          required: true
+          schema: { type: string, format: uuid }
+        - name: category
+          in: path
+          required: true
+          schema: { type: string }
+      responses:
+        '200':
+          description: List of Directive
+
+  /directives/mine:
+    get:
+      tags: [Directives]
+      summary: Get my directives
+      responses:
+        '200':
+          description: List of Directive
+
+  # ========================================
+  # REPORTS (5 endpoints)
+  # ========================================
+  /reports/job/{jobId}/summary:
+    post:
+      tags: [Reports]
+      summary: Upload summary report
+      parameters:
+        - name: jobId
+          in: path
+          required: true
+          schema: { type: string, format: uuid }
+      responses:
+        '200':
+          description: S3 key
+
+  /reports/job/{jobId}/agent/{agentType}:
+    post:
+      tags: [Reports]
+      summary: Upload agent report
+      parameters:
+        - name: jobId
+          in: path
+          required: true
+          schema: { type: string, format: uuid }
+        - name: agentType
+          in: path
+          required: true
+          schema: { type: string }
+      responses:
+        '200':
+          description: S3 key
+
+  /reports/job/{jobId}/spec:
+    post:
+      tags: [Reports]
+      summary: Upload specification (multipart)
+      parameters:
+        - name: jobId
+          in: path
+          required: true
+          schema: { type: string, format: uuid }
+      requestBody:
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              properties:
+                file:
+                  type: string
+                  format: binary
+      responses:
+        '200':
+          description: S3 key
+
+  /reports/download:
+    get:
+      tags: [Reports]
+      summary: Download report by S3 key
+      parameters:
+        - name: s3Key
+          in: query
+          required: true
+          schema: { type: string }
+      responses:
+        '200':
+          description: Report content
+
+  /reports/spec/download:
+    get:
+      tags: [Reports]
+      summary: Download specification file
+      parameters:
+        - name: s3Key
+          in: query
+          required: true
+          schema: { type: string }
+      responses:
+        '200':
+          description: File download
+
+  # ========================================
+  # TECH DEBT (9 endpoints)
+  # ========================================
+  /tech-debt:
+    post:
+      tags: [Tech Debt]
+      summary: Create tech debt item
+      responses:
+        '200':
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/TechDebtItem' }
+
+  /tech-debt/batch:
+    post:
+      tags: [Tech Debt]
+      summary: Batch create tech debt items
+      responses:
+        '200':
+          description: List of TechDebtItem
+
+  /tech-debt/{itemId}:
+    get:
+      tags: [Tech Debt]
+      summary: Get tech debt item
+      parameters:
+        - name: itemId
+          in: path
+          required: true
+          schema: { type: string, format: uuid }
+      responses:
+        '200':
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/TechDebtItem' }
+    delete:
+      tags: [Tech Debt]
+      summary: Delete tech debt item
+      parameters:
+        - name: itemId
+          in: path
+          required: true
+          schema: { type: string, format: uuid }
+      responses:
+        '204':
+          description: Deleted
+
+  /tech-debt/project/{projectId}:
+    get:
+      tags: [Tech Debt]
+      summary: Get tech debt for project (paged)
+      parameters:
+        - name: projectId
+          in: path
+          required: true
+          schema: { type: string, format: uuid }
+        - name: page
+          in: query
+          schema: { type: integer }
+        - name: size
+          in: query
+          schema: { type: integer }
+      responses:
+        '200':
+          description: PageResponse of TechDebtItem
+
+  /tech-debt/project/{projectId}/status/{status}:
+    get:
+      tags: [Tech Debt]
+      summary: Get tech debt by status
+      parameters:
+        - name: projectId
+          in: path
+          required: true
+          schema: { type: string, format: uuid }
+        - name: status
+          in: path
+          required: true
+          schema: { type: string }
+      responses:
+        '200':
+          description: PageResponse of TechDebtItem
+
+  /tech-debt/project/{projectId}/category/{category}:
+    get:
+      tags: [Tech Debt]
+      summary: Get tech debt by category
+      parameters:
+        - name: projectId
+          in: path
+          required: true
+          schema: { type: string, format: uuid }
+        - name: category
+          in: path
+          required: true
+          schema: { type: string }
+      responses:
+        '200':
+          description: PageResponse of TechDebtItem
+
+  /tech-debt/{itemId}/status:
+    put:
+      tags: [Tech Debt]
+      summary: Update tech debt status
+      parameters:
+        - name: itemId
+          in: path
+          required: true
+          schema: { type: string, format: uuid }
+      responses:
+        '200':
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/TechDebtItem' }
+
+  /tech-debt/project/{projectId}/summary:
+    get:
+      tags: [Tech Debt]
+      summary: Get debt summary
+      parameters:
+        - name: projectId
+          in: path
+          required: true
+          schema: { type: string, format: uuid }
+      responses:
+        '200':
+          description: Summary aggregation map
+
+  # ========================================
+  # METRICS (3 endpoints)
+  # ========================================
+  /metrics/team/{teamId}:
+    get:
+      tags: [Metrics]
+      summary: Get team metrics
+      parameters:
+        - name: teamId
+          in: path
+          required: true
+          schema: { type: string, format: uuid }
+      responses:
+        '200':
+          description: TeamMetrics
+
+  /metrics/project/{projectId}:
+    get:
+      tags: [Metrics]
+      summary: Get project metrics
+      parameters:
+        - name: projectId
+          in: path
+          required: true
+          schema: { type: string, format: uuid }
+      responses:
+        '200':
+          description: ProjectMetrics
+
+  /metrics/project/{projectId}/trend:
+    get:
+      tags: [Metrics]
+      summary: Get project health trend
+      parameters:
+        - name: projectId
+          in: path
+          required: true
+          schema: { type: string, format: uuid }
+        - name: days
+          in: query
+          schema: { type: integer, default: 30 }
+      responses:
+        '200':
+          description: List of HealthSnapshot
+
+  # ========================================
+  # HEALTH (2 endpoints)
+  # ========================================
+  /health/project/{projectId}:
+    get:
+      tags: [Health]
+      summary: Get health snapshot
+      parameters:
+        - name: projectId
+          in: path
+          required: true
+          schema: { type: string, format: uuid }
+      responses:
+        '200':
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/HealthSnapshot' }
+    post:
+      tags: [Health]
+      summary: Create health snapshot
+      parameters:
+        - name: projectId
+          in: path
+          required: true
+          schema: { type: string, format: uuid }
+      responses:
+        '200':
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/HealthSnapshot' }
+
+  # ========================================
+  # COMPLIANCE (5 endpoints)
+  # ========================================
+  /compliance:
+    post:
+      tags: [Compliance]
+      summary: Create compliance items batch
+      responses:
+        '200':
+          description: List of ComplianceItem
+
+  /compliance/job/{jobId}:
+    get:
+      tags: [Compliance]
+      summary: Get compliance items for job
+      parameters:
+        - name: jobId
+          in: path
+          required: true
+          schema: { type: string, format: uuid }
+      responses:
+        '200':
+          description: List of ComplianceItem
+
+  /compliance/{itemId}:
+    get:
+      tags: [Compliance]
+      summary: Get compliance item
+      parameters:
+        - name: itemId
+          in: path
+          required: true
+          schema: { type: string, format: uuid }
+      responses:
+        '200':
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/ComplianceItem' }
+
+  /compliance/{itemId}/status:
+    put:
+      tags: [Compliance]
+      summary: Update compliance item status
+      parameters:
+        - name: itemId
+          in: path
+          required: true
+          schema: { type: string, format: uuid }
+      responses:
+        '200':
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/ComplianceItem' }
+
+  /compliance/{itemId}:
+    delete:
+      tags: [Compliance]
+      summary: Delete compliance item
+      parameters:
+        - name: itemId
+          in: path
+          required: true
+          schema: { type: string, format: uuid }
+      responses:
+        '204':
+          description: Deleted
+
+  # ========================================
+  # DEPENDENCIES (5 endpoints)
+  # ========================================
+  /dependencies:
+    post:
+      tags: [Dependencies]
+      summary: Create dependency scan with vulnerabilities
+      responses:
+        '200':
+          description: DependencyScan
+
+  /dependencies/project/{projectId}:
+    get:
+      tags: [Dependencies]
+      summary: Get scans for project
+      parameters:
+        - name: projectId
+          in: path
+          required: true
+          schema: { type: string, format: uuid }
+      responses:
+        '200':
+          description: List of DependencyScan
+
+  /dependencies/{scanId}/vulnerabilities:
+    get:
+      tags: [Dependencies]
+      summary: Get vulnerabilities for scan
+      parameters:
+        - name: scanId
+          in: path
+          required: true
+          schema: { type: string, format: uuid }
+      responses:
+        '200':
+          description: List of DependencyVulnerability
+
+  /dependencies/vulnerabilities/{vulnId}/status:
+    put:
+      tags: [Dependencies]
+      summary: Update vulnerability status
+      parameters:
+        - name: vulnId
+          in: path
+          required: true
+          schema: { type: string, format: uuid }
+      responses:
+        '200':
+          description: Updated vulnerability
+
+  /dependencies/{scanId}:
+    delete:
+      tags: [Dependencies]
+      summary: Delete scan
+      parameters:
+        - name: scanId
+          in: path
+          required: true
+          schema: { type: string, format: uuid }
+      responses:
+        '204':
+          description: Deleted
+
+  # ========================================
+  # INTEGRATIONS (9 endpoints)
+  # ========================================
+  /integrations/github/{teamId}:
+    get:
+      tags: [Integrations]
+      summary: Get team GitHub connections
+      parameters:
+        - name: teamId
+          in: path
+          required: true
+          schema: { type: string, format: uuid }
+      responses:
+        '200':
+          description: List of GitHubConnection
+    post:
+      tags: [Integrations]
+      summary: Create GitHub connection
+      parameters:
+        - name: teamId
+          in: path
+          required: true
+          schema: { type: string, format: uuid }
+      responses:
+        '200':
+          description: GitHubConnection
+
+  /integrations/github/{connectionId}:
+    put:
+      tags: [Integrations]
+      summary: Update GitHub connection
+      parameters:
+        - name: connectionId
+          in: path
+          required: true
+          schema: { type: string, format: uuid }
+      responses:
+        '200':
+          description: GitHubConnection
+    delete:
+      tags: [Integrations]
+      summary: Delete GitHub connection
+      parameters:
+        - name: connectionId
+          in: path
+          required: true
+          schema: { type: string, format: uuid }
+      responses:
+        '204':
+          description: Deleted
+
+  /integrations/github/{connectionId}/test:
+    post:
+      tags: [Integrations]
+      summary: Test GitHub connection
+      parameters:
+        - name: connectionId
+          in: path
+          required: true
+          schema: { type: string, format: uuid }
+      responses:
+        '200':
+          description: Test result
+
+  /integrations/jira/{teamId}:
+    get:
+      tags: [Integrations]
+      summary: Get team Jira connections
+      parameters:
+        - name: teamId
+          in: path
+          required: true
+          schema: { type: string, format: uuid }
+      responses:
+        '200':
+          description: List of JiraConnection
+    post:
+      tags: [Integrations]
+      summary: Create Jira connection
+      parameters:
+        - name: teamId
+          in: path
+          required: true
+          schema: { type: string, format: uuid }
+      responses:
+        '200':
+          description: JiraConnection
+
+  /integrations/jira/{connectionId}:
+    delete:
+      tags: [Integrations]
+      summary: Delete Jira connection
+      parameters:
+        - name: connectionId
+          in: path
+          required: true
+          schema: { type: string, format: uuid }
+      responses:
+        '204':
+          description: Deleted
+
+  /integrations/jira/{connectionId}/test:
+    post:
+      tags: [Integrations]
+      summary: Test Jira connection
+      parameters:
+        - name: connectionId
+          in: path
+          required: true
+          schema: { type: string, format: uuid }
+      responses:
+        '200':
+          description: Test result
+
+  # ========================================
+  # ADMIN (4 endpoints)
+  # ========================================
+  /admin/teams/{teamId}/audit-log:
+    get:
+      tags: [Admin]
+      summary: Get team audit log
+      parameters:
+        - name: teamId
+          in: path
+          required: true
+          schema: { type: string, format: uuid }
+        - name: page
+          in: query
+          schema: { type: integer }
+        - name: size
+          in: query
+          schema: { type: integer }
+      responses:
+        '200':
+          description: Paginated audit log entries
+
+  /admin/system/health:
+    get:
+      tags: [Admin]
+      summary: Get system health
+      responses:
+        '200':
+          description: System health status
+
+  /admin/system/stats:
+    get:
+      tags: [Admin]
+      summary: Get system stats
+      responses:
+        '200':
+          description: System statistics
+
+  /admin/users:
+    get:
+      tags: [Admin]
+      summary: List all users (admin)
+      parameters:
+        - name: page
+          in: query
+          schema: { type: integer }
+        - name: size
+          in: query
+          schema: { type: integer }
+      responses:
+        '200':
+          description: Paginated user list
+
+  # ========================================
+  # VAULT — SECRETS (19 endpoints)
+  # Target: localhost:8097/api/v1/vault
+  # ========================================
+  /vault/secrets:
+    post:
+      tags: [Vault - Secrets]
+      summary: Create secret
+      responses:
+        '200':
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/SecretResponse' }
+    get:
+      tags: [Vault - Secrets]
+      summary: List secrets (paged, filtered)
+      parameters:
+        - name: type
+          in: query
+          schema: { type: string }
+        - name: pathPrefix
+          in: query
+          schema: { type: string }
+        - name: activeOnly
+          in: query
+          schema: { type: boolean }
+        - name: page
+          in: query
+          schema: { type: integer }
+        - name: size
+          in: query
+          schema: { type: integer }
+        - name: sortBy
+          in: query
+          schema: { type: string }
+        - name: sortDir
+          in: query
+          schema: { type: string }
+      responses:
+        '200':
+          description: PageResponse of SecretResponse
+
+  /vault/secrets/{secretId}:
+    get:
+      tags: [Vault - Secrets]
+      summary: Get secret
+      parameters:
+        - name: secretId
+          in: path
+          required: true
+          schema: { type: string, format: uuid }
+      responses:
+        '200':
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/SecretResponse' }
+    put:
+      tags: [Vault - Secrets]
+      summary: Update secret
+      parameters:
+        - name: secretId
+          in: path
+          required: true
+          schema: { type: string, format: uuid }
+      responses:
+        '200':
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/SecretResponse' }
+    delete:
+      tags: [Vault - Secrets]
+      summary: Soft delete secret
+      parameters:
+        - name: secretId
+          in: path
+          required: true
+          schema: { type: string, format: uuid }
+      responses:
+        '204':
+          description: Soft deleted
+
+  /vault/secrets/{secretId}/permanent:
+    delete:
+      tags: [Vault - Secrets]
+      summary: Hard delete secret
+      parameters:
+        - name: secretId
+          in: path
+          required: true
+          schema: { type: string, format: uuid }
+      responses:
+        '204':
+          description: Permanently deleted
+
+  /vault/secrets/by-path:
+    get:
+      tags: [Vault - Secrets]
+      summary: Get secret by path
+      parameters:
+        - name: path
+          in: query
+          required: true
+          schema: { type: string }
+      responses:
+        '200':
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/SecretResponse' }
+
+  /vault/secrets/{secretId}/value:
+    get:
+      tags: [Vault - Secrets]
+      summary: Read secret value
+      parameters:
+        - name: secretId
+          in: path
+          required: true
+          schema: { type: string, format: uuid }
+      responses:
+        '200':
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/SecretValueResponse' }
+
+  /vault/secrets/{secretId}/versions:
+    get:
+      tags: [Vault - Secrets]
+      summary: List secret versions
+      parameters:
+        - name: secretId
+          in: path
+          required: true
+          schema: { type: string, format: uuid }
+        - name: page
+          in: query
+          schema: { type: integer }
+        - name: size
+          in: query
+          schema: { type: integer }
+      responses:
+        '200':
+          description: PageResponse of SecretVersionResponse
+
+  /vault/secrets/{secretId}/versions/{version}:
+    get:
+      tags: [Vault - Secrets]
+      summary: Get specific version
+      parameters:
+        - name: secretId
+          in: path
+          required: true
+          schema: { type: string, format: uuid }
+        - name: version
+          in: path
+          required: true
+          schema: { type: integer }
+      responses:
+        '200':
+          description: SecretVersionResponse
+    delete:
+      tags: [Vault - Secrets]
+      summary: Destroy version
+      parameters:
+        - name: secretId
+          in: path
+          required: true
+          schema: { type: string, format: uuid }
+        - name: version
+          in: path
+          required: true
+          schema: { type: integer }
+      responses:
+        '204':
+          description: Version destroyed
+
+  /vault/secrets/{secretId}/versions/{version}/value:
+    get:
+      tags: [Vault - Secrets]
+      summary: Read version value
+      parameters:
+        - name: secretId
+          in: path
+          required: true
+          schema: { type: string, format: uuid }
+        - name: version
+          in: path
+          required: true
+          schema: { type: integer }
+      responses:
+        '200':
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/SecretValueResponse' }
+
+  /vault/secrets/{secretId}/metadata:
+    get:
+      tags: [Vault - Secrets]
+      summary: Get secret metadata
+      parameters:
+        - name: secretId
+          in: path
+          required: true
+          schema: { type: string, format: uuid }
+      responses:
+        '200':
+          description: Map of key-value metadata
+
+  /vault/secrets/{secretId}/metadata/{key}:
+    put:
+      tags: [Vault - Secrets]
+      summary: Set metadata key
+      parameters:
+        - name: secretId
+          in: path
+          required: true
+          schema: { type: string, format: uuid }
+        - name: key
+          in: path
+          required: true
+          schema: { type: string }
+      responses:
+        '200':
+          description: Metadata updated
+    delete:
+      tags: [Vault - Secrets]
+      summary: Remove metadata key
+      parameters:
+        - name: secretId
+          in: path
+          required: true
+          schema: { type: string, format: uuid }
+        - name: key
+          in: path
+          required: true
+          schema: { type: string }
+      responses:
+        '204':
+          description: Metadata removed
+
+  /vault/secrets/search:
+    get:
+      tags: [Vault - Secrets]
+      summary: Search secrets
+      parameters:
+        - name: q
+          in: query
+          required: true
+          schema: { type: string }
+        - name: page
+          in: query
+          schema: { type: integer }
+        - name: size
+          in: query
+          schema: { type: integer }
+      responses:
+        '200':
+          description: PageResponse of SecretResponse
+
+  /vault/secrets/paths:
+    get:
+      tags: [Vault - Secrets]
+      summary: List secret paths
+      parameters:
+        - name: prefix
+          in: query
+          schema: { type: string, default: '/' }
+      responses:
+        '200':
+          description: List of path strings
+
+  /vault/secrets/stats:
+    get:
+      tags: [Vault - Secrets]
+      summary: Get secret statistics
+      responses:
+        '200':
+          description: Map of stat name to count
+
+  /vault/secrets/expiring:
+    get:
+      tags: [Vault - Secrets]
+      summary: Get expiring secrets
+      parameters:
+        - name: withinHours
+          in: query
+          schema: { type: integer, default: 24 }
+      responses:
+        '200':
+          description: List of SecretResponse
+
+  # ========================================
+  # VAULT — POLICIES (12 endpoints)
+  # ========================================
+  /vault/policies:
+    post:
+      tags: [Vault - Policies]
+      summary: Create access policy
+      responses:
+        '200':
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/AccessPolicyResponse' }
+    get:
+      tags: [Vault - Policies]
+      summary: List policies
+      parameters:
+        - name: activeOnly
+          in: query
+          schema: { type: boolean }
+        - name: page
+          in: query
+          schema: { type: integer }
+        - name: size
+          in: query
+          schema: { type: integer }
+      responses:
+        '200':
+          description: PageResponse of AccessPolicyResponse
+
+  /vault/policies/{policyId}:
+    get:
+      tags: [Vault - Policies]
+      summary: Get policy
+      parameters:
+        - name: policyId
+          in: path
+          required: true
+          schema: { type: string, format: uuid }
+      responses:
+        '200':
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/AccessPolicyResponse' }
+    put:
+      tags: [Vault - Policies]
+      summary: Update policy
+      parameters:
+        - name: policyId
+          in: path
+          required: true
+          schema: { type: string, format: uuid }
+      responses:
+        '200':
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/AccessPolicyResponse' }
+    delete:
+      tags: [Vault - Policies]
+      summary: Delete policy
+      parameters:
+        - name: policyId
+          in: path
+          required: true
+          schema: { type: string, format: uuid }
+      responses:
+        '204':
+          description: Deleted
+
+  /vault/policies/bindings:
+    post:
+      tags: [Vault - Policies]
+      summary: Create policy binding
+      responses:
+        '200':
+          description: PolicyBindingResponse
+
+  /vault/policies/{policyId}/bindings:
+    get:
+      tags: [Vault - Policies]
+      summary: List bindings for policy
+      parameters:
+        - name: policyId
+          in: path
+          required: true
+          schema: { type: string, format: uuid }
+      responses:
+        '200':
+          description: List of PolicyBindingResponse
+
+  /vault/policies/bindings/target:
+    get:
+      tags: [Vault - Policies]
+      summary: List bindings for target
+      parameters:
+        - name: type
+          in: query
+          required: true
+          schema: { type: string }
+        - name: targetId
+          in: query
+          required: true
+          schema: { type: string }
+      responses:
+        '200':
+          description: List of PolicyBindingResponse
+
+  /vault/policies/bindings/{bindingId}:
+    delete:
+      tags: [Vault - Policies]
+      summary: Delete binding
+      parameters:
+        - name: bindingId
+          in: path
+          required: true
+          schema: { type: string, format: uuid }
+      responses:
+        '204':
+          description: Deleted
+
+  /vault/policies/evaluate:
+    post:
+      tags: [Vault - Policies]
+      summary: Evaluate user access
+      parameters:
+        - name: userId
+          in: query
+          required: true
+          schema: { type: string }
+        - name: path
+          in: query
+          required: true
+          schema: { type: string }
+        - name: permission
+          in: query
+          required: true
+          schema: { type: string }
+      responses:
+        '200':
+          description: AccessDecision
+
+  /vault/policies/evaluate/service:
+    post:
+      tags: [Vault - Policies]
+      summary: Evaluate service access
+      parameters:
+        - name: serviceId
+          in: query
+          required: true
+          schema: { type: string }
+        - name: path
+          in: query
+          required: true
+          schema: { type: string }
+        - name: permission
+          in: query
+          required: true
+          schema: { type: string }
+      responses:
+        '200':
+          description: AccessDecision
+
+  /vault/policies/stats:
+    get:
+      tags: [Vault - Policies]
+      summary: Get policy statistics
+      responses:
+        '200':
+          description: Map of stat name to count
+
+  # ========================================
+  # VAULT — ROTATION (8 endpoints)
+  # ========================================
+  /vault/rotation/policies:
+    post:
+      tags: [Vault - Rotation]
+      summary: Create/update rotation policy
+      responses:
+        '200':
+          description: RotationPolicyResponse
+
+  /vault/rotation/policies/{secretId}:
+    get:
+      tags: [Vault - Rotation]
+      summary: Get rotation policy for secret
+      parameters:
+        - name: secretId
+          in: path
+          required: true
+          schema: { type: string, format: uuid }
+      responses:
+        '200':
+          description: RotationPolicyResponse
+
+  /vault/rotation/policies/{policyId}:
+    put:
+      tags: [Vault - Rotation]
+      summary: Update rotation policy
+      parameters:
+        - name: policyId
+          in: path
+          required: true
+          schema: { type: string, format: uuid }
+      responses:
+        '200':
+          description: RotationPolicyResponse
+    delete:
+      tags: [Vault - Rotation]
+      summary: Delete rotation policy
+      parameters:
+        - name: policyId
+          in: path
+          required: true
+          schema: { type: string, format: uuid }
+      responses:
+        '204':
+          description: Deleted
+
+  /vault/rotation/rotate/{secretId}:
+    post:
+      tags: [Vault - Rotation]
+      summary: Rotate secret now
+      parameters:
+        - name: secretId
+          in: path
+          required: true
+          schema: { type: string, format: uuid }
+      responses:
+        '200':
+          description: RotationHistoryResponse
+
+  /vault/rotation/history/{secretId}:
+    get:
+      tags: [Vault - Rotation]
+      summary: Get rotation history
+      parameters:
+        - name: secretId
+          in: path
+          required: true
+          schema: { type: string, format: uuid }
+        - name: page
+          in: query
+          schema: { type: integer }
+        - name: size
+          in: query
+          schema: { type: integer }
+      responses:
+        '200':
+          description: PageResponse of RotationHistoryResponse
+
+  /vault/rotation/history/{secretId}/last:
+    get:
+      tags: [Vault - Rotation]
+      summary: Get last successful rotation
+      parameters:
+        - name: secretId
+          in: path
+          required: true
+          schema: { type: string, format: uuid }
+      responses:
+        '200':
+          description: RotationHistoryResponse
+
+  /vault/rotation/stats/{secretId}:
+    get:
+      tags: [Vault - Rotation]
+      summary: Get rotation statistics
+      parameters:
+        - name: secretId
+          in: path
+          required: true
+          schema: { type: string, format: uuid }
+      responses:
+        '200':
+          description: Map of stat name to count
+
+  # ========================================
+  # VAULT — TRANSIT (12 endpoints)
+  # ========================================
+  /vault/transit/keys:
+    post:
+      tags: [Vault - Transit]
+      summary: Create transit key
+      responses:
+        '200':
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/TransitKeyResponse' }
+    get:
+      tags: [Vault - Transit]
+      summary: List transit keys
+      parameters:
+        - name: activeOnly
+          in: query
+          schema: { type: boolean }
+        - name: page
+          in: query
+          schema: { type: integer }
+        - name: size
+          in: query
+          schema: { type: integer }
+      responses:
+        '200':
+          description: PageResponse of TransitKeyResponse
+
+  /vault/transit/keys/{keyId}:
+    get:
+      tags: [Vault - Transit]
+      summary: Get transit key
+      parameters:
+        - name: keyId
+          in: path
+          required: true
+          schema: { type: string, format: uuid }
+      responses:
+        '200':
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/TransitKeyResponse' }
+    put:
+      tags: [Vault - Transit]
+      summary: Update transit key
+      parameters:
+        - name: keyId
+          in: path
+          required: true
+          schema: { type: string, format: uuid }
+      responses:
+        '200':
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/TransitKeyResponse' }
+    delete:
+      tags: [Vault - Transit]
+      summary: Delete transit key
+      parameters:
+        - name: keyId
+          in: path
+          required: true
+          schema: { type: string, format: uuid }
+      responses:
+        '204':
+          description: Deleted
+
+  /vault/transit/keys/by-name:
+    get:
+      tags: [Vault - Transit]
+      summary: Get transit key by name
+      parameters:
+        - name: name
+          in: query
+          required: true
+          schema: { type: string }
+      responses:
+        '200':
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/TransitKeyResponse' }
+
+  /vault/transit/keys/{keyId}/rotate:
+    post:
+      tags: [Vault - Transit]
+      summary: Rotate transit key
+      parameters:
+        - name: keyId
+          in: path
+          required: true
+          schema: { type: string, format: uuid }
+      responses:
+        '200':
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/TransitKeyResponse' }
+
+  /vault/transit/encrypt:
+    post:
+      tags: [Vault - Transit]
+      summary: Encrypt data
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [keyName, plaintext]
+              properties:
+                keyName: { type: string }
+                plaintext: { type: string }
+      responses:
+        '200':
+          description: TransitEncryptResponse
+
+  /vault/transit/decrypt:
+    post:
+      tags: [Vault - Transit]
+      summary: Decrypt data
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [keyName, ciphertext]
+              properties:
+                keyName: { type: string }
+                ciphertext: { type: string }
+      responses:
+        '200':
+          description: TransitDecryptResponse
+
+  /vault/transit/rewrap:
+    post:
+      tags: [Vault - Transit]
+      summary: Rewrap ciphertext
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [keyName, ciphertext]
+              properties:
+                keyName: { type: string }
+                ciphertext: { type: string }
+      responses:
+        '200':
+          description: TransitEncryptResponse
+
+  /vault/transit/datakey:
+    post:
+      tags: [Vault - Transit]
+      summary: Generate data key
+      parameters:
+        - name: keyName
+          in: query
+          required: true
+          schema: { type: string }
+      responses:
+        '200':
+          description: Map of plaintext and ciphertext data key
+
+  /vault/transit/stats:
+    get:
+      tags: [Vault - Transit]
+      summary: Get transit statistics
+      responses:
+        '200':
+          description: Map of stat name to count
+
+  # ========================================
+  # VAULT — DYNAMIC SECRETS (7 endpoints)
+  # ========================================
+  /vault/dynamic/leases:
+    post:
+      tags: [Vault - Dynamic]
+      summary: Create dynamic lease
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [secretId, ttlSeconds]
+              properties:
+                secretId: { type: string, format: uuid }
+                ttlSeconds: { type: integer }
+      responses:
+        '200':
+          description: DynamicLeaseResponse
+    get:
+      tags: [Vault - Dynamic]
+      summary: List dynamic leases
+      parameters:
+        - name: secretId
+          in: query
+          required: true
+          schema: { type: string, format: uuid }
+        - name: page
+          in: query
+          schema: { type: integer }
+        - name: size
+          in: query
+          schema: { type: integer }
+      responses:
+        '200':
+          description: PageResponse of DynamicLeaseResponse
+
+  /vault/dynamic/leases/{leaseId}:
+    get:
+      tags: [Vault - Dynamic]
+      summary: Get lease
+      parameters:
+        - name: leaseId
+          in: path
+          required: true
+          schema: { type: string, format: uuid }
+      responses:
+        '200':
+          description: DynamicLeaseResponse
+
+  /vault/dynamic/leases/{leaseId}/revoke:
+    post:
+      tags: [Vault - Dynamic]
+      summary: Revoke lease
+      parameters:
+        - name: leaseId
+          in: path
+          required: true
+          schema: { type: string, format: uuid }
+      responses:
+        '200':
+          description: Lease revoked
+
+  /vault/dynamic/leases/revoke-all:
+    post:
+      tags: [Vault - Dynamic]
+      summary: Revoke all leases for secret
+      parameters:
+        - name: secretId
+          in: query
+          required: true
+          schema: { type: string, format: uuid }
+      responses:
+        '200':
+          description: Count of revoked leases
+
+  /vault/dynamic/stats:
+    get:
+      tags: [Vault - Dynamic]
+      summary: Get dynamic lease stats
+      parameters:
+        - name: secretId
+          in: query
+          required: true
+          schema: { type: string, format: uuid }
+      responses:
+        '200':
+          description: Map of stat name to count
+
+  /vault/dynamic/active-count:
+    get:
+      tags: [Vault - Dynamic]
+      summary: Get active lease count
+      responses:
+        '200':
+          description: Integer count
+
+  # ========================================
+  # VAULT — SEAL (5 endpoints)
+  # ========================================
+  /vault/seal/status:
+    get:
+      tags: [Vault - Seal]
+      summary: Get seal status (public)
+      security: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/SealStatusResponse' }
+
+  /vault/seal/seal:
+    post:
+      tags: [Vault - Seal]
+      summary: Seal the vault
+      responses:
+        '200':
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/SealStatusResponse' }
+
+  /vault/seal/unseal:
+    post:
+      tags: [Vault - Seal]
+      summary: Unseal the vault
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [action]
+              properties:
+                action: { type: string }
+                keyShare: { type: string }
+      responses:
+        '200':
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/SealStatusResponse' }
+
+  /vault/seal/generate-shares:
+    post:
+      tags: [Vault - Seal]
+      summary: Generate Shamir shares
+      responses:
+        '200':
+          description: Map with shares and recovery info
+
+  /vault/seal/info:
+    get:
+      tags: [Vault - Seal]
+      summary: Get seal info
+      responses:
+        '200':
+          description: Map with seal configuration
+
+  # ========================================
+  # VAULT — AUDIT (3 endpoints)
+  # ========================================
+  /vault/audit/query:
+    get:
+      tags: [Vault - Audit]
+      summary: Query audit log
+      parameters:
+        - name: userId
+          in: query
+          schema: { type: string }
+        - name: operation
+          in: query
+          schema: { type: string }
+        - name: path
+          in: query
+          schema: { type: string }
+        - name: resourceType
+          in: query
+          schema: { type: string }
+        - name: resourceId
+          in: query
+          schema: { type: string }
+        - name: successOnly
+          in: query
+          schema: { type: boolean }
+        - name: startTime
+          in: query
+          schema: { type: string, format: date-time }
+        - name: endTime
+          in: query
+          schema: { type: string, format: date-time }
+        - name: page
+          in: query
+          schema: { type: integer }
+        - name: size
+          in: query
+          schema: { type: integer }
+      responses:
+        '200':
+          description: PageResponse of AuditEntryResponse
+
+  /vault/audit/resource/{resourceType}/{resourceId}:
+    get:
+      tags: [Vault - Audit]
+      summary: Get audit for resource
+      parameters:
+        - name: resourceType
+          in: path
+          required: true
+          schema: { type: string }
+        - name: resourceId
+          in: path
+          required: true
+          schema: { type: string }
+        - name: page
+          in: query
+          schema: { type: integer }
+        - name: size
+          in: query
+          schema: { type: integer }
+      responses:
+        '200':
+          description: PageResponse of AuditEntryResponse
+
+  /vault/audit/stats:
+    get:
+      tags: [Vault - Audit]
+      summary: Get audit statistics
+      responses:
+        '200':
+          description: Map of stat name to count
