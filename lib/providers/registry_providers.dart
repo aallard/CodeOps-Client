@@ -322,6 +322,36 @@ final registryCyclesProvider = FutureProvider<List<String>>((ref) async {
 });
 
 // ─────────────────────────────────────────────────────────────────────────────
+// Dependencies — UI State Providers
+// ─────────────────────────────────────────────────────────────────────────────
+
+/// Layout algorithm for the dependency graph view.
+enum GraphLayoutType {
+  /// Layered (Sugiyama) layout — arranges nodes in horizontal layers.
+  layered,
+
+  /// Hierarchical tree layout from root services.
+  tree,
+
+  /// Force-directed layout — physics simulation for cluster exploration.
+  forceDirected;
+
+  /// Human-readable display name.
+  String get displayName => switch (this) {
+        GraphLayoutType.layered => 'Layered',
+        GraphLayoutType.tree => 'Tree',
+        GraphLayoutType.forceDirected => 'Force-Directed',
+      };
+}
+
+/// Selected layout algorithm for the dependency graph.
+final graphLayoutProvider =
+    StateProvider<GraphLayoutType>((ref) => GraphLayoutType.layered);
+
+/// Currently selected node in the dependency graph.
+final selectedGraphNodeProvider = StateProvider<String?>((ref) => null);
+
+// ─────────────────────────────────────────────────────────────────────────────
 // Ports — Data Providers
 // ─────────────────────────────────────────────────────────────────────────────
 
