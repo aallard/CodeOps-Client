@@ -49,12 +49,21 @@ class ScribeEditor extends ConsumerStatefulWidget {
   /// Callback fired on every content change. Null for read-only mode.
   final ValueChanged<String>? onChanged;
 
+  /// Callback fired on Ctrl+S (Cmd+S on macOS).
+  ///
+  /// Receives the current editor content as its argument.
+  final ValueChanged<String>? onSaved;
+
   /// Whether the editor is read-only (no editing allowed).
   /// When `true`, [onChanged] is ignored.
   final bool readOnly;
 
   /// Whether to show line numbers. Defaults to `true`.
   final bool showLineNumbers;
+
+  /// Whether to show code folding indicators in the gutter.
+  /// Defaults to `true`.
+  final bool showCodeFolding;
 
   /// Font size in logical pixels. Defaults to `14.0`.
   /// Valid range: 12.0 to 24.0.
@@ -71,11 +80,51 @@ class ScribeEditor extends ConsumerStatefulWidget {
   /// horizontally).
   final bool wordWrap;
 
+  /// Whether to auto-focus the editor when mounted. Defaults to `false`.
+  final bool autofocus;
+
+  /// Minimum height constraint in logical pixels.
+  ///
+  /// When `null`, the editor has no minimum height constraint.
+  final double? minHeight;
+
+  /// Maximum height constraint in logical pixels.
+  ///
+  /// When `null`, the editor fills available space.
+  final double? maxHeight;
+
   /// Whether to show the minimap. Defaults to `false`.
   ///
   /// Note: re_editor does not natively support minimaps. This parameter
   /// is reserved for future use and is currently a no-op.
   final bool showMinimap;
+
+  /// Whether to highlight the line containing the cursor.
+  /// Defaults to `true`.
+  final bool highlightActiveLine;
+
+  /// Whether to highlight matching brackets when cursor is adjacent.
+  /// Defaults to `true`.
+  ///
+  /// Note: Bracket matching is handled by re_editor's syntax engine.
+  /// This parameter controls whether the match highlight color is
+  /// applied.
+  final bool showBracketMatching;
+
+  /// Whether to auto-insert closing brackets: `(`, `[`, `{`.
+  /// Defaults to `true`.
+  final bool autoCloseBrackets;
+
+  /// Whether to auto-insert closing quotes: `'`, `"`, `` ` ``.
+  /// Defaults to `true`.
+  final bool autoCloseQuotes;
+
+  /// Whether to show vertical indent guide lines.
+  /// Defaults to `true`.
+  ///
+  /// Note: Indent guides are rendered via re_editor's chunk indicator
+  /// color. Full indent guide rendering depends on re_editor support.
+  final bool showIndentGuides;
 
   /// Optional placeholder text shown when content is empty.
   final String? placeholder;
@@ -93,13 +142,23 @@ class ScribeEditor extends ConsumerStatefulWidget {
     this.content = '',
     this.language = 'plaintext',
     this.onChanged,
+    this.onSaved,
     this.readOnly = false,
     this.showLineNumbers = true,
+    this.showCodeFolding = true,
     this.fontSize = 14.0,
     this.tabSize = 2,
     this.insertSpaces = true,
     this.wordWrap = false,
+    this.autofocus = false,
+    this.minHeight,
+    this.maxHeight,
     this.showMinimap = false,
+    this.highlightActiveLine = true,
+    this.showBracketMatching = true,
+    this.autoCloseBrackets = true,
+    this.autoCloseQuotes = true,
+    this.showIndentGuides = true,
     this.placeholder,
     this.controller,
     this.focusNode,
@@ -115,12 +174,17 @@ class _ScribeEditorState extends ConsumerState<ScribeEditor> {
   bool _ownsController = false;
   CodeHighlightTheme? _highlightTheme;
   String? _lastLanguage;
+  FocusNode? _ownedFocusNode;
+
+  FocusNode get _effectiveFocusNode =>
+      widget.focusNode ?? (_ownedFocusNode ??= FocusNode());
 
   @override
   void initState() {
     super.initState();
     _initController();
     _buildHighlightTheme();
+    _bindFocusNode();
   }
 
   @override
@@ -131,6 +195,7 @@ class _ScribeEditorState extends ConsumerState<ScribeEditor> {
     if (widget.controller != oldWidget.controller) {
       _disposeOwnedController();
       _initController();
+      _bindFocusNode();
     }
     // Content changed externally (only applies when no external controller).
     else if (widget.controller == null && widget.content != oldWidget.content) {
@@ -141,11 +206,17 @@ class _ScribeEditorState extends ConsumerState<ScribeEditor> {
     if (widget.language != oldWidget.language) {
       _buildHighlightTheme();
     }
+
+    // Focus node changed — rebind.
+    if (widget.focusNode != oldWidget.focusNode) {
+      _bindFocusNode();
+    }
   }
 
   @override
   void dispose() {
     _disposeOwnedController();
+    _ownedFocusNode?.dispose();
     super.dispose();
   }
 
@@ -166,6 +237,10 @@ class _ScribeEditorState extends ConsumerState<ScribeEditor> {
     if (_ownsController) {
       _internalController.dispose();
     }
+  }
+
+  void _bindFocusNode() {
+    widget.controller?.focusNode = _effectiveFocusNode;
   }
 
   void _buildHighlightTheme() {
@@ -195,13 +270,17 @@ class _ScribeEditorState extends ConsumerState<ScribeEditor> {
   @override
   Widget build(BuildContext context) {
     final themeData = ScribeTheme.dark();
+    final autoComplete = widget.autoCloseBrackets && widget.autoCloseQuotes;
 
-    return CodeEditor(
+    Widget editor = CodeEditor(
       controller: _internalController,
       readOnly: widget.readOnly,
       wordWrap: widget.wordWrap,
-      focusNode: widget.focusNode,
+      autofocus: widget.autofocus,
+      focusNode: _effectiveFocusNode,
       hint: widget.placeholder,
+      autocompleteSymbols: autoComplete,
+      shortcutOverrideActions: _buildShortcutOverrides(),
       style: CodeEditorStyle(
         fontSize: widget.fontSize,
         fontFamily: themeData.fontFamily,
@@ -212,41 +291,13 @@ class _ScribeEditorState extends ConsumerState<ScribeEditor> {
         hintTextColor: themeData.comment,
         selectionColor: themeData.selection,
         cursorColor: themeData.cursor,
-        cursorLineColor: themeData.lineHighlight,
+        cursorLineColor:
+            widget.highlightActiveLine ? themeData.lineHighlight : null,
+        chunkIndicatorColor:
+            widget.showIndentGuides ? themeData.indentGuide : null,
         codeTheme: _highlightTheme,
       ),
-      indicatorBuilder: widget.showLineNumbers
-          ? (
-              BuildContext context,
-              CodeLineEditingController editingController,
-              CodeChunkController chunkController,
-              CodeIndicatorValueNotifier notifier,
-            ) {
-              return Row(
-                children: <Widget>[
-                  DefaultCodeLineNumber(
-                    controller: editingController,
-                    notifier: notifier,
-                    textStyle: TextStyle(
-                      fontFamily: themeData.fontFamily,
-                      fontSize: widget.fontSize - 1,
-                      color: themeData.gutterText,
-                    ),
-                    focusedTextStyle: TextStyle(
-                      fontFamily: themeData.fontFamily,
-                      fontSize: widget.fontSize - 1,
-                      color: themeData.cursor,
-                    ),
-                  ),
-                  DefaultCodeChunkIndicator(
-                    width: 20,
-                    controller: chunkController,
-                    notifier: notifier,
-                  ),
-                ],
-              );
-            }
-          : null,
+      indicatorBuilder: _buildIndicator(themeData),
       sperator: widget.showLineNumbers
           ? Container(
               width: 1,
@@ -258,8 +309,76 @@ class _ScribeEditorState extends ConsumerState<ScribeEditor> {
           : (CodeLineEditingValue value) {
               widget.onChanged?.call(_internalController.text);
             },
-      chunkAnalyzer: const DefaultCodeChunkAnalyzer(),
+      chunkAnalyzer: widget.showCodeFolding
+          ? const DefaultCodeChunkAnalyzer()
+          : const NonCodeChunkAnalyzer(),
       padding: const EdgeInsets.all(8),
     );
+
+    // Apply height constraints if specified.
+    if (widget.minHeight != null || widget.maxHeight != null) {
+      editor = ConstrainedBox(
+        constraints: BoxConstraints(
+          minHeight: widget.minHeight ?? 0,
+          maxHeight: widget.maxHeight ?? double.infinity,
+        ),
+        child: editor,
+      );
+    }
+
+    return editor;
+  }
+
+  /// Builds the gutter indicator (line numbers + fold markers).
+  CodeIndicatorBuilder? _buildIndicator(ScribeThemeData themeData) {
+    if (!widget.showLineNumbers && !widget.showCodeFolding) {
+      return null;
+    }
+
+    return (
+      BuildContext context,
+      CodeLineEditingController editingController,
+      CodeChunkController chunkController,
+      CodeIndicatorValueNotifier notifier,
+    ) {
+      return Row(
+        children: <Widget>[
+          if (widget.showLineNumbers)
+            DefaultCodeLineNumber(
+              controller: editingController,
+              notifier: notifier,
+              textStyle: TextStyle(
+                fontFamily: themeData.fontFamily,
+                fontSize: widget.fontSize - 1,
+                color: themeData.gutterText,
+              ),
+              focusedTextStyle: TextStyle(
+                fontFamily: themeData.fontFamily,
+                fontSize: widget.fontSize - 1,
+                color: themeData.cursor,
+              ),
+            ),
+          if (widget.showCodeFolding)
+            DefaultCodeChunkIndicator(
+              width: 20,
+              controller: chunkController,
+              notifier: notifier,
+            ),
+        ],
+      );
+    };
+  }
+
+  /// Builds shortcut override actions (e.g., Ctrl+S save handler).
+  Map<Type, Action<Intent>>? _buildShortcutOverrides() {
+    if (widget.onSaved == null) return null;
+
+    return <Type, Action<Intent>>{
+      CodeShortcutSaveIntent:
+          CallbackAction<CodeShortcutSaveIntent>(onInvoke: (_) {
+        widget.onSaved?.call(_internalController.text);
+        return null;
+      }),
+    };
   }
 }

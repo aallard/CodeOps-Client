@@ -122,6 +122,10 @@ void main() {
         expect(ScribeLanguage.fromFileName('script.pl'), 'perl');
       });
 
+      test('maps .r extension to r', () {
+        expect(ScribeLanguage.fromFileName('analysis.r'), 'r');
+      });
+
       test('maps .graphql extension to graphql', () {
         expect(ScribeLanguage.fromFileName('schema.graphql'), 'graphql');
       });

@@ -30,6 +30,9 @@ void main() {
         expect(theme.constant, isNotNull);
         expect(theme.tag, isNotNull);
         expect(theme.attribute, isNotNull);
+        expect(theme.punctuation, isNotNull);
+        expect(theme.property, isNotNull);
+        expect(theme.indentGuide, isNotNull);
       });
 
       test('uses JetBrains Mono font family', () {
@@ -113,6 +116,9 @@ void main() {
         expect(theme.constant, isNotNull);
         expect(theme.tag, isNotNull);
         expect(theme.attribute, isNotNull);
+        expect(theme.punctuation, isNotNull);
+        expect(theme.property, isNotNull);
+        expect(theme.indentGuide, isNotNull);
       });
 
       test('uses JetBrains Mono font family', () {
@@ -218,6 +224,20 @@ void main() {
         final map = theme.toHighlightThemeMap();
         expect(map, contains('name'));
         expect(map['name']!.color, theme.tag);
+      });
+
+      test('contains punctuation entry', () {
+        final theme = ScribeTheme.dark();
+        final map = theme.toHighlightThemeMap();
+        expect(map, contains('punctuation'));
+        expect(map['punctuation']!.color, theme.punctuation);
+      });
+
+      test('contains property entry', () {
+        final theme = ScribeTheme.dark();
+        final map = theme.toHighlightThemeMap();
+        expect(map, contains('property'));
+        expect(map['property']!.color, theme.property);
       });
 
       test('light theme also produces valid map', () {

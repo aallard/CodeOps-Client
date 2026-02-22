@@ -85,6 +85,15 @@ class ScribeThemeData {
   /// Color for HTML/XML attribute names.
   final Color attribute;
 
+  /// Color for punctuation characters (`;`, `{`, `}`, etc.).
+  final Color punctuation;
+
+  /// Color for property/key names (JSON keys, YAML keys, etc.).
+  final Color property;
+
+  /// Color for vertical indent guide lines.
+  final Color indentGuide;
+
   /// Creates a [ScribeThemeData] with all required fields.
   const ScribeThemeData({
     required this.background,
@@ -108,6 +117,9 @@ class ScribeThemeData {
     required this.constant,
     required this.tag,
     required this.attribute,
+    required this.punctuation,
+    required this.property,
+    required this.indentGuide,
   });
 
   /// Converts the syntax colors to a re_highlight compatible theme map.
@@ -151,6 +163,8 @@ class ScribeThemeData {
       'deletion': TextStyle(color: tag),
       'subst': TextStyle(color: tag),
       'attribute': TextStyle(color: attribute),
+      'punctuation': TextStyle(color: punctuation),
+      'property': TextStyle(color: property),
       'emphasis': const TextStyle(fontStyle: FontStyle.italic),
       'strong': const TextStyle(fontWeight: FontWeight.bold),
     };
@@ -197,6 +211,9 @@ class ScribeTheme {
       constant: Color(0xFFF78C6C),
       tag: Color(0xFFF07178),
       attribute: Color(0xFFFFCB6B),
+      punctuation: Color(0xFF89DDFF),
+      property: Color(0xFF82AAFF),
+      indentGuide: Color(0xFF2A2D52),
     );
   }
 
@@ -228,6 +245,9 @@ class ScribeTheme {
       constant: Color(0xFFF4511E),
       tag: Color(0xFFE53935),
       attribute: Color(0xFFF9A825),
+      punctuation: Color(0xFF00838F),
+      property: Color(0xFF1565C0),
+      indentGuide: Color(0xFFE0E0E0),
     );
   }
 }
