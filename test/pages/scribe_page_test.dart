@@ -2,13 +2,24 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:mocktail/mocktail.dart';
 
 import 'package:codeops/models/scribe_models.dart';
 import 'package:codeops/pages/scribe_page.dart';
 import 'package:codeops/providers/scribe_providers.dart';
+import 'package:codeops/services/data/scribe_persistence_service.dart';
 import 'package:codeops/theme/app_theme.dart';
+import 'package:codeops/widgets/scribe/scribe_sidebar.dart';
+
+class MockScribePersistenceService extends Mock
+    implements ScribePersistenceService {}
 
 void main() {
+  setUpAll(() {
+    registerFallbackValue(<ScribeTab>[]);
+    registerFallbackValue(const ScribeSettings());
+  });
+
   final now = DateTime(2026, 2, 17);
 
   ScribeTab makeTab(int n, {String content = '', String language = 'dart'}) {
@@ -27,13 +38,29 @@ void main() {
     String? activeTabId,
     ScribeSettings settings = const ScribeSettings(),
   }) {
+    final mockPersistence = MockScribePersistenceService();
+    when(() => mockPersistence.loadTabs()).thenAnswer((_) async => tabs);
+    when(() => mockPersistence.loadSettings())
+        .thenAnswer((_) async => settings);
+    when(() => mockPersistence.saveTabs(any())).thenAnswer((_) async {});
+    when(() => mockPersistence.saveSettings(any())).thenAnswer((_) async {});
+
     return ProviderScope(
       overrides: [
-        scribeTabsProvider.overrideWith((ref) => tabs),
-        activeScribeTabIdProvider.overrideWith((ref) => activeTabId),
-        scribeSettingsProvider.overrideWith((ref) => settings),
-        // Override init provider to avoid database access.
-        scribeInitProvider.overrideWith((ref) => Future.value()),
+        scribePersistenceProvider.overrideWithValue(mockPersistence),
+        scribeInitProvider.overrideWith((ref) async {
+          await ref.read(scribeTabsProvider.notifier).loadFromPersistence();
+          await ref
+              .read(scribeSettingsProvider.notifier)
+              .loadFromPersistence();
+          final loadedTabs = ref.read(scribeTabsProvider);
+          if (activeTabId != null) {
+            ref.read(activeScribeTabIdProvider.notifier).state = activeTabId;
+          } else if (loadedTabs.isNotEmpty) {
+            ref.read(activeScribeTabIdProvider.notifier).state =
+                loadedTabs.first.id;
+          }
+        }),
       ],
       child: MaterialApp(
         theme: AppTheme.darkTheme,
@@ -73,7 +100,6 @@ void main() {
       ));
       await tester.pumpAndSettle();
 
-      // Editor renders (the ScribeEditor widget should be present).
       expect(find.byType(ScribePage), findsOneWidget);
     });
 
@@ -85,7 +111,6 @@ void main() {
       ));
       await tester.pumpAndSettle();
 
-      // Status bar shows language, cursor position, encoding.
       expect(find.text('Dart'), findsOneWidget);
       expect(find.text('Ln 1, Col 1'), findsOneWidget);
       expect(find.text('UTF-8'), findsOneWidget);
@@ -136,6 +161,107 @@ void main() {
       await tester.pumpAndSettle();
 
       expect(find.text('Code & text editor'), findsNothing);
+    });
+
+    testWidgets('switches tab when tab title clicked', (tester) async {
+      final tabs = [makeTab(1), makeTab(2)];
+      await tester.pumpWidget(createWidget(
+        tabs: tabs,
+        activeTabId: 'tab-1',
+      ));
+      await tester.pumpAndSettle();
+
+      // Tap second tab title.
+      await tester.tap(find.text('File-2.dart'));
+      await tester.pumpAndSettle();
+
+      // The tab should now be active (but both tabs still visible).
+      expect(find.text('File-1.dart'), findsOneWidget);
+      expect(find.text('File-2.dart'), findsOneWidget);
+    });
+
+    testWidgets('closes tab when close button clicked', (tester) async {
+      final tabs = [makeTab(1), makeTab(2)];
+      await tester.pumpWidget(createWidget(
+        tabs: tabs,
+        activeTabId: 'tab-1',
+      ));
+      await tester.pumpAndSettle();
+
+      // Find close buttons (one per tab).
+      final closeButtons = find.byIcon(Icons.close);
+      expect(closeButtons, findsNWidgets(2));
+
+      // Tap first close button.
+      await tester.tap(closeButtons.first);
+      await tester.pumpAndSettle();
+
+      // First tab should be removed.
+      expect(find.text('File-1.dart'), findsNothing);
+      expect(find.text('File-2.dart'), findsOneWidget);
+    });
+
+    testWidgets('shows dirty indicator when tab is dirty', (tester) async {
+      final dirtyTab = makeTab(1).copyWith(isDirty: true);
+      await tester.pumpWidget(createWidget(
+        tabs: [dirtyTab],
+        activeTabId: 'tab-1',
+      ));
+      await tester.pumpAndSettle();
+
+      // Dirty indicator is the Unicode bullet \u25CF.
+      expect(find.text('\u25CF'), findsOneWidget);
+    });
+
+    testWidgets('no dirty indicator on clean tab', (tester) async {
+      final cleanTab = makeTab(1);
+      await tester.pumpWidget(createWidget(
+        tabs: [cleanTab],
+        activeTabId: 'tab-1',
+      ));
+      await tester.pumpAndSettle();
+
+      // The bullet should NOT appear.
+      expect(find.text('\u25CF'), findsNothing);
+    });
+
+    testWidgets('sidebar toggle button is present when tabs exist',
+        (tester) async {
+      final tabs = [makeTab(1)];
+      await tester.pumpWidget(createWidget(
+        tabs: tabs,
+        activeTabId: 'tab-1',
+      ));
+      await tester.pumpAndSettle();
+
+      expect(find.byIcon(Icons.vertical_split), findsOneWidget);
+    });
+
+    testWidgets('sidebar is hidden by default', (tester) async {
+      final tabs = [makeTab(1)];
+      await tester.pumpWidget(createWidget(
+        tabs: tabs,
+        activeTabId: 'tab-1',
+      ));
+      await tester.pumpAndSettle();
+
+      expect(find.byType(ScribeSidebar), findsNothing);
+    });
+
+    testWidgets('sidebar appears when toggle clicked', (tester) async {
+      final tabs = [makeTab(1)];
+      await tester.pumpWidget(createWidget(
+        tabs: tabs,
+        activeTabId: 'tab-1',
+      ));
+      await tester.pumpAndSettle();
+
+      // Click sidebar toggle.
+      await tester.tap(find.byIcon(Icons.vertical_split));
+      await tester.pumpAndSettle();
+
+      expect(find.byType(ScribeSidebar), findsOneWidget);
+      expect(find.text('OPEN FILES'), findsOneWidget);
     });
   });
 }

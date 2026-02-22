@@ -2,8 +2,8 @@
 /// the CodeOps desktop application.
 ///
 /// Scribe provides syntax-highlighted editing for 30+ languages with
-/// tabbed file management, session persistence, and a status bar showing
-/// cursor position, language mode, and encoding.
+/// tabbed file management, session persistence, an optional sidebar,
+/// and a status bar showing cursor position, language mode, and encoding.
 ///
 /// This page is the standalone Scribe experience at the `/scribe` route.
 /// The underlying [ScribeEditor] widget is also consumed by other Control
@@ -22,6 +22,8 @@ import '../providers/scribe_providers.dart';
 import '../theme/colors.dart';
 import '../widgets/scribe/scribe_editor.dart';
 import '../widgets/scribe/scribe_empty_state.dart';
+import '../widgets/scribe/scribe_language.dart';
+import '../widgets/scribe/scribe_sidebar.dart';
 import '../widgets/scribe/scribe_status_bar.dart';
 import '../widgets/scribe/scribe_tab_bar.dart';
 
@@ -49,6 +51,7 @@ class _ScribePageState extends ConsumerState<ScribePage> {
   Widget build(BuildContext context) {
     final tabs = ref.watch(scribeTabsProvider);
     final activeTab = ref.watch(activeScribeTabProvider);
+    final sidebarVisible = ref.watch(scribeSidebarVisibleProvider);
 
     return CallbackShortcuts(
       bindings: <ShortcutActivator, VoidCallback>{
@@ -68,15 +71,39 @@ class _ScribePageState extends ConsumerState<ScribePage> {
                 onTabSelected: _handleTabSelected,
                 onTabClosed: _handleTabClosed,
                 onNewTab: _handleNewTab,
+                onCloseOthers: _handleCloseOtherTabs,
+                onCloseAll: _handleCloseAllTabs,
+                onReorder: _handleReorderTabs,
+                onToggleSidebar: _handleToggleSidebar,
+                sidebarVisible: sidebarVisible,
               ),
             if (tabs.isNotEmpty && activeTab != null)
               Expanded(
-                child: _EditorArea(
-                  key: ValueKey(activeTab.id),
-                  tab: activeTab,
-                  settings: ref.watch(scribeSettingsProvider),
-                  onChanged: (value) => _handleContentChanged(activeTab, value),
-                  onCursorChanged: _handleCursorChanged,
+                child: Row(
+                  children: [
+                    if (sidebarVisible)
+                      ScribeSidebar(
+                        tabs: tabs,
+                        activeTabId: activeTab.id,
+                        onTabSelected: _handleTabSelected,
+                      ),
+                    if (sidebarVisible)
+                      const VerticalDivider(
+                        width: 1,
+                        thickness: 1,
+                        color: CodeOpsColors.border,
+                      ),
+                    Expanded(
+                      child: _EditorArea(
+                        key: ValueKey(activeTab.id),
+                        tab: activeTab,
+                        settings: ref.watch(scribeSettingsProvider),
+                        onChanged: (value) =>
+                            _handleContentChanged(activeTab, value),
+                        onCursorChanged: _handleCursorChanged,
+                      ),
+                    ),
+                  ],
                 ),
               )
             else
@@ -103,14 +130,10 @@ class _ScribePageState extends ConsumerState<ScribePage> {
   /// Creates a new untitled tab.
   void _handleNewTab() {
     final counter = ref.read(scribeUntitledCounterProvider);
-    final tab = ScribeTab.untitled(counter);
     ref.read(scribeUntitledCounterProvider.notifier).state = counter + 1;
-
-    final tabs = [...ref.read(scribeTabsProvider), tab];
-    ref.read(scribeTabsProvider.notifier).state = tabs;
-    ref.read(activeScribeTabIdProvider.notifier).state = tab.id;
-
-    _persistTabs(tabs);
+    ref.read(scribeTabsProvider.notifier).openTab(
+          title: 'Untitled-$counter',
+        );
   }
 
   /// Opens a file picker and creates a tab from the selected file.
@@ -125,13 +148,16 @@ class _ScribePageState extends ConsumerState<ScribePage> {
     if (path == null) return;
 
     final content = await File(path).readAsString();
-    final tab = ScribeTab.fromFile(filePath: path, content: content);
+    final lastSlash = path.lastIndexOf('/');
+    final fileName = lastSlash >= 0 ? path.substring(lastSlash + 1) : path;
+    final language = ScribeLanguage.fromFileName(path);
 
-    final tabs = [...ref.read(scribeTabsProvider), tab];
-    ref.read(scribeTabsProvider.notifier).state = tabs;
-    ref.read(activeScribeTabIdProvider.notifier).state = tab.id;
-
-    _persistTabs(tabs);
+    ref.read(scribeTabsProvider.notifier).openTab(
+          title: fileName,
+          content: content,
+          language: language,
+          filePath: path,
+        );
   }
 
   /// Switches to the selected tab.
@@ -147,43 +173,35 @@ class _ScribePageState extends ConsumerState<ScribePage> {
     }
   }
 
-  /// Closes a tab and updates the active tab.
+  /// Closes a tab via the notifier.
   void _handleTabClosed(String tabId) {
-    final tabs = ref.read(scribeTabsProvider);
-    final index = tabs.indexWhere((t) => t.id == tabId);
-    if (index < 0) return;
+    ref.read(scribeTabsProvider.notifier).closeTab(tabId);
+  }
 
-    final newTabs = [...tabs]..removeAt(index);
-    ref.read(scribeTabsProvider.notifier).state = newTabs;
+  /// Closes all tabs except the specified one.
+  void _handleCloseOtherTabs(String tabId) {
+    ref.read(scribeTabsProvider.notifier).closeOtherTabs(tabId);
+  }
 
-    // Update active tab if the closed tab was active.
-    final activeId = ref.read(activeScribeTabIdProvider);
-    if (activeId == tabId) {
-      if (newTabs.isEmpty) {
-        ref.read(activeScribeTabIdProvider.notifier).state = null;
-      } else {
-        final newIndex = index.clamp(0, newTabs.length - 1);
-        ref.read(activeScribeTabIdProvider.notifier).state =
-            newTabs[newIndex].id;
-      }
-    }
+  /// Closes all tabs.
+  void _handleCloseAllTabs() {
+    ref.read(scribeTabsProvider.notifier).closeAllTabs();
+  }
 
-    _persistTabs(newTabs);
+  /// Reorders tabs via drag-drop.
+  void _handleReorderTabs(int oldIndex, int newIndex) {
+    ref.read(scribeTabsProvider.notifier).reorderTabs(oldIndex, newIndex);
+  }
+
+  /// Toggles the sidebar visibility.
+  void _handleToggleSidebar() {
+    ref.read(scribeSidebarVisibleProvider.notifier).state =
+        !ref.read(scribeSidebarVisibleProvider);
   }
 
   /// Handles content changes from the editor.
   void _handleContentChanged(ScribeTab tab, String newContent) {
-    final tabs = ref.read(scribeTabsProvider);
-    final index = tabs.indexWhere((t) => t.id == tab.id);
-    if (index < 0) return;
-
-    final updated = tab.copyWith(
-      content: newContent,
-      isDirty: true,
-      lastModifiedAt: DateTime.now(),
-    );
-    final newTabs = [...tabs]..[index] = updated;
-    ref.read(scribeTabsProvider.notifier).state = newTabs;
+    ref.read(scribeTabsProvider.notifier).updateContent(tab.id, newContent);
   }
 
   /// Handles cursor position changes from the editor.
@@ -196,21 +214,7 @@ class _ScribePageState extends ConsumerState<ScribePage> {
 
   /// Handles language mode changes from the status bar.
   void _handleLanguageChanged(ScribeTab tab, String newLanguage) {
-    final tabs = ref.read(scribeTabsProvider);
-    final index = tabs.indexWhere((t) => t.id == tab.id);
-    if (index < 0) return;
-
-    final updated = tab.copyWith(language: newLanguage);
-    final newTabs = [...tabs]..[index] = updated;
-    ref.read(scribeTabsProvider.notifier).state = newTabs;
-
-    _persistTabs(newTabs);
-  }
-
-  /// Persists tabs to the database.
-  void _persistTabs(List<ScribeTab> tabs) {
-    final persistence = ref.read(scribePersistenceProvider);
-    persistence.saveTabs(tabs);
+    ref.read(scribeTabsProvider.notifier).updateLanguage(tab.id, newLanguage);
   }
 }
 

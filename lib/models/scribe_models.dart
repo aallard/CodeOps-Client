@@ -192,6 +192,9 @@ class ScribeSettings {
   /// Show minimap. Default: false.
   final bool showMinimap;
 
+  /// Theme mode ("dark" or "light"). Default: "dark".
+  final String themeMode;
+
   /// Creates [ScribeSettings] with sensible defaults.
   const ScribeSettings({
     this.fontSize = 14.0,
@@ -200,6 +203,7 @@ class ScribeSettings {
     this.wordWrap = false,
     this.showLineNumbers = true,
     this.showMinimap = false,
+    this.themeMode = 'dark',
   });
 
   /// Creates a copy of these settings with the given fields replaced.
@@ -210,6 +214,7 @@ class ScribeSettings {
     bool? wordWrap,
     bool? showLineNumbers,
     bool? showMinimap,
+    String? themeMode,
   }) {
     return ScribeSettings(
       fontSize: fontSize ?? this.fontSize,
@@ -218,6 +223,7 @@ class ScribeSettings {
       wordWrap: wordWrap ?? this.wordWrap,
       showLineNumbers: showLineNumbers ?? this.showLineNumbers,
       showMinimap: showMinimap ?? this.showMinimap,
+      themeMode: themeMode ?? this.themeMode,
     );
   }
 
@@ -230,6 +236,7 @@ class ScribeSettings {
       'wordWrap': wordWrap,
       'showLineNumbers': showLineNumbers,
       'showMinimap': showMinimap,
+      'themeMode': themeMode,
     };
   }
 
@@ -245,6 +252,7 @@ class ScribeSettings {
       wordWrap: json['wordWrap'] as bool? ?? false,
       showLineNumbers: json['showLineNumbers'] as bool? ?? true,
       showMinimap: json['showMinimap'] as bool? ?? false,
+      themeMode: json['themeMode'] as String? ?? 'dark',
     );
   }
 
