@@ -252,6 +252,14 @@ class _Sidebar extends ConsumerWidget {
                   currentPath: currentPath,
                   collapsed: collapsed,
                 ),
+                _SectionHeader('REGISTRY', collapsed),
+                _NavItem(
+                  icon: Icons.app_registration_outlined,
+                  label: 'Registry',
+                  path: '/registry',
+                  currentPath: currentPath,
+                  collapsed: collapsed,
+                ),
               ],
             ),
           ),
@@ -709,6 +717,7 @@ class _TopBar extends StatelessWidget {
       '/vault/transit': 'Transit',
       '/vault/dynamic': 'Dynamic Secrets',
       '/vault/seal': 'Seal',
+      '/registry': 'Registry',
     };
     // Check exact match first, then prefix matches for parameterized routes
     if (routes.containsKey(path)) return routes[path]!;

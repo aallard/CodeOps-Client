@@ -26,6 +26,12 @@ class AppConstants {
   /// API path prefix for all Vault endpoints.
   static const String vaultApiPrefix = '/api/v1/vault';
 
+  /// Base URL for the CodeOps Registry API.
+  static const String registryApiBaseUrl = 'http://localhost:8096';
+
+  /// API path prefix for all Registry endpoints.
+  static const String registryApiPrefix = '/api/v1/registry';
+
   /// Maximum number of members allowed in a team.
   static const int maxTeamMembers = 50;
 

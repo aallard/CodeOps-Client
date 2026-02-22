@@ -1,4 +1,4 @@
-/// GoRouter configuration with all 31 application routes.
+/// GoRouter configuration with all 32 application routes.
 ///
 /// Uses an [AuthNotifier] listenable connected to [AuthService] for
 /// reactive auth state. Unauthenticated users are redirected to `/login`.
@@ -26,6 +26,7 @@ import 'pages/persona_editor_page.dart';
 import 'pages/personas_page.dart';
 import 'pages/dependency_scan_page.dart';
 import 'pages/placeholder_page.dart';
+import 'pages/registry_dashboard_page.dart';
 import 'pages/vault_dashboard_page.dart';
 import 'pages/vault_dynamic_page.dart';
 import 'pages/vault_policies_page.dart';
@@ -66,7 +67,7 @@ class AuthNotifier extends ChangeNotifier {
 /// [AuthService] updates this when auth state changes.
 final AuthNotifier authNotifier = AuthNotifier();
 
-/// The application router with all 31 routes.
+/// The application router with all 32 routes.
 final GoRouter router = GoRouter(
   initialLocation: '/login',
   refreshListenable: authNotifier,
@@ -351,6 +352,14 @@ final GoRouter router = GoRouter(
           name: 'vault-seal',
           pageBuilder: (context, state) => const NoTransitionPage(
             child: VaultSealPage(),
+          ),
+        ),
+        // 32. Registry Dashboard
+        GoRoute(
+          path: '/registry',
+          name: 'registry',
+          pageBuilder: (context, state) => const NoTransitionPage(
+            child: RegistryDashboardPage(),
           ),
         ),
       ],
