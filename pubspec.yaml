@@ -36,6 +36,9 @@ dependencies:
   window_manager: ^0.4.3
   split_view: ^3.2.1
 
+  # Diff
+  diff_match_patch: ^0.4.1
+
   # Utilities
   path: ^1.9.0
   path_provider: ^2.1.5

@@ -51,6 +51,9 @@ class ScribeTabBar extends ConsumerWidget {
   /// Callback to reveal the specified tab's file in Finder.
   final ValueChanged<String>? onRevealInFinder;
 
+  /// Callback to start a comparison with the specified tab.
+  final ValueChanged<String>? onCompareWith;
+
   /// Callback when tabs are reordered via drag-drop.
   final void Function(int oldIndex, int newIndex)? onReorder;
 
@@ -74,6 +77,7 @@ class ScribeTabBar extends ConsumerWidget {
     this.onCloseSaved,
     this.onCopyFilePath,
     this.onRevealInFinder,
+    this.onCompareWith,
     this.onReorder,
     this.onToggleSidebar,
     this.sidebarVisible = false,
@@ -117,6 +121,9 @@ class ScribeTabBar extends ConsumerWidget {
           onCopyFilePath != null ? () => onCopyFilePath!(tab.id) : null,
       onRevealInFinder:
           onRevealInFinder != null ? () => onRevealInFinder!(tab.id) : null,
+      onCompareWith:
+          onCompareWith != null ? () => onCompareWith!(tab.id) : null,
+      hasOtherTabs: tabs.length > 1,
     );
   }
 

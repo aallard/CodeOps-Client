@@ -11,7 +11,9 @@ import 'package:uuid/uuid.dart';
 
 import 'package:dio/dio.dart';
 
+import '../models/scribe_diff_models.dart';
 import '../models/scribe_models.dart';
+import '../services/data/scribe_diff_service.dart';
 import '../services/data/scribe_file_service.dart';
 import '../services/data/scribe_persistence_service.dart';
 import '../utils/constants.dart';
@@ -75,6 +77,25 @@ final scribeSplitRatioProvider =
 /// Newest entries are at the end of the list.
 final scribeClosedTabHistoryProvider =
     StateProvider<List<ScribeTab>>((ref) => []);
+
+// ---------------------------------------------------------------------------
+// Diff State Providers (CS-007)
+// ---------------------------------------------------------------------------
+
+/// Singleton diff service for computing diffs between tab contents.
+final scribeDiffServiceProvider = Provider<ScribeDiffService>((ref) {
+  return ScribeDiffService();
+});
+
+/// The current diff comparison state, or null if no comparison active.
+final scribeDiffStateProvider = StateProvider<DiffState?>((ref) => null);
+
+/// The current diff view mode (side-by-side or inline).
+final scribeDiffViewModeProvider =
+    StateProvider<DiffViewMode>((ref) => DiffViewMode.sideBySide);
+
+/// Whether to collapse unchanged regions in the diff view.
+final scribeCollapseUnchangedProvider = StateProvider<bool>((ref) => true);
 
 // ---------------------------------------------------------------------------
 // StateNotifier Providers (complex state with methods)

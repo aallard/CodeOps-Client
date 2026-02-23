@@ -17,11 +17,14 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../models/scribe_diff_models.dart';
 import '../models/scribe_models.dart';
 import '../providers/scribe_providers.dart';
 import '../services/logging/log_service.dart';
 import '../theme/colors.dart';
 import '../utils/constants.dart';
+import '../widgets/scribe/scribe_diff_editor.dart';
+import '../widgets/scribe/scribe_diff_selector.dart';
 import '../widgets/scribe/scribe_drop_target.dart';
 import '../widgets/scribe/scribe_editor.dart';
 import '../widgets/scribe/scribe_empty_state.dart';
@@ -53,6 +56,12 @@ class _ScribePageState extends ConsumerState<ScribePage> {
   Timer? _autoSaveTimer;
   bool _autoSaveEnabled = false;
   int _autoSaveIntervalSeconds = 30;
+
+  /// Whether the diff comparison selector is visible.
+  bool _showDiffSelector = false;
+
+  /// The tab ID pre-selected as the left side of a comparison.
+  String? _diffLeftTabId;
 
   @override
   void initState() {
@@ -124,6 +133,7 @@ class _ScribePageState extends ConsumerState<ScribePage> {
                         onCloseSaved: _handleCloseSavedTabs,
                         onCopyFilePath: _handleCopyFilePath,
                         onRevealInFinder: _handleRevealInFinder,
+                        onCompareWith: _handleCompareWith,
                         onReorder: _handleReorderTabs,
                         onToggleSidebar: _handleToggleSidebar,
                         sidebarVisible: sidebarVisible,
@@ -150,36 +160,22 @@ class _ScribePageState extends ConsumerState<ScribePage> {
                     ),
                   ],
                 ),
+              // Diff selector bar (CS-007).
+              if (_showDiffSelector && tabs.length > 1)
+                ScribeDiffSelector(
+                  tabs: tabs,
+                  initialLeftTabId: _diffLeftTabId,
+                  onCompare: _handleStartCompare,
+                  onClose: _handleCloseDiffSelector,
+                ),
               if (tabs.isNotEmpty && activeTab != null)
                 Expanded(
-                  child: Row(
-                    children: [
-                      if (sidebarVisible)
-                        ScribeSidebar(
-                          tabs: tabs,
-                          activeTabId: activeTab.id,
-                          onTabSelected: _handleTabSelected,
-                        ),
-                      if (sidebarVisible)
-                        const VerticalDivider(
-                          width: 1,
-                          thickness: 1,
-                          color: CodeOpsColors.border,
-                        ),
-                      Expanded(
-                        child: _buildEditorWithPreview(activeTab, settings),
-                      ),
-                      if (settingsPanelVisible) ...[
-                        const VerticalDivider(
-                          width: 1,
-                          thickness: 1,
-                          color: CodeOpsColors.border,
-                        ),
-                        ScribeSettingsPanel(
-                          onClose: _handleToggleSettingsPanel,
-                        ),
-                      ],
-                    ],
+                  child: _buildMainContent(
+                    tabs: tabs,
+                    activeTab: activeTab,
+                    settings: settings,
+                    sidebarVisible: sidebarVisible,
+                    settingsPanelVisible: settingsPanelVisible,
                   ),
                 )
               else
@@ -642,6 +638,120 @@ class _ScribePageState extends ConsumerState<ScribePage> {
       mode: mode,
       splitRatio: ratio,
       onSplitRatioChanged: (r) => _handleSplitRatioChanged(tab.id, r),
+    );
+  }
+
+  // ---------------------------------------------------------------------------
+  // Diff comparison (CS-007)
+  // ---------------------------------------------------------------------------
+
+  /// Opens the diff selector with a pre-selected left tab.
+  void _handleCompareWith(String tabId) {
+    setState(() {
+      _showDiffSelector = true;
+      _diffLeftTabId = tabId;
+    });
+  }
+
+  /// Closes the diff selector and clears diff state.
+  void _handleCloseDiffSelector() {
+    setState(() {
+      _showDiffSelector = false;
+      _diffLeftTabId = null;
+    });
+    ref.read(scribeDiffStateProvider.notifier).state = null;
+  }
+
+  /// Starts a diff comparison between two tabs.
+  void _handleStartCompare(String leftTabId, String rightTabId) {
+    final tabs = ref.read(scribeTabsProvider);
+    final leftTab =
+        tabs.where((t) => t.id == leftTabId).firstOrNull;
+    final rightTab =
+        tabs.where((t) => t.id == rightTabId).firstOrNull;
+    if (leftTab == null || rightTab == null) return;
+
+    final diffService = ref.read(scribeDiffServiceProvider);
+    final diffState = diffService.computeDiff(
+      leftTabId: leftTabId,
+      rightTabId: rightTabId,
+      leftText: leftTab.content,
+      rightText: rightTab.content,
+    );
+
+    ref.read(scribeDiffStateProvider.notifier).state = diffState;
+  }
+
+  /// Builds the main content area, showing either the diff editor or
+  /// the regular editor/preview.
+  Widget _buildMainContent({
+    required List<ScribeTab> tabs,
+    required ScribeTab activeTab,
+    required ScribeSettings settings,
+    required bool sidebarVisible,
+    required bool settingsPanelVisible,
+  }) {
+    final diffState = ref.watch(scribeDiffStateProvider);
+
+    return Row(
+      children: [
+        if (sidebarVisible)
+          ScribeSidebar(
+            tabs: tabs,
+            activeTabId: activeTab.id,
+            onTabSelected: _handleTabSelected,
+          ),
+        if (sidebarVisible)
+          const VerticalDivider(
+            width: 1,
+            thickness: 1,
+            color: CodeOpsColors.border,
+          ),
+        Expanded(
+          child: diffState != null
+              ? _buildDiffView(diffState, tabs)
+              : _buildEditorWithPreview(activeTab, settings),
+        ),
+        if (settingsPanelVisible) ...[
+          const VerticalDivider(
+            width: 1,
+            thickness: 1,
+            color: CodeOpsColors.border,
+          ),
+          ScribeSettingsPanel(
+            onClose: _handleToggleSettingsPanel,
+          ),
+        ],
+      ],
+    );
+  }
+
+  /// Builds the diff editor view.
+  Widget _buildDiffView(DiffState diffState, List<ScribeTab> tabs) {
+    final viewMode = ref.watch(scribeDiffViewModeProvider);
+    final collapseUnchanged = ref.watch(scribeCollapseUnchangedProvider);
+    final diffService = ref.read(scribeDiffServiceProvider);
+
+    final displayLines = collapseUnchanged
+        ? diffService.collapseUnchanged(diffState.lines)
+        : diffState.lines;
+
+    final leftTab =
+        tabs.where((t) => t.id == diffState.leftTabId).firstOrNull;
+    final rightTab =
+        tabs.where((t) => t.id == diffState.rightTabId).firstOrNull;
+
+    return ScribeDiffEditor(
+      diffState: diffState,
+      viewMode: viewMode,
+      collapseUnchanged: collapseUnchanged,
+      displayLines: displayLines,
+      onViewModeChanged: (mode) =>
+          ref.read(scribeDiffViewModeProvider.notifier).state = mode,
+      onCollapseChanged: (value) =>
+          ref.read(scribeCollapseUnchangedProvider.notifier).state = value,
+      leftTitle: leftTab?.title,
+      rightTitle: rightTab?.title,
     );
   }
 

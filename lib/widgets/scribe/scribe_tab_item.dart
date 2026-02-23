@@ -47,6 +47,12 @@ class ScribeTabItem extends StatelessWidget {
   /// Callback to reveal the file in Finder.
   final VoidCallback? onRevealInFinder;
 
+  /// Callback to start a comparison with this tab.
+  final VoidCallback? onCompareWith;
+
+  /// Whether there are other tabs available for comparison.
+  final bool hasOtherTabs;
+
   /// Creates a [ScribeTabItem].
   const ScribeTabItem({
     super.key,
@@ -60,6 +66,8 @@ class ScribeTabItem extends StatelessWidget {
     this.onCloseSaved,
     this.onCopyFilePath,
     this.onRevealInFinder,
+    this.onCompareWith,
+    this.hasOtherTabs = false,
   });
 
   @override
@@ -140,6 +148,8 @@ class ScribeTabItem extends StatelessWidget {
       onCloseSaved: onCloseSaved,
       onCopyFilePath: onCopyFilePath,
       onRevealInFinder: onRevealInFinder,
+      onCompareWith: onCompareWith,
+      hasOtherTabs: hasOtherTabs,
     );
   }
 }

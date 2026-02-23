@@ -59,6 +59,37 @@ class CodeOpsColors {
   /// Divider color.
   static const Color divider = Color(0xFF1E293B);
 
+  // ─────────────────────────────────────────────────────────────────────────
+  // Diff editor colors (CS-007)
+  // ─────────────────────────────────────────────────────────────────────────
+
+  /// Background for added (inserted) lines in the diff view.
+  static const Color diffAdded = Color(0xFF1A3D2A);
+
+  /// Background for removed (deleted) lines in the diff view.
+  static const Color diffRemoved = Color(0xFF3D1A1A);
+
+  /// Background for modified lines in the diff view.
+  static const Color diffModified = Color(0xFF3D3A1A);
+
+  /// Character-level highlight for added text within a line.
+  static const Color diffAddedHighlight = Color(0xFF2D6B45);
+
+  /// Character-level highlight for removed text within a line.
+  static const Color diffRemovedHighlight = Color(0xFF6B2D2D);
+
+  /// Character-level highlight for modified text within a line.
+  static const Color diffModifiedHighlight = Color(0xFF6B6B2D);
+
+  /// Gutter marker color for added lines.
+  static const Color diffGutterAdded = Color(0xFF4ADE80);
+
+  /// Gutter marker color for removed lines.
+  static const Color diffGutterRemoved = Color(0xFFEF4444);
+
+  /// Gutter marker color for modified lines.
+  static const Color diffGutterModified = Color(0xFFFBBF24);
+
   /// Maps each [Severity] to its corresponding color.
   static const Map<Severity, Color> severityColors = {
     Severity.critical: critical,

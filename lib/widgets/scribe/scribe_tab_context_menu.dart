@@ -29,7 +29,9 @@ class ScribeTabContextMenu {
     VoidCallback? onCloseSaved,
     VoidCallback? onCopyFilePath,
     VoidCallback? onRevealInFinder,
+    VoidCallback? onCompareWith,
     String? filePath,
+    bool hasOtherTabs = false,
   }) async {
     final hasFilePath = filePath != null;
 
@@ -65,6 +67,14 @@ class ScribeTabContextMenu {
           'Reveal in Finder',
           enabled: hasFilePath,
         ),
+        if (onCompareWith != null) ...[
+          const PopupMenuDivider(height: 8),
+          _menuItem(
+            'compareWith',
+            'Compare with...',
+            enabled: hasOtherTabs,
+          ),
+        ],
       ],
     );
 
@@ -83,6 +93,8 @@ class ScribeTabContextMenu {
         onCopyFilePath?.call();
       case 'revealInFinder':
         onRevealInFinder?.call();
+      case 'compareWith':
+        onCompareWith?.call();
     }
   }
 

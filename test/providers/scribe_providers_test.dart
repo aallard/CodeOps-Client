@@ -5,6 +5,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
 
+import 'package:codeops/models/scribe_diff_models.dart';
 import 'package:codeops/models/scribe_models.dart';
 import 'package:codeops/providers/scribe_providers.dart';
 import 'package:codeops/services/data/scribe_persistence_service.dart';
@@ -1074,6 +1075,70 @@ void main() {
 
       final ratios = container.read(scribeSplitRatioProvider);
       expect(ratios['nonexistent'], isNull);
+    });
+  });
+
+  // ---------------------------------------------------------------------------
+  // Diff Providers (CS-007)
+  // ---------------------------------------------------------------------------
+
+  group('Diff Providers', () {
+    test('scribeDiffStateProvider defaults to null', () {
+      final container = createContainer();
+      expect(container.read(scribeDiffStateProvider), isNull);
+    });
+
+    test('scribeDiffStateProvider can be set and read', () {
+      final container = createContainer();
+      const state = DiffState(
+        leftTabId: 'tab-1',
+        rightTabId: 'tab-2',
+        lines: [],
+        summary: DiffSummary(),
+        changeIndices: [],
+      );
+
+      container.read(scribeDiffStateProvider.notifier).state = state;
+      final result = container.read(scribeDiffStateProvider);
+
+      expect(result, isNotNull);
+      expect(result!.leftTabId, 'tab-1');
+      expect(result.rightTabId, 'tab-2');
+    });
+
+    test('scribeDiffViewModeProvider defaults to sideBySide', () {
+      final container = createContainer();
+      expect(
+        container.read(scribeDiffViewModeProvider),
+        DiffViewMode.sideBySide,
+      );
+    });
+
+    test('scribeDiffViewModeProvider can be set to inline', () {
+      final container = createContainer();
+      container.read(scribeDiffViewModeProvider.notifier).state =
+          DiffViewMode.inline;
+      expect(
+        container.read(scribeDiffViewModeProvider),
+        DiffViewMode.inline,
+      );
+    });
+
+    test('scribeCollapseUnchangedProvider defaults to true', () {
+      final container = createContainer();
+      expect(container.read(scribeCollapseUnchangedProvider), isTrue);
+    });
+
+    test('scribeCollapseUnchangedProvider can be toggled', () {
+      final container = createContainer();
+      container.read(scribeCollapseUnchangedProvider.notifier).state = false;
+      expect(container.read(scribeCollapseUnchangedProvider), isFalse);
+    });
+
+    test('scribeDiffServiceProvider returns a service instance', () {
+      final container = createContainer();
+      final service = container.read(scribeDiffServiceProvider);
+      expect(service, isNotNull);
     });
   });
 }

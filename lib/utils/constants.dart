@@ -333,4 +333,23 @@ class AppConstants {
 
   /// Cooldown in milliseconds for bidirectional scroll synchronization.
   static const int scribeScrollSyncCooldownMs = 100;
+
+  // -------------------------------------------------------------------------
+  // Scribe constants (CS-007 — Diff Editor)
+  // -------------------------------------------------------------------------
+
+  /// Width of the diff gutter in logical pixels.
+  static const double scribeDiffGutterWidth = 48.0;
+
+  /// Height of a single line in the diff view in logical pixels.
+  static const double scribeDiffLineHeight = 22.0;
+
+  /// Number of unchanged context lines shown around changes.
+  static const int scribeDiffContextLines = 3;
+
+  /// Maximum number of closed tabs retained in diff history.
+  static const int scribeDiffMaxHistory = 20;
+
+  /// Height of the diff summary bar in logical pixels.
+  static const double scribeDiffSummaryBarHeight = 32.0;
 }

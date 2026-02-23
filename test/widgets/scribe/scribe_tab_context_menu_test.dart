@@ -208,6 +208,64 @@ void main() {
       expect(called, isFalse);
     });
 
+    testWidgets('Compare with... action fires onCompareWith callback',
+        (tester) async {
+      var called = false;
+      await tester.pumpWidget(wrap(
+        Builder(builder: (context) {
+          return GestureDetector(
+            onTap: () => ScribeTabContextMenu.show(
+              context,
+              position: const Offset(100, 100),
+              onClose: () {},
+              onCompareWith: () => called = true,
+              hasOtherTabs: true,
+            ),
+            child: const Text('open menu'),
+          );
+        }),
+      ));
+
+      await tester.tap(find.text('open menu'));
+      await tester.pumpAndSettle();
+
+      expect(find.text('Compare with...'), findsOneWidget);
+
+      await tester.tap(find.text('Compare with...'));
+      await tester.pumpAndSettle();
+
+      expect(called, isTrue);
+    });
+
+    testWidgets('Compare with... disabled when hasOtherTabs is false',
+        (tester) async {
+      var called = false;
+      await tester.pumpWidget(wrap(
+        Builder(builder: (context) {
+          return GestureDetector(
+            onTap: () => ScribeTabContextMenu.show(
+              context,
+              position: const Offset(100, 100),
+              onClose: () {},
+              onCompareWith: () => called = true,
+              hasOtherTabs: false,
+            ),
+            child: const Text('open menu'),
+          );
+        }),
+      ));
+
+      await tester.tap(find.text('open menu'));
+      await tester.pumpAndSettle();
+
+      expect(find.text('Compare with...'), findsOneWidget);
+
+      await tester.tap(find.text('Compare with...'));
+      await tester.pumpAndSettle();
+
+      expect(called, isFalse);
+    });
+
     testWidgets('shows Ctrl+W shortcut hint on Close item', (tester) async {
       await tester.pumpWidget(wrap(
         Builder(builder: (context) {
