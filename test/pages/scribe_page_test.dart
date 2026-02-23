@@ -8,17 +8,27 @@ import 'package:mocktail/mocktail.dart';
 import 'package:codeops/models/scribe_models.dart';
 import 'package:codeops/pages/scribe_page.dart';
 import 'package:codeops/providers/scribe_providers.dart';
+import 'package:codeops/services/data/scribe_file_service.dart';
 import 'package:codeops/services/data/scribe_persistence_service.dart';
 import 'package:codeops/theme/app_theme.dart';
+import 'package:codeops/widgets/scribe/scribe_drop_target.dart';
 import 'package:codeops/widgets/scribe/scribe_sidebar.dart';
 
 class MockScribePersistenceService extends Mock
     implements ScribePersistenceService {}
 
+class MockScribeFileService extends Mock implements ScribeFileService {}
+
 void main() {
   setUpAll(() {
     registerFallbackValue(<ScribeTab>[]);
     registerFallbackValue(const ScribeSettings());
+    registerFallbackValue(ScribeTab(
+      id: 'fallback',
+      title: 'fallback',
+      createdAt: DateTime(2026),
+      lastModifiedAt: DateTime(2026),
+    ));
   });
 
   final now = DateTime(2026, 2, 17);
@@ -45,10 +55,23 @@ void main() {
         .thenAnswer((_) async => settings);
     when(() => mockPersistence.saveTabs(any())).thenAnswer((_) async {});
     when(() => mockPersistence.saveSettings(any())).thenAnswer((_) async {});
+    when(() => mockPersistence.loadSettingsValue(any()))
+        .thenAnswer((_) async => null);
+    when(() => mockPersistence.saveSettingsValue(any(), any()))
+        .thenAnswer((_) async {});
+
+    final mockFileService = MockScribeFileService();
+    when(() => mockFileService.loadRecentFiles())
+        .thenAnswer((_) async => <String>[]);
+    when(() => mockFileService.saveFile(any()))
+        .thenAnswer((_) async => true);
+    when(() => mockFileService.addRecentFile(any()))
+        .thenAnswer((_) async {});
 
     return ProviderScope(
       overrides: [
         scribePersistenceProvider.overrideWithValue(mockPersistence),
+        scribeFileServiceProvider.overrideWithValue(mockFileService),
         scribeInitProvider.overrideWith((ref) async {
           await ref.read(scribeTabsProvider.notifier).loadFromPersistence();
           await ref
@@ -377,6 +400,43 @@ void main() {
 
       // Tab should still be open.
       expect(find.text('File-1.dart'), findsOneWidget);
+    });
+
+    testWidgets('ScribeDropTarget wraps the page content', (tester) async {
+      await tester.pumpWidget(createWidget());
+      await tester.pumpAndSettle();
+
+      expect(find.byType(ScribeDropTarget), findsOneWidget);
+    });
+
+    testWidgets('Ctrl+S does not crash when no tabs open', (tester) async {
+      await tester.pumpWidget(createWidget());
+      await tester.pumpAndSettle();
+
+      // Press Ctrl+S with no active tab — should be a no-op.
+      await tester.sendKeyDownEvent(LogicalKeyboardKey.controlLeft);
+      await tester.sendKeyEvent(LogicalKeyboardKey.keyS);
+      await tester.sendKeyUpEvent(LogicalKeyboardKey.controlLeft);
+      await tester.pumpAndSettle();
+
+      // Page still renders.
+      expect(find.text('Scribe'), findsOneWidget);
+    });
+
+    testWidgets('Ctrl+Alt+S does not crash when no tabs open',
+        (tester) async {
+      await tester.pumpWidget(createWidget());
+      await tester.pumpAndSettle();
+
+      // Press Ctrl+Alt+S with no active tab — should be a no-op.
+      await tester.sendKeyDownEvent(LogicalKeyboardKey.controlLeft);
+      await tester.sendKeyDownEvent(LogicalKeyboardKey.altLeft);
+      await tester.sendKeyEvent(LogicalKeyboardKey.keyS);
+      await tester.sendKeyUpEvent(LogicalKeyboardKey.altLeft);
+      await tester.sendKeyUpEvent(LogicalKeyboardKey.controlLeft);
+      await tester.pumpAndSettle();
+
+      expect(find.text('Scribe'), findsOneWidget);
     });
   });
 }

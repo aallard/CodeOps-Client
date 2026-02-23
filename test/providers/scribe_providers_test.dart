@@ -444,6 +444,72 @@ void main() {
     });
   });
 
+  group('updateTabFilePath', () {
+    test('updates file path, title, and marks clean', () {
+      final container = createContainer();
+
+      container.read(scribeTabsProvider.notifier).openTab(title: 'Untitled-1');
+      final tabId = container.read(scribeTabsProvider).first.id;
+
+      // Make it dirty first.
+      container
+          .read(scribeTabsProvider.notifier)
+          .updateContent(tabId, 'some content');
+      expect(container.read(scribeTabsProvider).first.isDirty, isTrue);
+
+      container
+          .read(scribeTabsProvider.notifier)
+          .updateTabFilePath(tabId, '/path/to/saved.dart');
+
+      final tab = container.read(scribeTabsProvider).first;
+      expect(tab.filePath, '/path/to/saved.dart');
+      expect(tab.title, 'saved.dart');
+      expect(tab.isDirty, isFalse);
+    });
+
+    test('extracts file name from path', () {
+      final container = createContainer();
+
+      container.read(scribeTabsProvider.notifier).openTab(title: 'Temp');
+      final tabId = container.read(scribeTabsProvider).first.id;
+
+      container
+          .read(scribeTabsProvider.notifier)
+          .updateTabFilePath(tabId, '/deep/nested/folder/config.yaml');
+
+      expect(container.read(scribeTabsProvider).first.title, 'config.yaml');
+    });
+
+    test('no-op for nonexistent tab id', () {
+      final container = createContainer();
+
+      container.read(scribeTabsProvider.notifier).openTab(title: 'Real');
+
+      container
+          .read(scribeTabsProvider.notifier)
+          .updateTabFilePath('nonexistent', '/path/to/file.dart');
+
+      // No crash, original tab unchanged.
+      expect(container.read(scribeTabsProvider).first.title, 'Real');
+    });
+  });
+
+  group('scribeRecentFilesProvider', () {
+    test('initializes empty', () {
+      final container = createContainer();
+      expect(container.read(scribeRecentFilesProvider), isEmpty);
+    });
+
+    test('can be set', () {
+      final container = createContainer();
+      container.read(scribeRecentFilesProvider.notifier).state = [
+        '/a.dart',
+        '/b.dart',
+      ];
+      expect(container.read(scribeRecentFilesProvider), hasLength(2));
+    });
+  });
+
   group('ScribeSettingsNotifier', () {
     test('updateFontSize clamps to valid range', () {
       final container = createContainer();

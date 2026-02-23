@@ -12,14 +12,15 @@ library;
 
 import 'dart:io';
 
-import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../models/scribe_models.dart';
 import '../providers/scribe_providers.dart';
+import '../services/logging/log_service.dart';
 import '../theme/colors.dart';
+import '../widgets/scribe/scribe_drop_target.dart';
 import '../widgets/scribe/scribe_editor.dart';
 import '../widgets/scribe/scribe_empty_state.dart';
 import '../widgets/scribe/scribe_language.dart';
@@ -38,6 +39,8 @@ class ScribePage extends ConsumerStatefulWidget {
 }
 
 class _ScribePageState extends ConsumerState<ScribePage> {
+  static const String _tag = 'ScribePage';
+
   int _cursorLine = 0;
   int _cursorColumn = 0;
 
@@ -68,73 +71,82 @@ class _ScribePageState extends ConsumerState<ScribePage> {
             control: true, shift: true): _handlePrevTab,
         const SingleActivator(LogicalKeyboardKey.keyT,
             control: true, shift: true): _handleReopenLastClosed,
+        const SingleActivator(LogicalKeyboardKey.keyS, control: true):
+            _handleSave,
+        const SingleActivator(LogicalKeyboardKey.keyS,
+            control: true, shift: true): _handleSaveAs,
+        const SingleActivator(LogicalKeyboardKey.keyS,
+            control: true, alt: true): _handleSaveAll,
       },
       child: Focus(
         autofocus: true,
-        child: Column(
-          children: [
-            if (tabs.isNotEmpty)
-              ScribeTabBar(
-                tabs: tabs,
-                activeTabId: activeTab?.id,
-                onTabSelected: _handleTabSelected,
-                onTabClosed: _handleTabClosed,
-                onNewTab: _handleNewTab,
-                onCloseOthers: _handleCloseOtherTabs,
-                onCloseAll: _handleCloseAllTabs,
-                onCloseToRight: _handleCloseToRight,
-                onCloseSaved: _handleCloseSavedTabs,
-                onCopyFilePath: _handleCopyFilePath,
-                onRevealInFinder: _handleRevealInFinder,
-                onReorder: _handleReorderTabs,
-                onToggleSidebar: _handleToggleSidebar,
-                sidebarVisible: sidebarVisible,
-              ),
-            if (tabs.isNotEmpty && activeTab != null)
-              Expanded(
-                child: Row(
-                  children: [
-                    if (sidebarVisible)
-                      ScribeSidebar(
-                        tabs: tabs,
-                        activeTabId: activeTab.id,
-                        onTabSelected: _handleTabSelected,
-                      ),
-                    if (sidebarVisible)
-                      const VerticalDivider(
-                        width: 1,
-                        thickness: 1,
-                        color: CodeOpsColors.border,
-                      ),
-                    Expanded(
-                      child: _EditorArea(
-                        key: ValueKey(activeTab.id),
-                        tab: activeTab,
-                        settings: ref.watch(scribeSettingsProvider),
-                        onChanged: (value) =>
-                            _handleContentChanged(activeTab, value),
-                        onCursorChanged: _handleCursorChanged,
-                      ),
-                    ),
-                  ],
+        child: ScribeDropTarget(
+          onFilesDropped: _handleFilesDropped,
+          child: Column(
+            children: [
+              if (tabs.isNotEmpty)
+                ScribeTabBar(
+                  tabs: tabs,
+                  activeTabId: activeTab?.id,
+                  onTabSelected: _handleTabSelected,
+                  onTabClosed: _handleTabClosed,
+                  onNewTab: _handleNewTab,
+                  onCloseOthers: _handleCloseOtherTabs,
+                  onCloseAll: _handleCloseAllTabs,
+                  onCloseToRight: _handleCloseToRight,
+                  onCloseSaved: _handleCloseSavedTabs,
+                  onCopyFilePath: _handleCopyFilePath,
+                  onRevealInFinder: _handleRevealInFinder,
+                  onReorder: _handleReorderTabs,
+                  onToggleSidebar: _handleToggleSidebar,
+                  sidebarVisible: sidebarVisible,
                 ),
-              )
-            else
-              Expanded(
-                child: ScribeEmptyState(
-                  onNewFile: _handleNewTab,
-                  onOpenFile: _handleOpenFile,
+              if (tabs.isNotEmpty && activeTab != null)
+                Expanded(
+                  child: Row(
+                    children: [
+                      if (sidebarVisible)
+                        ScribeSidebar(
+                          tabs: tabs,
+                          activeTabId: activeTab.id,
+                          onTabSelected: _handleTabSelected,
+                        ),
+                      if (sidebarVisible)
+                        const VerticalDivider(
+                          width: 1,
+                          thickness: 1,
+                          color: CodeOpsColors.border,
+                        ),
+                      Expanded(
+                        child: _EditorArea(
+                          key: ValueKey(activeTab.id),
+                          tab: activeTab,
+                          settings: ref.watch(scribeSettingsProvider),
+                          onChanged: (value) =>
+                              _handleContentChanged(activeTab, value),
+                          onCursorChanged: _handleCursorChanged,
+                        ),
+                      ),
+                    ],
+                  ),
+                )
+              else
+                Expanded(
+                  child: ScribeEmptyState(
+                    onNewFile: _handleNewTab,
+                    onOpenFile: _handleOpenFile,
+                  ),
                 ),
-              ),
-            if (tabs.isNotEmpty && activeTab != null)
-              ScribeStatusBar(
-                cursorLine: _cursorLine,
-                cursorColumn: _cursorColumn,
-                language: activeTab.language,
-                onLanguageChanged: (lang) =>
-                    _handleLanguageChanged(activeTab, lang),
-              ),
-          ],
+              if (tabs.isNotEmpty && activeTab != null)
+                ScribeStatusBar(
+                  cursorLine: _cursorLine,
+                  cursorColumn: _cursorColumn,
+                  language: activeTab.language,
+                  onLanguageChanged: (lang) =>
+                      _handleLanguageChanged(activeTab, lang),
+                ),
+            ],
+          ),
         ),
       ),
     );
@@ -153,28 +165,21 @@ class _ScribePageState extends ConsumerState<ScribePage> {
         );
   }
 
-  /// Opens a file picker and creates a tab from the selected file.
+  /// Opens a file picker (multi-select) and creates tabs from selected files.
   Future<void> _handleOpenFile() async {
-    final result = await FilePicker.platform.pickFiles(
-      type: FileType.any,
-      allowMultiple: false,
-    );
-    if (result == null || result.files.isEmpty) return;
-
-    final path = result.files.single.path;
-    if (path == null) return;
-
-    final content = await File(path).readAsString();
-    final lastSlash = path.lastIndexOf('/');
-    final fileName = lastSlash >= 0 ? path.substring(lastSlash + 1) : path;
-    final language = ScribeLanguage.fromFileName(path);
-
-    ref.read(scribeTabsProvider.notifier).openTab(
-          title: fileName,
-          content: content,
-          language: language,
-          filePath: path,
-        );
+    final fileService = ref.read(scribeFileServiceProvider);
+    final tabs = await fileService.openFiles();
+    for (final tab in tabs) {
+      ref.read(scribeTabsProvider.notifier).openTab(
+            title: tab.title,
+            content: tab.content,
+            language: tab.language,
+            filePath: tab.filePath,
+          );
+      if (tab.filePath != null) {
+        await _trackRecentFile(tab.filePath!);
+      }
+    }
   }
 
   // ---------------------------------------------------------------------------
@@ -218,6 +223,43 @@ class _ScribePageState extends ConsumerState<ScribePage> {
     final currentIndex = tabs.indexWhere((t) => t.id == activeId);
     final prevIndex = (currentIndex - 1 + tabs.length) % tabs.length;
     _handleTabSelected(tabs[prevIndex].id);
+  }
+
+  // ---------------------------------------------------------------------------
+  // Save operations (CS-004)
+  // ---------------------------------------------------------------------------
+
+  /// Saves the active tab (Ctrl+S).
+  ///
+  /// If the tab has no file path, triggers Save As instead.
+  void _handleSave() {
+    final activeTab = ref.read(activeScribeTabProvider);
+    if (activeTab == null) return;
+
+    if (activeTab.filePath == null) {
+      _handleSaveAs();
+    } else {
+      _saveTab(activeTab);
+    }
+  }
+
+  /// Opens a Save As dialog for the active tab (Ctrl+Shift+S).
+  void _handleSaveAs() {
+    final activeTab = ref.read(activeScribeTabProvider);
+    if (activeTab == null) return;
+    _saveTabAs(activeTab);
+  }
+
+  /// Saves all dirty tabs (Ctrl+Alt+S).
+  ///
+  /// Tabs without a file path are skipped (they would need Save As).
+  void _handleSaveAll() {
+    final tabs = ref.read(scribeTabsProvider);
+    for (final tab in tabs) {
+      if (tab.isDirty && tab.filePath != null) {
+        _saveTab(tab);
+      }
+    }
   }
 
   // ---------------------------------------------------------------------------
@@ -381,6 +423,32 @@ class _ScribePageState extends ConsumerState<ScribePage> {
   }
 
   // ---------------------------------------------------------------------------
+  // Drag and drop (CS-004)
+  // ---------------------------------------------------------------------------
+
+  /// Handles files dropped onto the Scribe editor.
+  Future<void> _handleFilesDropped(List<String> paths) async {
+    for (final path in paths) {
+      try {
+        final file = File(path);
+        final content = await file.readAsString();
+        final tab = ScribeTab.fromFile(filePath: path, content: content);
+        ref.read(scribeTabsProvider.notifier).openTab(
+              title: tab.title,
+              content: tab.content,
+              language: tab.language,
+              filePath: tab.filePath,
+            );
+        await _trackRecentFile(path);
+      } on FormatException catch (e) {
+        log.w(_tag, 'Skipping binary/unreadable dropped file: $path', e);
+      } on FileSystemException catch (e) {
+        log.w(_tag, 'Failed to read dropped file: $path', e);
+      }
+    }
+  }
+
+  // ---------------------------------------------------------------------------
   // Tab reordering and sidebar
   // ---------------------------------------------------------------------------
 
@@ -418,14 +486,48 @@ class _ScribePageState extends ConsumerState<ScribePage> {
   }
 
   // ---------------------------------------------------------------------------
-  // Save helper
+  // Save helpers (CS-004)
   // ---------------------------------------------------------------------------
 
-  /// Saves the tab content to its file path, or does nothing for untitled tabs.
+  /// Saves the tab content to its file path.
+  ///
+  /// If the tab has no file path, triggers Save As. On success, marks
+  /// the tab clean and tracks the file in recent files.
   Future<void> _saveTab(ScribeTab tab) async {
-    if (tab.filePath == null) return;
-    await File(tab.filePath!).writeAsString(tab.content);
-    ref.read(scribeTabsProvider.notifier).markClean(tab.id);
+    if (tab.filePath == null) {
+      await _saveTabAs(tab);
+      return;
+    }
+
+    final fileService = ref.read(scribeFileServiceProvider);
+    final success = await fileService.saveFile(tab);
+    if (success) {
+      ref.read(scribeTabsProvider.notifier).markClean(tab.id);
+      await _trackRecentFile(tab.filePath!);
+    }
+  }
+
+  /// Opens a Save As dialog for [tab] and writes to the chosen path.
+  ///
+  /// Updates the tab's file path, title, and language on success.
+  Future<void> _saveTabAs(ScribeTab tab) async {
+    final fileService = ref.read(scribeFileServiceProvider);
+    final newPath = await fileService.saveFileAs(tab);
+    if (newPath == null) return;
+
+    // Update tab with new file path and detected language.
+    final language = ScribeLanguage.fromFileName(newPath);
+    ref.read(scribeTabsProvider.notifier).updateTabFilePath(tab.id, newPath);
+    ref.read(scribeTabsProvider.notifier).updateLanguage(tab.id, language);
+    await _trackRecentFile(newPath);
+  }
+
+  /// Adds a file path to recent files and persists.
+  Future<void> _trackRecentFile(String filePath) async {
+    final fileService = ref.read(scribeFileServiceProvider);
+    await fileService.addRecentFile(filePath);
+    final updated = await fileService.loadRecentFiles();
+    ref.read(scribeRecentFilesProvider.notifier).state = updated;
   }
 }
 

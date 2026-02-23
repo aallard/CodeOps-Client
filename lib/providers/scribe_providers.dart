@@ -7,7 +7,10 @@ library;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:uuid/uuid.dart';
 
+import 'package:dio/dio.dart';
+
 import '../models/scribe_models.dart';
+import '../services/data/scribe_file_service.dart';
 import '../services/data/scribe_persistence_service.dart';
 import '../utils/constants.dart';
 import 'auth_providers.dart';
@@ -21,6 +24,17 @@ final scribePersistenceProvider = Provider<ScribePersistenceService>((ref) {
   final db = ref.watch(databaseProvider);
   return ScribePersistenceService(db);
 });
+
+/// Scribe file I/O service for open, save, save-as, and URL operations.
+final scribeFileServiceProvider = Provider<ScribeFileService>((ref) {
+  final persistence = ref.watch(scribePersistenceProvider);
+  return ScribeFileService(persistence, Dio());
+});
+
+/// List of recently opened file paths, capped at
+/// [AppConstants.scribeMaxRecentFiles].
+final scribeRecentFilesProvider =
+    StateProvider<List<String>>((ref) => []);
 
 // ---------------------------------------------------------------------------
 // State Providers (simple mutable UI state)
@@ -115,6 +129,11 @@ final scribeInitProvider = FutureProvider<void>((ref) async {
         .fold(0, (int a, int b) => a > b ? a : b);
     ref.read(scribeUntitledCounterProvider.notifier).state = maxUntitled + 1;
   }
+
+  // Load recent files.
+  final fileService = ref.read(scribeFileServiceProvider);
+  final recentFiles = await fileService.loadRecentFiles();
+  ref.read(scribeRecentFilesProvider.notifier).state = recentFiles;
 });
 
 // ---------------------------------------------------------------------------
@@ -337,6 +356,27 @@ class ScribeTabsNotifier extends StateNotifier<List<ScribeTab>> {
         ? history.sublist(history.length - maxClosedHistory)
         : history;
     _ref.read(scribeClosedTabHistoryProvider.notifier).state = capped;
+  }
+
+  /// Updates the file path and title of the tab with [tabId].
+  ///
+  /// Used after a "Save As" operation to associate the tab with its
+  /// new disk location.
+  void updateTabFilePath(String tabId, String filePath) {
+    final index = state.indexWhere((t) => t.id == tabId);
+    if (index < 0) return;
+
+    final lastSlash = filePath.lastIndexOf('/');
+    final fileName =
+        lastSlash >= 0 ? filePath.substring(lastSlash + 1) : filePath;
+
+    final updated = state[index].copyWith(
+      filePath: filePath,
+      title: fileName,
+      isDirty: false,
+    );
+    state = [...state]..[index] = updated;
+    _persist();
   }
 
   /// Changes the syntax highlighting language for the tab with [tabId].

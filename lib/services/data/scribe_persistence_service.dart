@@ -83,6 +83,21 @@ class ScribePersistenceService {
         );
   }
 
+  /// Loads a single settings value by [key], or `null` if not found.
+  Future<String?> loadSettingsValue(String key) async {
+    final row = await (_database.select(_database.scribeSettings)
+          ..where((t) => t.key.equals(key)))
+        .getSingleOrNull();
+    return row?.value;
+  }
+
+  /// Saves a single settings value by [key].
+  Future<void> saveSettingsValue(String key, String value) async {
+    await _database.into(_database.scribeSettings).insertOnConflictUpdate(
+          ScribeSettingsCompanion.insert(key: key, value: value),
+        );
+  }
+
   /// Converts a Drift row to a [ScribeTab].
   ScribeTab _rowToTab(db.ScribeTab row) {
     return ScribeTab(

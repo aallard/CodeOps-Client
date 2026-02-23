@@ -285,4 +285,14 @@ class AppConstants {
 
   /// Maximum width of a Scribe tab in logical pixels.
   static const double scribeTabMaxWidth = 200.0;
+
+  // -------------------------------------------------------------------------
+  // Scribe constants (CS-004)
+  // -------------------------------------------------------------------------
+
+  /// Maximum number of recent files tracked in Scribe.
+  static const int scribeMaxRecentFiles = 20;
+
+  /// Maximum file size in bytes that Scribe will open (10 MB).
+  static const int scribeMaxFileSizeBytes = 10485760;
 }
