@@ -1,4 +1,4 @@
-/// GoRouter configuration with all 47 application routes.
+/// GoRouter configuration with all 49 application routes.
 ///
 /// Uses an [AuthNotifier] listenable connected to [AuthService] for
 /// reactive auth state. Unauthenticated users are redirected to `/login`.
@@ -38,6 +38,7 @@ import 'pages/registry/service_form_page.dart';
 import 'pages/registry/solution_detail_page.dart';
 import 'pages/registry/solution_list_page.dart';
 import 'pages/registry/service_list_page.dart';
+import 'pages/registry/api_docs_page.dart';
 import 'pages/registry/workstation_detail_page.dart';
 import 'pages/registry/workstation_list_page.dart';
 import 'pages/vault_dashboard_page.dart';
@@ -496,6 +497,25 @@ final GoRouter router = GoRouter(
             final id = state.pathParameters['profileId']!;
             return NoTransitionPage(
               child: WorkstationDetailPage(profileId: id),
+            );
+          },
+        ),
+        // 47. Registry — API Docs Viewer
+        GoRoute(
+          path: '/registry/api-docs',
+          name: 'registry-api-docs',
+          pageBuilder: (context, state) => const NoTransitionPage(
+            child: ApiDocsPage(),
+          ),
+        ),
+        // 48. Registry — API Docs for Service
+        GoRoute(
+          path: '/registry/api-docs/:serviceId',
+          name: 'registry-api-docs-service',
+          pageBuilder: (context, state) {
+            final id = state.pathParameters['serviceId']!;
+            return NoTransitionPage(
+              child: ApiDocsPage(serviceId: id),
             );
           },
         ),

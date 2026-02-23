@@ -6,7 +6,7 @@ import 'package:codeops/services/auth/auth_service.dart';
 
 void main() {
   group('Router', () {
-    test('has 47 routes', () {
+    test('has 49 routes', () {
       int countRoutes(List<RouteBase> routes) {
         var count = 0;
         for (final route in routes) {
@@ -20,7 +20,7 @@ void main() {
         return count;
       }
 
-      expect(countRoutes(router.configuration.routes), 47);
+      expect(countRoutes(router.configuration.routes), 49);
     });
 
     test('initial location is /login', () {
@@ -76,6 +76,8 @@ void main() {
         '/registry/config',
         '/registry/workstations',
         '/registry/workstations/:profileId',
+        '/registry/api-docs',
+        '/registry/api-docs/:serviceId',
       ];
 
       final registeredPaths = <String>[];

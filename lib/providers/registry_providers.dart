@@ -8,13 +8,18 @@
 /// [StateProvider] for UI state.
 library;
 
+import 'dart:convert';
+
+import 'package:dio/dio.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../models/health_snapshot.dart';
+import '../models/openapi_spec.dart';
 import '../models/registry_enums.dart';
 import '../models/registry_models.dart';
 import '../services/cloud/registry_api.dart';
 import '../services/cloud/registry_api_client.dart';
+import '../services/openapi_parser.dart';
 import 'auth_providers.dart';
 import 'team_providers.dart';
 
@@ -749,11 +754,67 @@ final storedConfigsProvider =
 });
 
 // ─────────────────────────────────────────────────────────────────────────────
+// API Docs — State Providers
+// ─────────────────────────────────────────────────────────────────────────────
+
+/// Selected service ID for the API docs viewer.
+final apiDocsServiceIdProvider = StateProvider<String?>((ref) => null);
+
+/// Search query for filtering endpoints in the API docs viewer.
+final apiDocsSearchProvider = StateProvider<String>((ref) => '');
+
+/// HTTP method filter for the API docs viewer (null = all methods).
+final apiDocsMethodFilterProvider = StateProvider<String?>((ref) => null);
+
+/// Set of expanded tag group names in the API docs viewer.
+final apiDocsExpandedTagsProvider = StateProvider<Set<String>>((ref) => {});
+
+/// Fetches and parses the OpenAPI spec for the selected service.
+///
+/// Resolves the service's HTTP API port from its port allocations, then
+/// fetches the OpenAPI 3.0 JSON from `http://localhost:{port}/v3/api-docs`
+/// and parses it using [OpenApiParser].
+final openApiSpecProvider = FutureProvider<OpenApiSpec?>((ref) async {
+  final serviceId = ref.watch(apiDocsServiceIdProvider);
+  if (serviceId == null) return null;
+
+  final api = ref.watch(registryApiProvider);
+  final ports = await api.getPortsForService(serviceId);
+
+  // Find the HTTP API port for the 'dev' environment.
+  final httpPort = ports
+      .where((p) => p.portType == PortType.httpApi && p.environment == 'dev')
+      .toList();
+  if (httpPort.isEmpty) return null;
+
+  final port = httpPort.first.portNumber;
+  final dio = Dio(BaseOptions(
+    connectTimeout: const Duration(seconds: 5),
+    receiveTimeout: const Duration(seconds: 10),
+  ));
+
+  try {
+    final response = await dio.get<dynamic>('http://localhost:$port/v3/api-docs');
+    final Map<String, dynamic> json;
+    if (response.data is String) {
+      json = jsonDecode(response.data as String) as Map<String, dynamic>;
+    } else {
+      json = response.data as Map<String, dynamic>;
+    }
+    return OpenApiParser.parse(json);
+  } on DioException {
+    return null;
+  } finally {
+    dio.close();
+  }
+});
+
+// ─────────────────────────────────────────────────────────────────────────────
 // Navigation State
 // ─────────────────────────────────────────────────────────────────────────────
 
 /// Active registry tab index.
 ///
 /// 0=Services, 1=Solutions, 2=Ports, 3=Dependencies, 4=Topology,
-/// 5=Infrastructure, 6=Config, 7=Health, 8=Workstations.
+/// 5=Infrastructure, 6=Config, 7=Health, 8=Workstations, 9=API Docs.
 final registryActiveTabProvider = StateProvider<int>((ref) => 0);

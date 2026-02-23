@@ -133,7 +133,7 @@ class ServiceDetailPage extends ConsumerWidget {
   }
 }
 
-/// Action buttons for Clone, Delete, and Check Health.
+/// Action buttons for Clone, Delete, Check Health, and API Docs.
 class _ActionButtons extends ConsumerWidget {
   final String serviceId;
   final String serviceName;
@@ -145,6 +145,12 @@ class _ActionButtons extends ConsumerWidget {
     return Row(
       mainAxisSize: MainAxisSize.min,
       children: [
+        _ActionButton(
+          icon: Icons.api_outlined,
+          label: 'API Docs',
+          onPressed: () => context.go('/registry/api-docs/$serviceId'),
+        ),
+        const SizedBox(width: 8),
         _ActionButton(
           icon: Icons.copy_outlined,
           label: 'Clone',
