@@ -9,6 +9,7 @@ import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 
 import '../../models/registry_enums.dart';
 import '../../models/registry_models.dart';
@@ -83,6 +84,18 @@ class _HeaderBar extends ConsumerWidget {
             ),
           ),
           const Spacer(),
+          OutlinedButton.icon(
+            onPressed: () =>
+                context.go('/registry/dependencies/impact'),
+            icon: const Icon(Icons.account_tree_outlined, size: 16),
+            label: const Text('Impact Analysis'),
+            style: OutlinedButton.styleFrom(
+              side: const BorderSide(color: CodeOpsColors.border),
+              padding:
+                  const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+            ),
+          ),
+          const SizedBox(width: 8),
           OutlinedButton.icon(
             onPressed: () => showAddDependencyDialog(context),
             icon: const Icon(Icons.add, size: 16),

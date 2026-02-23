@@ -351,6 +351,9 @@ final graphLayoutProvider =
 /// Currently selected node in the dependency graph.
 final selectedGraphNodeProvider = StateProvider<String?>((ref) => null);
 
+/// Selected service ID for impact analysis.
+final impactServiceIdProvider = StateProvider<String?>((ref) => null);
+
 // ─────────────────────────────────────────────────────────────────────────────
 // Ports — Data Providers
 // ─────────────────────────────────────────────────────────────────────────────

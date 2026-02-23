@@ -1,4 +1,4 @@
-/// GoRouter configuration with all 40 application routes.
+/// GoRouter configuration with all 41 application routes.
 ///
 /// Uses an [AuthNotifier] listenable connected to [AuthService] for
 /// reactive auth state. Unauthenticated users are redirected to `/login`.
@@ -27,6 +27,7 @@ import 'pages/personas_page.dart';
 import 'pages/dependency_scan_page.dart';
 import 'pages/placeholder_page.dart';
 import 'pages/registry/dependency_graph_page.dart';
+import 'pages/registry/impact_analysis_page.dart';
 import 'pages/registry/service_detail_page.dart';
 import 'pages/registry/port_allocation_page.dart';
 import 'pages/registry/service_form_page.dart';
@@ -431,6 +432,14 @@ final GoRouter router = GoRouter(
           name: 'registry-dependencies',
           pageBuilder: (context, state) => const NoTransitionPage(
             child: DependencyGraphPage(),
+          ),
+        ),
+        // 40. Registry — Impact Analysis
+        GoRoute(
+          path: '/registry/dependencies/impact',
+          name: 'registry-impact-analysis',
+          pageBuilder: (context, state) => const NoTransitionPage(
+            child: ImpactAnalysisPage(),
           ),
         ),
       ],
