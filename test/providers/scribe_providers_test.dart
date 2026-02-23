@@ -249,6 +249,201 @@ void main() {
     });
   });
 
+  group('Closed tab history', () {
+    test('closeTab pushes tab to closed history', () {
+      final container = createContainer();
+
+      container.read(scribeTabsProvider.notifier).openTab(title: 'Tab 1');
+      final tabId = container.read(scribeTabsProvider).first.id;
+
+      container.read(scribeTabsProvider.notifier).closeTab(tabId);
+
+      final history = container.read(scribeClosedTabHistoryProvider);
+      expect(history, hasLength(1));
+      expect(history.first.title, 'Tab 1');
+    });
+
+    test('closeAllTabs pushes all tabs to closed history', () {
+      final container = createContainer();
+
+      container.read(scribeTabsProvider.notifier).openTab(title: 'Tab 1');
+      container.read(scribeTabsProvider.notifier).openTab(title: 'Tab 2');
+
+      container.read(scribeTabsProvider.notifier).closeAllTabs();
+
+      final history = container.read(scribeClosedTabHistoryProvider);
+      expect(history, hasLength(2));
+      expect(history[0].title, 'Tab 1');
+      expect(history[1].title, 'Tab 2');
+    });
+
+    test('closeOtherTabs pushes removed tabs to closed history', () {
+      final container = createContainer();
+
+      container.read(scribeTabsProvider.notifier).openTab(title: 'Keep');
+      final keepId = container.read(scribeTabsProvider).first.id;
+      container.read(scribeTabsProvider.notifier).openTab(title: 'Remove 1');
+      container.read(scribeTabsProvider.notifier).openTab(title: 'Remove 2');
+
+      container.read(scribeTabsProvider.notifier).closeOtherTabs(keepId);
+
+      final history = container.read(scribeClosedTabHistoryProvider);
+      expect(history, hasLength(2));
+      expect(history.map((t) => t.title), containsAll(['Remove 1', 'Remove 2']));
+    });
+
+    test('closed history capped at 20 entries', () {
+      final container = createContainer();
+
+      // Create and close 25 tabs.
+      for (var i = 0; i < 25; i++) {
+        container.read(scribeTabsProvider.notifier).openTab(title: 'Tab-$i');
+      }
+      container.read(scribeTabsProvider.notifier).closeAllTabs();
+
+      final history = container.read(scribeClosedTabHistoryProvider);
+      expect(history, hasLength(20));
+      // Should keep the last 20 (Tab-5 through Tab-24).
+      expect(history.first.title, 'Tab-5');
+      expect(history.last.title, 'Tab-24');
+    });
+  });
+
+  group('closeTabsToRight', () {
+    test('closes tabs after specified index', () {
+      final container = createContainer();
+
+      container.read(scribeTabsProvider.notifier).openTab(title: 'A');
+      container.read(scribeTabsProvider.notifier).openTab(title: 'B');
+      container.read(scribeTabsProvider.notifier).openTab(title: 'C');
+      container.read(scribeTabsProvider.notifier).openTab(title: 'D');
+
+      final tabs = container.read(scribeTabsProvider);
+      container.read(scribeTabsProvider.notifier).closeTabsToRight(tabs[1].id);
+
+      final remaining = container.read(scribeTabsProvider);
+      expect(remaining, hasLength(2));
+      expect(remaining[0].title, 'A');
+      expect(remaining[1].title, 'B');
+
+      final history = container.read(scribeClosedTabHistoryProvider);
+      expect(history, hasLength(2));
+      expect(history[0].title, 'C');
+      expect(history[1].title, 'D');
+    });
+
+    test('does nothing when tab is last', () {
+      final container = createContainer();
+
+      container.read(scribeTabsProvider.notifier).openTab(title: 'A');
+      container.read(scribeTabsProvider.notifier).openTab(title: 'B');
+
+      final tabs = container.read(scribeTabsProvider);
+      container.read(scribeTabsProvider.notifier).closeTabsToRight(tabs.last.id);
+
+      expect(container.read(scribeTabsProvider), hasLength(2));
+      expect(container.read(scribeClosedTabHistoryProvider), isEmpty);
+    });
+
+    test('activates kept tab when active tab removed', () {
+      final container = createContainer();
+
+      container.read(scribeTabsProvider.notifier).openTab(title: 'A');
+      container.read(scribeTabsProvider.notifier).openTab(title: 'B');
+      container.read(scribeTabsProvider.notifier).openTab(title: 'C');
+
+      final tabs = container.read(scribeTabsProvider);
+      // Active is last tab (C). Close to right of A removes B and C.
+      container.read(scribeTabsProvider.notifier).closeTabsToRight(tabs[0].id);
+
+      expect(container.read(scribeTabsProvider), hasLength(1));
+      expect(container.read(activeScribeTabIdProvider), tabs[0].id);
+    });
+  });
+
+  group('closeSavedTabs', () {
+    test('closes only clean tabs', () {
+      final container = createContainer();
+
+      container.read(scribeTabsProvider.notifier).openTab(title: 'Clean 1');
+      container.read(scribeTabsProvider.notifier).openTab(title: 'Dirty 1');
+      final dirtyId = container.read(scribeTabsProvider).last.id;
+      container.read(scribeTabsProvider.notifier)
+          .updateContent(dirtyId, 'changed');
+      container.read(scribeTabsProvider.notifier).openTab(title: 'Clean 2');
+
+      container.read(scribeTabsProvider.notifier).closeSavedTabs();
+
+      final remaining = container.read(scribeTabsProvider);
+      expect(remaining, hasLength(1));
+      expect(remaining.first.title, 'Dirty 1');
+    });
+
+    test('preserves dirty tabs and activates first remaining', () {
+      final container = createContainer();
+
+      container.read(scribeTabsProvider.notifier).openTab(title: 'Clean');
+      container.read(scribeTabsProvider.notifier).openTab(title: 'Dirty');
+      final dirtyId = container.read(scribeTabsProvider).last.id;
+      container.read(scribeTabsProvider.notifier)
+          .updateContent(dirtyId, 'changed');
+
+      // Active is the clean tab.
+      container.read(activeScribeTabIdProvider.notifier).state =
+          container.read(scribeTabsProvider).first.id;
+
+      container.read(scribeTabsProvider.notifier).closeSavedTabs();
+
+      expect(container.read(activeScribeTabIdProvider), dirtyId);
+    });
+
+    test('does nothing when no saved tabs exist', () {
+      final container = createContainer();
+
+      container.read(scribeTabsProvider.notifier).openTab(title: 'Dirty');
+      final dirtyId = container.read(scribeTabsProvider).first.id;
+      container.read(scribeTabsProvider.notifier)
+          .updateContent(dirtyId, 'changed');
+
+      container.read(scribeTabsProvider.notifier).closeSavedTabs();
+
+      expect(container.read(scribeTabsProvider), hasLength(1));
+      expect(container.read(scribeClosedTabHistoryProvider), isEmpty);
+    });
+  });
+
+  group('reopenLastClosed', () {
+    test('restores tab and activates it', () {
+      final container = createContainer();
+
+      container.read(scribeTabsProvider.notifier).openTab(title: 'Tab 1');
+      container.read(scribeTabsProvider.notifier).openTab(title: 'Tab 2');
+      final tab2Id = container.read(scribeTabsProvider).last.id;
+
+      container.read(scribeTabsProvider.notifier).closeTab(tab2Id);
+      expect(container.read(scribeTabsProvider), hasLength(1));
+
+      container.read(scribeTabsProvider.notifier).reopenLastClosed();
+
+      final tabs = container.read(scribeTabsProvider);
+      expect(tabs, hasLength(2));
+      expect(tabs.last.title, 'Tab 2');
+      expect(container.read(activeScribeTabIdProvider), tab2Id);
+      expect(container.read(scribeClosedTabHistoryProvider), isEmpty);
+    });
+
+    test('does nothing when history is empty', () {
+      final container = createContainer();
+
+      container.read(scribeTabsProvider.notifier).openTab(title: 'Tab 1');
+      final tabCount = container.read(scribeTabsProvider).length;
+
+      container.read(scribeTabsProvider.notifier).reopenLastClosed();
+
+      expect(container.read(scribeTabsProvider), hasLength(tabCount));
+    });
+  });
+
   group('ScribeSettingsNotifier', () {
     test('updateFontSize clamps to valid range', () {
       final container = createContainer();
@@ -417,6 +612,11 @@ void main() {
     test('scribeSidebarVisibleProvider initializes false', () {
       final container = createContainer();
       expect(container.read(scribeSidebarVisibleProvider), isFalse);
+    });
+
+    test('scribeClosedTabHistoryProvider initializes empty', () {
+      final container = createContainer();
+      expect(container.read(scribeClosedTabHistoryProvider), isEmpty);
     });
 
     test('scribeSettingsProvider initializes with defaults', () {

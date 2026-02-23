@@ -1,5 +1,6 @@
 // Tests for ScribePage.
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
@@ -262,6 +263,120 @@ void main() {
 
       expect(find.byType(ScribeSidebar), findsOneWidget);
       expect(find.text('OPEN FILES'), findsOneWidget);
+    });
+
+    testWidgets('Ctrl+W closes the active clean tab', (tester) async {
+      final tabs = [makeTab(1), makeTab(2)];
+      await tester.pumpWidget(createWidget(
+        tabs: tabs,
+        activeTabId: 'tab-1',
+      ));
+      await tester.pumpAndSettle();
+
+      // Press Ctrl+W.
+      await tester.sendKeyDownEvent(LogicalKeyboardKey.controlLeft);
+      await tester.sendKeyEvent(LogicalKeyboardKey.keyW);
+      await tester.sendKeyUpEvent(LogicalKeyboardKey.controlLeft);
+      await tester.pumpAndSettle();
+
+      // Tab 1 should be closed.
+      expect(find.text('File-1.dart'), findsNothing);
+      expect(find.text('File-2.dart'), findsOneWidget);
+    });
+
+    testWidgets('Ctrl+Tab cycles to next tab', (tester) async {
+      final tabs = [makeTab(1), makeTab(2), makeTab(3)];
+      await tester.pumpWidget(createWidget(
+        tabs: tabs,
+        activeTabId: 'tab-1',
+      ));
+      await tester.pumpAndSettle();
+
+      // Press Ctrl+Tab — should cycle from tab-1 to tab-2.
+      await tester.sendKeyDownEvent(LogicalKeyboardKey.controlLeft);
+      await tester.sendKeyEvent(LogicalKeyboardKey.tab);
+      await tester.sendKeyUpEvent(LogicalKeyboardKey.controlLeft);
+      await tester.pumpAndSettle();
+
+      // All 3 tabs still visible.
+      expect(find.text('File-1.dart'), findsOneWidget);
+      expect(find.text('File-2.dart'), findsOneWidget);
+      expect(find.text('File-3.dart'), findsOneWidget);
+    });
+
+    testWidgets('Ctrl+Shift+Tab cycles to previous tab', (tester) async {
+      final tabs = [makeTab(1), makeTab(2), makeTab(3)];
+      await tester.pumpWidget(createWidget(
+        tabs: tabs,
+        activeTabId: 'tab-2',
+      ));
+      await tester.pumpAndSettle();
+
+      // Press Ctrl+Shift+Tab — should cycle from tab-2 to tab-1.
+      await tester.sendKeyDownEvent(LogicalKeyboardKey.controlLeft);
+      await tester.sendKeyDownEvent(LogicalKeyboardKey.shiftLeft);
+      await tester.sendKeyEvent(LogicalKeyboardKey.tab);
+      await tester.sendKeyUpEvent(LogicalKeyboardKey.shiftLeft);
+      await tester.sendKeyUpEvent(LogicalKeyboardKey.controlLeft);
+      await tester.pumpAndSettle();
+
+      // All tabs still visible.
+      expect(find.text('File-1.dart'), findsOneWidget);
+      expect(find.text('File-2.dart'), findsOneWidget);
+      expect(find.text('File-3.dart'), findsOneWidget);
+    });
+
+    testWidgets('Ctrl+Shift+T reopens last closed tab', (tester) async {
+      final tabs = [makeTab(1), makeTab(2)];
+      await tester.pumpWidget(createWidget(
+        tabs: tabs,
+        activeTabId: 'tab-1',
+      ));
+      await tester.pumpAndSettle();
+
+      // Close tab-1 first (it's clean so no dialog).
+      final closeButtons = find.byIcon(Icons.close);
+      await tester.tap(closeButtons.first);
+      await tester.pumpAndSettle();
+
+      expect(find.text('File-1.dart'), findsNothing);
+
+      // Now reopen with Ctrl+Shift+T.
+      await tester.sendKeyDownEvent(LogicalKeyboardKey.controlLeft);
+      await tester.sendKeyDownEvent(LogicalKeyboardKey.shiftLeft);
+      await tester.sendKeyEvent(LogicalKeyboardKey.keyT);
+      await tester.sendKeyUpEvent(LogicalKeyboardKey.shiftLeft);
+      await tester.sendKeyUpEvent(LogicalKeyboardKey.controlLeft);
+      await tester.pumpAndSettle();
+
+      // Tab should be reopened.
+      expect(find.text('File-1.dart'), findsOneWidget);
+      expect(find.text('File-2.dart'), findsOneWidget);
+    });
+
+    testWidgets('dirty tab close shows save confirmation dialog',
+        (tester) async {
+      final dirtyTab = makeTab(1).copyWith(isDirty: true);
+      await tester.pumpWidget(createWidget(
+        tabs: [dirtyTab],
+        activeTabId: 'tab-1',
+      ));
+      await tester.pumpAndSettle();
+
+      // Click close button on the dirty tab.
+      await tester.tap(find.byIcon(Icons.close));
+      await tester.pumpAndSettle();
+
+      // Save dialog should appear.
+      expect(find.text('Unsaved Changes'), findsOneWidget);
+      expect(find.text("'File-1.dart' has unsaved changes."), findsOneWidget);
+
+      // Cancel the close.
+      await tester.tap(find.text('Cancel'));
+      await tester.pumpAndSettle();
+
+      // Tab should still be open.
+      expect(find.text('File-1.dart'), findsOneWidget);
     });
   });
 }

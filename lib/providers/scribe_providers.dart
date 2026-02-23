@@ -35,6 +35,13 @@ final scribeUntitledCounterProvider = StateProvider<int>((ref) => 1);
 /// Whether the Scribe sidebar is visible.
 final scribeSidebarVisibleProvider = StateProvider<bool>((ref) => false);
 
+/// Stack of recently closed tabs for Ctrl+Shift+T reopen.
+///
+/// Capped at [ScribeTabsNotifier.maxClosedHistory] entries.
+/// Newest entries are at the end of the list.
+final scribeClosedTabHistoryProvider =
+    StateProvider<List<ScribeTab>>((ref) => []);
+
 // ---------------------------------------------------------------------------
 // StateNotifier Providers (complex state with methods)
 // ---------------------------------------------------------------------------
@@ -122,6 +129,9 @@ class ScribeTabsNotifier extends StateNotifier<List<ScribeTab>> {
   final ScribePersistenceService _persistence;
   final Ref _ref;
 
+  /// Maximum number of closed tabs retained in history.
+  static const int maxClosedHistory = 20;
+
   /// Creates a [ScribeTabsNotifier].
   ScribeTabsNotifier(this._persistence, this._ref) : super([]);
 
@@ -166,10 +176,14 @@ class ScribeTabsNotifier extends StateNotifier<List<ScribeTab>> {
 
   /// Closes the tab with the given [tabId].
   ///
-  /// If the closed tab was active, activates the adjacent tab.
+  /// Pushes the closed tab onto the closed-tab history stack for
+  /// later reopening. If the closed tab was active, activates the
+  /// adjacent tab.
   void closeTab(String tabId) {
     final index = state.indexWhere((t) => t.id == tabId);
     if (index < 0) return;
+
+    _pushToClosedHistory([state[index]]);
 
     final newTabs = [...state]..removeAt(index);
     state = newTabs;
@@ -230,20 +244,99 @@ class ScribeTabsNotifier extends StateNotifier<List<ScribeTab>> {
   }
 
   /// Closes all open tabs.
+  ///
+  /// All tabs are pushed to the closed-tab history before clearing.
   void closeAllTabs() {
+    _pushToClosedHistory(state);
     state = [];
     _ref.read(activeScribeTabIdProvider.notifier).state = null;
     _persist();
   }
 
   /// Closes all tabs except the one with [tabId].
+  ///
+  /// Removed tabs are pushed to the closed-tab history.
   void closeOtherTabs(String tabId) {
     final tab = state.where((t) => t.id == tabId).firstOrNull;
     if (tab == null) return;
 
+    final removed = state.where((t) => t.id != tabId).toList();
+    _pushToClosedHistory(removed);
+
     state = [tab];
     _ref.read(activeScribeTabIdProvider.notifier).state = tabId;
     _persist();
+  }
+
+  /// Closes all tabs to the right of the tab with [tabId].
+  ///
+  /// Removed tabs are pushed to the closed-tab history. If [tabId] is
+  /// the last tab (or not found), this is a no-op.
+  void closeTabsToRight(String tabId) {
+    final index = state.indexWhere((t) => t.id == tabId);
+    if (index < 0 || index >= state.length - 1) return;
+
+    final removed = state.sublist(index + 1);
+    _pushToClosedHistory(removed);
+
+    state = state.sublist(0, index + 1);
+
+    // If the active tab was among those removed, activate the kept tab.
+    final activeId = _ref.read(activeScribeTabIdProvider);
+    if (activeId != null && !state.any((t) => t.id == activeId)) {
+      _ref.read(activeScribeTabIdProvider.notifier).state = state.last.id;
+    }
+
+    _persist();
+  }
+
+  /// Closes all tabs that are not dirty (have no unsaved changes).
+  ///
+  /// Removed tabs are pushed to the closed-tab history.
+  void closeSavedTabs() {
+    final saved = state.where((t) => !t.isDirty).toList();
+    if (saved.isEmpty) return;
+
+    _pushToClosedHistory(saved);
+
+    final remaining = state.where((t) => t.isDirty).toList();
+    state = remaining;
+
+    final activeId = _ref.read(activeScribeTabIdProvider);
+    if (activeId != null && !state.any((t) => t.id == activeId)) {
+      _ref.read(activeScribeTabIdProvider.notifier).state =
+          state.isNotEmpty ? state.first.id : null;
+    }
+
+    _persist();
+  }
+
+  /// Reopens the most recently closed tab from history.
+  ///
+  /// Pops the last entry from [scribeClosedTabHistoryProvider], adds it
+  /// back to the tab list, and activates it. No-op if history is empty.
+  void reopenLastClosed() {
+    final history = _ref.read(scribeClosedTabHistoryProvider);
+    if (history.isEmpty) return;
+
+    final tab = history.last;
+    _ref.read(scribeClosedTabHistoryProvider.notifier).state =
+        history.sublist(0, history.length - 1);
+
+    state = [...state, tab];
+    _ref.read(activeScribeTabIdProvider.notifier).state = tab.id;
+    _persist();
+  }
+
+  /// Pushes [tabs] onto the closed-tab history stack, capped at
+  /// [maxClosedHistory].
+  void _pushToClosedHistory(List<ScribeTab> tabs) {
+    if (tabs.isEmpty) return;
+    final history = [..._ref.read(scribeClosedTabHistoryProvider), ...tabs];
+    final capped = history.length > maxClosedHistory
+        ? history.sublist(history.length - maxClosedHistory)
+        : history;
+    _ref.read(scribeClosedTabHistoryProvider.notifier).state = capped;
   }
 
   /// Changes the syntax highlighting language for the tab with [tabId].

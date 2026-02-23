@@ -23,6 +23,7 @@ import '../theme/colors.dart';
 import '../widgets/scribe/scribe_editor.dart';
 import '../widgets/scribe/scribe_empty_state.dart';
 import '../widgets/scribe/scribe_language.dart';
+import '../widgets/scribe/scribe_save_dialog.dart';
 import '../widgets/scribe/scribe_sidebar.dart';
 import '../widgets/scribe/scribe_status_bar.dart';
 import '../widgets/scribe/scribe_tab_bar.dart';
@@ -59,6 +60,14 @@ class _ScribePageState extends ConsumerState<ScribePage> {
             _handleNewTab,
         const SingleActivator(LogicalKeyboardKey.keyO, control: true):
             _handleOpenFile,
+        const SingleActivator(LogicalKeyboardKey.keyW, control: true):
+            _handleCloseActiveTab,
+        const SingleActivator(LogicalKeyboardKey.tab, control: true):
+            _handleNextTab,
+        const SingleActivator(LogicalKeyboardKey.tab,
+            control: true, shift: true): _handlePrevTab,
+        const SingleActivator(LogicalKeyboardKey.keyT,
+            control: true, shift: true): _handleReopenLastClosed,
       },
       child: Focus(
         autofocus: true,
@@ -73,6 +82,10 @@ class _ScribePageState extends ConsumerState<ScribePage> {
                 onNewTab: _handleNewTab,
                 onCloseOthers: _handleCloseOtherTabs,
                 onCloseAll: _handleCloseAllTabs,
+                onCloseToRight: _handleCloseToRight,
+                onCloseSaved: _handleCloseSavedTabs,
+                onCopyFilePath: _handleCopyFilePath,
+                onRevealInFinder: _handleRevealInFinder,
                 onReorder: _handleReorderTabs,
                 onToggleSidebar: _handleToggleSidebar,
                 sidebarVisible: sidebarVisible,
@@ -127,6 +140,10 @@ class _ScribePageState extends ConsumerState<ScribePage> {
     );
   }
 
+  // ---------------------------------------------------------------------------
+  // Tab creation
+  // ---------------------------------------------------------------------------
+
   /// Creates a new untitled tab.
   void _handleNewTab() {
     final counter = ref.read(scribeUntitledCounterProvider);
@@ -160,6 +177,10 @@ class _ScribePageState extends ConsumerState<ScribePage> {
         );
   }
 
+  // ---------------------------------------------------------------------------
+  // Tab selection
+  // ---------------------------------------------------------------------------
+
   /// Switches to the selected tab.
   void _handleTabSelected(String tabId) {
     ref.read(activeScribeTabIdProvider.notifier).state = tabId;
@@ -173,20 +194,195 @@ class _ScribePageState extends ConsumerState<ScribePage> {
     }
   }
 
-  /// Closes a tab via the notifier.
-  void _handleTabClosed(String tabId) {
-    ref.read(scribeTabsProvider.notifier).closeTab(tabId);
+  // ---------------------------------------------------------------------------
+  // Keyboard shortcuts — tab navigation
+  // ---------------------------------------------------------------------------
+
+  /// Cycles to the next tab (wraps around).
+  void _handleNextTab() {
+    final tabs = ref.read(scribeTabsProvider);
+    if (tabs.length < 2) return;
+
+    final activeId = ref.read(activeScribeTabIdProvider);
+    final currentIndex = tabs.indexWhere((t) => t.id == activeId);
+    final nextIndex = (currentIndex + 1) % tabs.length;
+    _handleTabSelected(tabs[nextIndex].id);
   }
 
-  /// Closes all tabs except the specified one.
-  void _handleCloseOtherTabs(String tabId) {
-    ref.read(scribeTabsProvider.notifier).closeOtherTabs(tabId);
+  /// Cycles to the previous tab (wraps around).
+  void _handlePrevTab() {
+    final tabs = ref.read(scribeTabsProvider);
+    if (tabs.length < 2) return;
+
+    final activeId = ref.read(activeScribeTabIdProvider);
+    final currentIndex = tabs.indexWhere((t) => t.id == activeId);
+    final prevIndex = (currentIndex - 1 + tabs.length) % tabs.length;
+    _handleTabSelected(tabs[prevIndex].id);
   }
 
-  /// Closes all tabs.
-  void _handleCloseAllTabs() {
-    ref.read(scribeTabsProvider.notifier).closeAllTabs();
+  // ---------------------------------------------------------------------------
+  // Tab closing — with save confirmation for dirty tabs
+  // ---------------------------------------------------------------------------
+
+  /// Closes the active tab via Ctrl+W.
+  void _handleCloseActiveTab() {
+    final activeId = ref.read(activeScribeTabIdProvider);
+    if (activeId != null) {
+      _handleTabClosed(activeId);
+    }
   }
+
+  /// Closes a single tab. Shows save confirmation if dirty.
+  Future<void> _handleTabClosed(String tabId) async {
+    final tab =
+        ref.read(scribeTabsProvider).where((t) => t.id == tabId).firstOrNull;
+    if (tab == null) return;
+
+    if (tab.isDirty) {
+      if (!mounted) return;
+      final action = await ScribeSaveDialog.show(context, tab: tab);
+      switch (action) {
+        case ScribeSaveAction.save:
+          await _saveTab(tab);
+          ref.read(scribeTabsProvider.notifier).closeTab(tabId);
+        case ScribeSaveAction.dontSave:
+          ref.read(scribeTabsProvider.notifier).closeTab(tabId);
+        case ScribeSaveAction.cancel:
+          return;
+      }
+    } else {
+      ref.read(scribeTabsProvider.notifier).closeTab(tabId);
+    }
+  }
+
+  /// Closes all tabs except the specified one. Shows batch save dialog
+  /// if any tabs being removed are dirty.
+  Future<void> _handleCloseOtherTabs(String tabId) async {
+    final tabs = ref.read(scribeTabsProvider);
+    final dirtyOthers =
+        tabs.where((t) => t.id != tabId && t.isDirty).toList();
+
+    if (dirtyOthers.isNotEmpty) {
+      if (!mounted) return;
+      final result = await ScribeSaveDialog.showBatch(
+        context,
+        dirtyTabs: dirtyOthers,
+      );
+      switch (result.action) {
+        case ScribeSaveAction.save:
+          for (final id in result.selectedTabIds) {
+            final t = tabs.where((t) => t.id == id).firstOrNull;
+            if (t != null) await _saveTab(t);
+          }
+          ref.read(scribeTabsProvider.notifier).closeOtherTabs(tabId);
+        case ScribeSaveAction.dontSave:
+          ref.read(scribeTabsProvider.notifier).closeOtherTabs(tabId);
+        case ScribeSaveAction.cancel:
+          return;
+      }
+    } else {
+      ref.read(scribeTabsProvider.notifier).closeOtherTabs(tabId);
+    }
+  }
+
+  /// Closes all tabs. Shows batch save dialog if any are dirty.
+  Future<void> _handleCloseAllTabs() async {
+    final tabs = ref.read(scribeTabsProvider);
+    final dirtyTabs = tabs.where((t) => t.isDirty).toList();
+
+    if (dirtyTabs.isNotEmpty) {
+      if (!mounted) return;
+      final result = await ScribeSaveDialog.showBatch(
+        context,
+        dirtyTabs: dirtyTabs,
+      );
+      switch (result.action) {
+        case ScribeSaveAction.save:
+          for (final id in result.selectedTabIds) {
+            final t = tabs.where((t) => t.id == id).firstOrNull;
+            if (t != null) await _saveTab(t);
+          }
+          ref.read(scribeTabsProvider.notifier).closeAllTabs();
+        case ScribeSaveAction.dontSave:
+          ref.read(scribeTabsProvider.notifier).closeAllTabs();
+        case ScribeSaveAction.cancel:
+          return;
+      }
+    } else {
+      ref.read(scribeTabsProvider.notifier).closeAllTabs();
+    }
+  }
+
+  /// Closes all tabs to the right of the specified one.
+  Future<void> _handleCloseToRight(String tabId) async {
+    final tabs = ref.read(scribeTabsProvider);
+    final index = tabs.indexWhere((t) => t.id == tabId);
+    if (index < 0 || index >= tabs.length - 1) return;
+
+    final rightTabs = tabs.sublist(index + 1);
+    final dirtyRight = rightTabs.where((t) => t.isDirty).toList();
+
+    if (dirtyRight.isNotEmpty) {
+      if (!mounted) return;
+      final result = await ScribeSaveDialog.showBatch(
+        context,
+        dirtyTabs: dirtyRight,
+      );
+      switch (result.action) {
+        case ScribeSaveAction.save:
+          for (final id in result.selectedTabIds) {
+            final t = tabs.where((t) => t.id == id).firstOrNull;
+            if (t != null) await _saveTab(t);
+          }
+          ref.read(scribeTabsProvider.notifier).closeTabsToRight(tabId);
+        case ScribeSaveAction.dontSave:
+          ref.read(scribeTabsProvider.notifier).closeTabsToRight(tabId);
+        case ScribeSaveAction.cancel:
+          return;
+      }
+    } else {
+      ref.read(scribeTabsProvider.notifier).closeTabsToRight(tabId);
+    }
+  }
+
+  /// Closes all saved (non-dirty) tabs. No dialog needed.
+  void _handleCloseSavedTabs() {
+    ref.read(scribeTabsProvider.notifier).closeSavedTabs();
+  }
+
+  /// Reopens the most recently closed tab via Ctrl+Shift+T.
+  void _handleReopenLastClosed() {
+    ref.read(scribeTabsProvider.notifier).reopenLastClosed();
+  }
+
+  // ---------------------------------------------------------------------------
+  // File path operations
+  // ---------------------------------------------------------------------------
+
+  /// Copies the file path of the given tab to the clipboard.
+  void _handleCopyFilePath(String tabId) {
+    final tab =
+        ref.read(scribeTabsProvider).where((t) => t.id == tabId).firstOrNull;
+    if (tab?.filePath == null) return;
+    Clipboard.setData(ClipboardData(text: tab!.filePath!));
+  }
+
+  /// Reveals the tab's file in Finder (macOS) or file manager.
+  void _handleRevealInFinder(String tabId) {
+    final tab =
+        ref.read(scribeTabsProvider).where((t) => t.id == tabId).firstOrNull;
+    if (tab?.filePath == null) return;
+
+    if (Platform.isMacOS) {
+      Process.run('open', ['-R', tab!.filePath!]);
+    } else if (Platform.isLinux) {
+      Process.run('xdg-open', [File(tab!.filePath!).parent.path]);
+    }
+  }
+
+  // ---------------------------------------------------------------------------
+  // Tab reordering and sidebar
+  // ---------------------------------------------------------------------------
 
   /// Reorders tabs via drag-drop.
   void _handleReorderTabs(int oldIndex, int newIndex) {
@@ -198,6 +394,10 @@ class _ScribePageState extends ConsumerState<ScribePage> {
     ref.read(scribeSidebarVisibleProvider.notifier).state =
         !ref.read(scribeSidebarVisibleProvider);
   }
+
+  // ---------------------------------------------------------------------------
+  // Editor callbacks
+  // ---------------------------------------------------------------------------
 
   /// Handles content changes from the editor.
   void _handleContentChanged(ScribeTab tab, String newContent) {
@@ -215,6 +415,17 @@ class _ScribePageState extends ConsumerState<ScribePage> {
   /// Handles language mode changes from the status bar.
   void _handleLanguageChanged(ScribeTab tab, String newLanguage) {
     ref.read(scribeTabsProvider.notifier).updateLanguage(tab.id, newLanguage);
+  }
+
+  // ---------------------------------------------------------------------------
+  // Save helper
+  // ---------------------------------------------------------------------------
+
+  /// Saves the tab content to its file path, or does nothing for untitled tabs.
+  Future<void> _saveTab(ScribeTab tab) async {
+    if (tab.filePath == null) return;
+    await File(tab.filePath!).writeAsString(tab.content);
+    ref.read(scribeTabsProvider.notifier).markClean(tab.id);
   }
 }
 

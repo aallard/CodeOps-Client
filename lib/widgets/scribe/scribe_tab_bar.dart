@@ -11,11 +11,12 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../models/scribe_models.dart';
 import '../../theme/colors.dart';
 import '../../utils/constants.dart';
+import 'scribe_tab_item.dart';
 
 /// A horizontal scrollable tab bar for the Scribe editor.
 ///
-/// Supports tab selection, closing, right-click context menus,
-/// drag-to-reorder, and sidebar toggle.
+/// Supports tab selection, closing, right-click context menus with
+/// 7 actions, drag-to-reorder, and sidebar toggle.
 class ScribeTabBar extends ConsumerWidget {
   /// The list of open tabs to display.
   final List<ScribeTab> tabs;
@@ -38,6 +39,18 @@ class ScribeTabBar extends ConsumerWidget {
   /// Callback to close all tabs.
   final VoidCallback? onCloseAll;
 
+  /// Callback to close all tabs to the right of the specified one.
+  final ValueChanged<String>? onCloseToRight;
+
+  /// Callback to close all saved (non-dirty) tabs.
+  final VoidCallback? onCloseSaved;
+
+  /// Callback to copy the file path of the specified tab.
+  final ValueChanged<String>? onCopyFilePath;
+
+  /// Callback to reveal the specified tab's file in Finder.
+  final ValueChanged<String>? onRevealInFinder;
+
   /// Callback when tabs are reordered via drag-drop.
   final void Function(int oldIndex, int newIndex)? onReorder;
 
@@ -57,6 +70,10 @@ class ScribeTabBar extends ConsumerWidget {
     required this.onNewTab,
     this.onCloseOthers,
     this.onCloseAll,
+    this.onCloseToRight,
+    this.onCloseSaved,
+    this.onCopyFilePath,
+    this.onRevealInFinder,
     this.onReorder,
     this.onToggleSidebar,
     this.sidebarVisible = false,
@@ -83,6 +100,26 @@ class ScribeTabBar extends ConsumerWidget {
     );
   }
 
+  /// Builds a [ScribeTabItem] for the given [tab].
+  ScribeTabItem _buildTabItem(ScribeTab tab) {
+    return ScribeTabItem(
+      tab: tab,
+      isActive: tab.id == activeTabId,
+      onSelected: () => onTabSelected(tab.id),
+      onClosed: () => onTabClosed(tab.id),
+      onCloseOthers:
+          onCloseOthers != null ? () => onCloseOthers!(tab.id) : null,
+      onCloseAll: onCloseAll,
+      onCloseToRight:
+          onCloseToRight != null ? () => onCloseToRight!(tab.id) : null,
+      onCloseSaved: onCloseSaved,
+      onCopyFilePath:
+          onCopyFilePath != null ? () => onCopyFilePath!(tab.id) : null,
+      onRevealInFinder:
+          onRevealInFinder != null ? () => onRevealInFinder!(tab.id) : null,
+    );
+  }
+
   /// Builds the tab list with optional drag-to-reorder support.
   Widget _buildTabList() {
     if (onReorder != null) {
@@ -102,16 +139,7 @@ class ScribeTabBar extends ConsumerWidget {
             ReorderableDragStartListener(
               key: ValueKey(tabs[i].id),
               index: i,
-              child: _TabChip(
-                tab: tabs[i],
-                isActive: tabs[i].id == activeTabId,
-                onSelected: () => onTabSelected(tabs[i].id),
-                onClosed: () => onTabClosed(tabs[i].id),
-                onCloseOthers: onCloseOthers != null
-                    ? () => onCloseOthers!(tabs[i].id)
-                    : null,
-                onCloseAll: onCloseAll,
-              ),
+              child: _buildTabItem(tabs[i]),
             ),
         ],
       );
@@ -121,17 +149,7 @@ class ScribeTabBar extends ConsumerWidget {
       scrollDirection: Axis.horizontal,
       child: Row(
         children: [
-          for (final tab in tabs)
-            _TabChip(
-              tab: tab,
-              isActive: tab.id == activeTabId,
-              onSelected: () => onTabSelected(tab.id),
-              onClosed: () => onTabClosed(tab.id),
-              onCloseOthers: onCloseOthers != null
-                  ? () => onCloseOthers!(tab.id)
-                  : null,
-              onCloseAll: onCloseAll,
-            ),
+          for (final tab in tabs) _buildTabItem(tab),
         ],
       ),
     );
@@ -164,136 +182,6 @@ class _SidebarToggle extends StatelessWidget {
         padding: EdgeInsets.zero,
       ),
     );
-  }
-}
-
-/// A single tab chip within the tab bar.
-class _TabChip extends StatelessWidget {
-  final ScribeTab tab;
-  final bool isActive;
-  final VoidCallback onSelected;
-  final VoidCallback onClosed;
-  final VoidCallback? onCloseOthers;
-  final VoidCallback? onCloseAll;
-
-  const _TabChip({
-    required this.tab,
-    required this.isActive,
-    required this.onSelected,
-    required this.onClosed,
-    this.onCloseOthers,
-    this.onCloseAll,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return GestureDetector(
-      onTap: onSelected,
-      onSecondaryTapUp: (details) => _showContextMenu(context, details),
-      child: Container(
-        constraints: const BoxConstraints(
-          minWidth: AppConstants.scribeTabMinWidth,
-          maxWidth: AppConstants.scribeTabMaxWidth,
-        ),
-        height: AppConstants.scribeTabBarHeight,
-        decoration: BoxDecoration(
-          border: Border(
-            bottom: BorderSide(
-              color: isActive ? CodeOpsColors.primary : Colors.transparent,
-              width: 2,
-            ),
-          ),
-        ),
-        padding: const EdgeInsets.symmetric(horizontal: 12),
-        child: Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Flexible(
-              child: Text(
-                tab.title,
-                overflow: TextOverflow.ellipsis,
-                style: TextStyle(
-                  fontSize: 12,
-                  color: isActive
-                      ? CodeOpsColors.textPrimary
-                      : CodeOpsColors.textSecondary,
-                  fontWeight: isActive ? FontWeight.w500 : FontWeight.w400,
-                ),
-              ),
-            ),
-            if (tab.isDirty) ...[
-              const SizedBox(width: 4),
-              const Text(
-                '\u25CF',
-                style: TextStyle(
-                  fontSize: 8,
-                  color: CodeOpsColors.warning,
-                ),
-              ),
-            ],
-            const SizedBox(width: 4),
-            SizedBox(
-              width: 16,
-              height: 16,
-              child: IconButton(
-                icon: const Icon(Icons.close, size: 12),
-                onPressed: onClosed,
-                padding: EdgeInsets.zero,
-                constraints: const BoxConstraints(),
-                color: CodeOpsColors.textTertiary,
-                tooltip: 'Close tab',
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  /// Shows the right-click context menu.
-  void _showContextMenu(BuildContext context, TapUpDetails details) {
-    showMenu<String>(
-      context: context,
-      position: RelativeRect.fromLTRB(
-        details.globalPosition.dx,
-        details.globalPosition.dy,
-        details.globalPosition.dx,
-        details.globalPosition.dy,
-      ),
-      color: CodeOpsColors.surface,
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(8),
-        side: const BorderSide(color: CodeOpsColors.border),
-      ),
-      items: [
-        const PopupMenuItem(
-          value: 'close',
-          height: 32,
-          child: Text('Close', style: TextStyle(fontSize: 13)),
-        ),
-        if (onCloseOthers != null)
-          const PopupMenuItem(
-            value: 'closeOthers',
-            height: 32,
-            child: Text('Close Others', style: TextStyle(fontSize: 13)),
-          ),
-        if (onCloseAll != null)
-          const PopupMenuItem(
-            value: 'closeAll',
-            height: 32,
-            child: Text('Close All', style: TextStyle(fontSize: 13)),
-          ),
-      ],
-    ).then((value) {
-      switch (value) {
-        case 'close':
-          onClosed();
-        case 'closeOthers':
-          onCloseOthers?.call();
-        case 'closeAll':
-          onCloseAll?.call();
-      }
-    });
   }
 }
 

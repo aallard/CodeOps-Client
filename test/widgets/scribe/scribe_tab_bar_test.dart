@@ -189,5 +189,98 @@ void main() {
       // Only one dirty indicator.
       expect(find.text('\u25CF'), findsOneWidget);
     });
+
+    testWidgets('onCloseToRight callback fires with correct tab id',
+        (tester) async {
+      String? closedToRightId;
+      final tabs = [makeTab(1), makeTab(2), makeTab(3)];
+      await tester.pumpWidget(wrap(
+        ScribeTabBar(
+          tabs: tabs,
+          activeTabId: 'tab-1',
+          onTabSelected: (_) {},
+          onTabClosed: (_) {},
+          onNewTab: () {},
+          onCloseOthers: (_) {},
+          onCloseAll: () {},
+          onCloseToRight: (id) => closedToRightId = id,
+          onCloseSaved: () {},
+        ),
+      ));
+      await tester.pumpAndSettle();
+
+      // Right-click on first tab to open context menu.
+      final tabFinder = find.text('File-1.dart');
+      final center = tester.getCenter(tabFinder);
+      final gesture = await tester.startGesture(center, buttons: 2);
+      await gesture.up();
+      await tester.pumpAndSettle();
+
+      // Tap "Close to the Right".
+      await tester.tap(find.text('Close to the Right'));
+      await tester.pumpAndSettle();
+
+      expect(closedToRightId, 'tab-1');
+    });
+
+    testWidgets('onCloseSaved callback fires from context menu',
+        (tester) async {
+      var savedCalled = false;
+      final tabs = [makeTab(1)];
+      await tester.pumpWidget(wrap(
+        ScribeTabBar(
+          tabs: tabs,
+          activeTabId: 'tab-1',
+          onTabSelected: (_) {},
+          onTabClosed: (_) {},
+          onNewTab: () {},
+          onCloseOthers: (_) {},
+          onCloseAll: () {},
+          onCloseToRight: (_) {},
+          onCloseSaved: () => savedCalled = true,
+        ),
+      ));
+      await tester.pumpAndSettle();
+
+      // Right-click to open context menu.
+      final tabFinder = find.text('File-1.dart');
+      final center = tester.getCenter(tabFinder);
+      final gesture = await tester.startGesture(center, buttons: 2);
+      await gesture.up();
+      await tester.pumpAndSettle();
+
+      await tester.tap(find.text('Close Saved'));
+      await tester.pumpAndSettle();
+
+      expect(savedCalled, isTrue);
+    });
+
+    testWidgets('context menu appears on right-click', (tester) async {
+      final tabs = [makeTab(1)];
+      await tester.pumpWidget(wrap(
+        ScribeTabBar(
+          tabs: tabs,
+          activeTabId: 'tab-1',
+          onTabSelected: (_) {},
+          onTabClosed: (_) {},
+          onNewTab: () {},
+          onCloseOthers: (_) {},
+          onCloseAll: () {},
+        ),
+      ));
+      await tester.pumpAndSettle();
+
+      // Right-click on the tab.
+      final tabFinder = find.text('File-1.dart');
+      final center = tester.getCenter(tabFinder);
+      final gesture = await tester.startGesture(center, buttons: 2);
+      await gesture.up();
+      await tester.pumpAndSettle();
+
+      // Menu should appear with Close item.
+      expect(find.text('Close'), findsOneWidget);
+      expect(find.text('Close Others'), findsOneWidget);
+      expect(find.text('Close All'), findsOneWidget);
+    });
   });
 }
