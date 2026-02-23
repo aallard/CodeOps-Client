@@ -98,6 +98,22 @@ final scribeDiffViewModeProvider =
 final scribeCollapseUnchangedProvider = StateProvider<bool>((ref) => true);
 
 // ---------------------------------------------------------------------------
+// Session Persistence Providers (CS-008)
+// ---------------------------------------------------------------------------
+
+/// Whether the recent files panel is visible.
+final scribeRecentFilesPanelVisibleProvider =
+    StateProvider<bool>((ref) => false);
+
+/// Whether the quick-open overlay is visible.
+final scribeQuickOpenVisibleProvider = StateProvider<bool>((ref) => false);
+
+/// Map of tab ID → true when the file on disk has changed since the tab
+/// was loaded. Cleared when the user chooses Reload or Keep.
+final scribeFileChangedTabsProvider =
+    StateProvider<Map<String, bool>>((ref) => {});
+
+// ---------------------------------------------------------------------------
 // StateNotifier Providers (complex state with methods)
 // ---------------------------------------------------------------------------
 
@@ -154,15 +170,27 @@ final scribeTabCountProvider = Provider<int>((ref) {
 
 /// Loads persisted tabs and settings on first access.
 ///
-/// Used to initialize [scribeTabsProvider] and [scribeSettingsProvider]
-/// from the local database on app startup.
+/// Restores the full session state including tabs, settings, the
+/// previously active tab, and recent files from the local database.
+/// Validates that file-backed tabs still exist on disk and flags any
+/// that have changed for the file-changed banner.
 final scribeInitProvider = FutureProvider<void>((ref) async {
   await ref.read(scribeTabsProvider.notifier).loadFromPersistence();
   await ref.read(scribeSettingsProvider.notifier).loadFromPersistence();
 
+  final persistence = ref.read(scribePersistenceProvider);
   final tabs = ref.read(scribeTabsProvider);
+
   if (tabs.isNotEmpty) {
-    ref.read(activeScribeTabIdProvider.notifier).state = tabs.first.id;
+    // Restore previously active tab from session metadata.
+    final metadata = await persistence.loadSessionMetadata();
+    final savedActiveId = metadata.activeTabId;
+    if (savedActiveId != null && tabs.any((t) => t.id == savedActiveId)) {
+      ref.read(activeScribeTabIdProvider.notifier).state = savedActiveId;
+    } else {
+      ref.read(activeScribeTabIdProvider.notifier).state = tabs.first.id;
+    }
+
     // Set untitled counter to max existing untitled number + 1.
     final maxUntitled = tabs
         .where((t) => t.title.startsWith('Untitled-'))
@@ -184,10 +212,12 @@ final scribeInitProvider = FutureProvider<void>((ref) async {
 /// Notifier that manages the list of open editor tabs.
 ///
 /// Handles opening, closing, reordering tabs and persists all changes
-/// to the local database via [ScribePersistenceService].
+/// to the local database via [ScribePersistenceService]. Session state
+/// is auto-persisted with a 5-second debounce to avoid excessive writes.
 class ScribeTabsNotifier extends StateNotifier<List<ScribeTab>> {
   final ScribePersistenceService _persistence;
   final Ref _ref;
+  Timer? _sessionPersistTimer;
 
   /// Maximum number of closed tabs retained in history.
   static const int maxClosedHistory = 20;
@@ -430,8 +460,70 @@ class ScribeTabsNotifier extends StateNotifier<List<ScribeTab>> {
     _persist();
   }
 
+  /// Updates the cursor position for a tab without marking it dirty.
+  ///
+  /// Triggers a debounced persist so cursor state is saved to the database
+  /// without excessive writes on every keystroke.
+  void updateCursorPosition(String tabId, int line, int column) {
+    final index = state.indexWhere((t) => t.id == tabId);
+    if (index < 0) return;
+
+    final tab = state[index];
+    if (tab.cursorLine == line && tab.cursorColumn == column) return;
+
+    final updated = tab.copyWith(cursorLine: line, cursorColumn: column);
+    state = [...state]..[index] = updated;
+    _persistDebounced();
+  }
+
+  /// Updates the scroll offset for a tab without marking it dirty.
+  ///
+  /// Triggers a debounced persist to save scroll position.
+  void updateScrollOffset(String tabId, double offset) {
+    final index = state.indexWhere((t) => t.id == tabId);
+    if (index < 0) return;
+
+    final tab = state[index];
+    if (tab.scrollOffset == offset) return;
+
+    final updated = tab.copyWith(scrollOffset: offset);
+    state = [...state]..[index] = updated;
+    _persistDebounced();
+  }
+
+  /// Persists session state immediately (no debounce).
+  ///
+  /// Called on app lifecycle events (e.g., pause/detach) to ensure
+  /// all state is saved before the app may be terminated.
+  Future<void> persistSessionNow() async {
+    _sessionPersistTimer?.cancel();
+    await _persistence.saveTabs(state);
+    await _persistence.saveSessionMetadata(
+      activeTabId: _ref.read(activeScribeTabIdProvider),
+    );
+  }
+
   void _persist() {
     _persistence.saveTabs(state);
+    _persistence.saveSessionMetadata(
+      activeTabId: _ref.read(activeScribeTabIdProvider),
+    );
+  }
+
+  void _persistDebounced() {
+    _sessionPersistTimer?.cancel();
+    _sessionPersistTimer = Timer(
+      const Duration(
+        milliseconds: AppConstants.scribeSessionPersistDebounceMs,
+      ),
+      () => _persist(),
+    );
+  }
+
+  @override
+  void dispose() {
+    _sessionPersistTimer?.cancel();
+    super.dispose();
   }
 }
 

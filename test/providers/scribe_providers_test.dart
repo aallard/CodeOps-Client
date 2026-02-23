@@ -28,6 +28,9 @@ void main() {
     when(() => mockPersistence.loadTabs()).thenAnswer((_) async => []);
     when(() => mockPersistence.loadSettings())
         .thenAnswer((_) async => const ScribeSettings());
+    when(() => mockPersistence.saveSessionMetadata(
+          activeTabId: any(named: 'activeTabId'),
+        )).thenAnswer((_) async {});
   });
 
   ProviderContainer createContainer() {
@@ -1139,6 +1142,199 @@ void main() {
       final container = createContainer();
       final service = container.read(scribeDiffServiceProvider);
       expect(service, isNotNull);
+    });
+  });
+
+  // ---------------------------------------------------------------------------
+  // Session Persistence Providers (CS-008)
+  // ---------------------------------------------------------------------------
+
+  group('Session Persistence (CS-008)', () {
+    test('scribeRecentFilesPanelVisibleProvider defaults to false', () {
+      final container = createContainer();
+      expect(container.read(scribeRecentFilesPanelVisibleProvider), isFalse);
+    });
+
+    test('scribeQuickOpenVisibleProvider defaults to false', () {
+      final container = createContainer();
+      expect(container.read(scribeQuickOpenVisibleProvider), isFalse);
+    });
+
+    test('scribeFileChangedTabsProvider defaults to empty', () {
+      final container = createContainer();
+      expect(container.read(scribeFileChangedTabsProvider), isEmpty);
+    });
+
+    test('scribeFileChangedTabsProvider can track changed tabs', () {
+      final container = createContainer();
+      container.read(scribeFileChangedTabsProvider.notifier).state = {
+        'tab-1': true,
+        'tab-3': true,
+      };
+      final changed = container.read(scribeFileChangedTabsProvider);
+      expect(changed, hasLength(2));
+      expect(changed['tab-1'], isTrue);
+      expect(changed['tab-3'], isTrue);
+    });
+  });
+
+  group('ScribeTabsNotifier — cursor and scroll (CS-008)', () {
+    test('updateCursorPosition updates cursor without marking dirty', () {
+      final container = createContainer();
+
+      container.read(scribeTabsProvider.notifier).openTab(title: 'Test');
+      final tabId = container.read(scribeTabsProvider).first.id;
+
+      container
+          .read(scribeTabsProvider.notifier)
+          .updateCursorPosition(tabId, 10, 5);
+
+      final tab = container.read(scribeTabsProvider).first;
+      expect(tab.cursorLine, 10);
+      expect(tab.cursorColumn, 5);
+      expect(tab.isDirty, isFalse);
+    });
+
+    test('updateCursorPosition no-op when values unchanged', () {
+      final container = createContainer();
+
+      container.read(scribeTabsProvider.notifier).openTab(title: 'Test');
+      final tabId = container.read(scribeTabsProvider).first.id;
+
+      // Initial cursor is (0, 0). Setting to same values should be a no-op.
+      container
+          .read(scribeTabsProvider.notifier)
+          .updateCursorPosition(tabId, 0, 0);
+
+      // Still at default values.
+      final tab = container.read(scribeTabsProvider).first;
+      expect(tab.cursorLine, 0);
+      expect(tab.cursorColumn, 0);
+    });
+
+    test('updateCursorPosition no-op for nonexistent tab', () {
+      final container = createContainer();
+
+      container.read(scribeTabsProvider.notifier).openTab(title: 'Test');
+
+      // Should not throw.
+      container
+          .read(scribeTabsProvider.notifier)
+          .updateCursorPosition('nonexistent', 5, 3);
+
+      expect(container.read(scribeTabsProvider).first.cursorLine, 0);
+    });
+
+    test('updateScrollOffset updates offset without marking dirty', () {
+      final container = createContainer();
+
+      container.read(scribeTabsProvider.notifier).openTab(title: 'Test');
+      final tabId = container.read(scribeTabsProvider).first.id;
+
+      container
+          .read(scribeTabsProvider.notifier)
+          .updateScrollOffset(tabId, 150.5);
+
+      final tab = container.read(scribeTabsProvider).first;
+      expect(tab.scrollOffset, 150.5);
+      expect(tab.isDirty, isFalse);
+    });
+
+    test('updateScrollOffset no-op when value unchanged', () {
+      final container = createContainer();
+
+      container.read(scribeTabsProvider.notifier).openTab(title: 'Test');
+      final tabId = container.read(scribeTabsProvider).first.id;
+
+      container
+          .read(scribeTabsProvider.notifier)
+          .updateScrollOffset(tabId, 0.0);
+
+      final tab = container.read(scribeTabsProvider).first;
+      expect(tab.scrollOffset, 0.0);
+    });
+
+    test('persistSessionNow saves tabs and session metadata', () async {
+      when(() => mockPersistence.saveSessionMetadata(
+            activeTabId: any(named: 'activeTabId'),
+          )).thenAnswer((_) async {});
+
+      final container = createContainer();
+      container.read(scribeTabsProvider.notifier).openTab(title: 'Test');
+
+      // Reset call counts after openTab's _persist call.
+      clearInteractions(mockPersistence);
+
+      await container
+          .read(scribeTabsProvider.notifier)
+          .persistSessionNow();
+
+      verify(() => mockPersistence.saveTabs(any())).called(1);
+      verify(() => mockPersistence.saveSessionMetadata(
+            activeTabId: any(named: 'activeTabId'),
+          )).called(1);
+    });
+  });
+
+  group('scribeInitProvider — session metadata restore (CS-008)', () {
+    test('restores active tab from session metadata', () async {
+      final now = DateTime(2026, 2, 20);
+      final testTabs = [
+        ScribeTab(
+          id: 'tab-1',
+          title: 'first.dart',
+          createdAt: now,
+          lastModifiedAt: now,
+        ),
+        ScribeTab(
+          id: 'tab-2',
+          title: 'second.dart',
+          createdAt: now,
+          lastModifiedAt: now,
+        ),
+      ];
+
+      when(() => mockPersistence.loadTabs())
+          .thenAnswer((_) async => testTabs);
+      when(() => mockPersistence.loadSessionMetadata())
+          .thenAnswer((_) async => (activeTabId: 'tab-2', timestamp: now));
+      when(() => mockPersistence.loadSettingsValue(any()))
+          .thenAnswer((_) async => null);
+      when(() => mockPersistence.saveSessionMetadata(
+            activeTabId: any(named: 'activeTabId'),
+          )).thenAnswer((_) async {});
+
+      final container = createContainer();
+      await container.read(scribeInitProvider.future);
+
+      expect(container.read(activeScribeTabIdProvider), 'tab-2');
+    });
+
+    test('falls back to first tab when saved active tab not found', () async {
+      final now = DateTime(2026, 2, 20);
+      final testTabs = [
+        ScribeTab(
+          id: 'tab-1',
+          title: 'first.dart',
+          createdAt: now,
+          lastModifiedAt: now,
+        ),
+      ];
+
+      when(() => mockPersistence.loadTabs())
+          .thenAnswer((_) async => testTabs);
+      when(() => mockPersistence.loadSessionMetadata())
+          .thenAnswer((_) async => (activeTabId: 'nonexistent', timestamp: now));
+      when(() => mockPersistence.loadSettingsValue(any()))
+          .thenAnswer((_) async => null);
+      when(() => mockPersistence.saveSessionMetadata(
+            activeTabId: any(named: 'activeTabId'),
+          )).thenAnswer((_) async {});
+
+      final container = createContainer();
+      await container.read(scribeInitProvider.future);
+
+      expect(container.read(activeScribeTabIdProvider), 'tab-1');
     });
   });
 }

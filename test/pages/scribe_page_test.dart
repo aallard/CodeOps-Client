@@ -59,6 +59,9 @@ void main() {
         .thenAnswer((_) async => null);
     when(() => mockPersistence.saveSettingsValue(any(), any()))
         .thenAnswer((_) async {});
+    when(() => mockPersistence.saveSessionMetadata(
+          activeTabId: any(named: 'activeTabId'),
+        )).thenAnswer((_) async {});
 
     final mockFileService = MockScribeFileService();
     when(() => mockFileService.loadRecentFiles())

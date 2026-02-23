@@ -28,10 +28,13 @@ import '../widgets/scribe/scribe_diff_selector.dart';
 import '../widgets/scribe/scribe_drop_target.dart';
 import '../widgets/scribe/scribe_editor.dart';
 import '../widgets/scribe/scribe_empty_state.dart';
+import '../widgets/scribe/scribe_file_changed_banner.dart';
 import '../widgets/scribe/scribe_language.dart';
 import '../widgets/scribe/scribe_markdown_split.dart';
 import '../widgets/scribe/scribe_markdown_toc.dart';
 import '../widgets/scribe/scribe_preview_controls.dart';
+import '../widgets/scribe/scribe_quick_open.dart';
+import '../widgets/scribe/scribe_recent_files.dart';
 import '../widgets/scribe/scribe_save_dialog.dart';
 import '../widgets/scribe/scribe_settings_panel.dart';
 import '../widgets/scribe/scribe_sidebar.dart';
@@ -47,7 +50,8 @@ class ScribePage extends ConsumerStatefulWidget {
   ConsumerState<ScribePage> createState() => _ScribePageState();
 }
 
-class _ScribePageState extends ConsumerState<ScribePage> {
+class _ScribePageState extends ConsumerState<ScribePage>
+    with WidgetsBindingObserver {
   static const String _tag = 'ScribePage';
 
   int _cursorLine = 0;
@@ -66,14 +70,53 @@ class _ScribePageState extends ConsumerState<ScribePage> {
   @override
   void initState() {
     super.initState();
+    WidgetsBinding.instance.addObserver(this);
     // Trigger session restoration.
     Future.microtask(() => ref.read(scribeInitProvider));
   }
 
   @override
   void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
     _autoSaveTimer?.cancel();
     super.dispose();
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    super.didChangeAppLifecycleState(state);
+    if (state == AppLifecycleState.paused ||
+        state == AppLifecycleState.detached ||
+        state == AppLifecycleState.inactive) {
+      // Persist session immediately when the app is backgrounded or closing.
+      ref.read(scribeTabsProvider.notifier).persistSessionNow();
+    } else if (state == AppLifecycleState.resumed) {
+      // Check for file changes on disk when the app is resumed.
+      _checkFilesChangedOnDisk();
+    }
+  }
+
+  /// Checks whether any file-backed tab has been modified on disk since
+  /// the tab's [lastModifiedAt] timestamp.
+  Future<void> _checkFilesChangedOnDisk() async {
+    final tabs = ref.read(scribeTabsProvider);
+    final changed = <String, bool>{};
+    for (final tab in tabs) {
+      if (tab.filePath == null) continue;
+      try {
+        final file = File(tab.filePath!);
+        if (!file.existsSync()) continue;
+        final stat = await file.stat();
+        if (stat.modified.isAfter(tab.lastModifiedAt)) {
+          changed[tab.id] = true;
+        }
+      } on FileSystemException {
+        // Ignore unreadable files.
+      }
+    }
+    if (changed.isNotEmpty) {
+      ref.read(scribeFileChangedTabsProvider.notifier).state = changed;
+    }
   }
 
   @override
@@ -84,6 +127,10 @@ class _ScribePageState extends ConsumerState<ScribePage> {
     final settingsPanelVisible =
         ref.watch(scribeSettingsPanelVisibleProvider);
     final settings = ref.watch(scribeSettingsProvider);
+    final recentFilesPanelVisible =
+        ref.watch(scribeRecentFilesPanelVisibleProvider);
+    final quickOpenVisible = ref.watch(scribeQuickOpenVisibleProvider);
+    final fileChangedTabs = ref.watch(scribeFileChangedTabsProvider);
 
     // Manage auto-save timer when settings change.
     _updateAutoSaveTimer(settings);
@@ -110,6 +157,10 @@ class _ScribePageState extends ConsumerState<ScribePage> {
             control: true, alt: true): _handleSaveAll,
         const SingleActivator(LogicalKeyboardKey.keyV,
             control: true, shift: true): _handleTogglePreview,
+        const SingleActivator(LogicalKeyboardKey.keyO,
+            control: true, shift: true): _handleToggleRecentFiles,
+        const SingleActivator(LogicalKeyboardKey.keyP, control: true):
+            _handleToggleQuickOpen,
       },
       child: Focus(
         autofocus: true,
@@ -168,14 +219,45 @@ class _ScribePageState extends ConsumerState<ScribePage> {
                   onCompare: _handleStartCompare,
                   onClose: _handleCloseDiffSelector,
                 ),
+              // File changed on disk banner (CS-008).
+              if (activeTab != null &&
+                  fileChangedTabs[activeTab.id] == true)
+                ScribeFileChangedBanner(
+                  fileName: activeTab.title,
+                  onReload: () => _handleReloadFromDisk(activeTab.id),
+                  onKeep: () => _handleKeepContent(activeTab.id),
+                ),
               if (tabs.isNotEmpty && activeTab != null)
                 Expanded(
-                  child: _buildMainContent(
-                    tabs: tabs,
-                    activeTab: activeTab,
-                    settings: settings,
-                    sidebarVisible: sidebarVisible,
-                    settingsPanelVisible: settingsPanelVisible,
+                  child: Stack(
+                    children: [
+                      _buildMainContent(
+                        tabs: tabs,
+                        activeTab: activeTab,
+                        settings: settings,
+                        sidebarVisible: sidebarVisible,
+                        settingsPanelVisible: settingsPanelVisible,
+                        recentFilesPanelVisible: recentFilesPanelVisible,
+                      ),
+                      // Quick-open overlay (CS-008).
+                      if (quickOpenVisible)
+                        Positioned.fill(
+                          child: GestureDetector(
+                            onTap: _handleCloseQuickOpen,
+                            behavior: HitTestBehavior.opaque,
+                            child: Container(
+                              color: Colors.black26,
+                              alignment: Alignment.topCenter,
+                              padding: const EdgeInsets.only(top: 40),
+                              child: ScribeQuickOpen(
+                                items: _buildQuickOpenItems(),
+                                onSelect: _handleQuickOpenSelect,
+                                onClose: _handleCloseQuickOpen,
+                              ),
+                            ),
+                          ),
+                        ),
+                    ],
                   ),
                 )
               else
@@ -683,13 +765,14 @@ class _ScribePageState extends ConsumerState<ScribePage> {
   }
 
   /// Builds the main content area, showing either the diff editor or
-  /// the regular editor/preview.
+  /// the regular editor/preview, with optional sidebar and panels.
   Widget _buildMainContent({
     required List<ScribeTab> tabs,
     required ScribeTab activeTab,
     required ScribeSettings settings,
     required bool sidebarVisible,
     required bool settingsPanelVisible,
+    required bool recentFilesPanelVisible,
   }) {
     final diffState = ref.watch(scribeDiffStateProvider);
 
@@ -720,6 +803,21 @@ class _ScribePageState extends ConsumerState<ScribePage> {
           ),
           ScribeSettingsPanel(
             onClose: _handleToggleSettingsPanel,
+          ),
+        ],
+        // Recent files panel (CS-008).
+        if (recentFilesPanelVisible) ...[
+          const VerticalDivider(
+            width: 1,
+            thickness: 1,
+            color: CodeOpsColors.border,
+          ),
+          ScribeRecentFiles(
+            recentFiles: ref.watch(scribeRecentFilesProvider),
+            onOpen: _handleOpenRecentFile,
+            onRemove: _handleRemoveRecentFile,
+            onClearAll: _handleClearRecentFiles,
+            onClose: _handleToggleRecentFiles,
           ),
         ],
       ],
@@ -756,6 +854,150 @@ class _ScribePageState extends ConsumerState<ScribePage> {
   }
 
   // ---------------------------------------------------------------------------
+  // Session persistence (CS-008)
+  // ---------------------------------------------------------------------------
+
+  /// Toggles the recent files panel via Ctrl+Shift+O.
+  void _handleToggleRecentFiles() {
+    final current = ref.read(scribeRecentFilesPanelVisibleProvider);
+    ref.read(scribeRecentFilesPanelVisibleProvider.notifier).state = !current;
+    // Close quick-open if switching to recent files.
+    if (!current) {
+      ref.read(scribeQuickOpenVisibleProvider.notifier).state = false;
+    }
+  }
+
+  /// Toggles the quick-open overlay via Ctrl+P.
+  void _handleToggleQuickOpen() {
+    final current = ref.read(scribeQuickOpenVisibleProvider);
+    ref.read(scribeQuickOpenVisibleProvider.notifier).state = !current;
+    // Close recent files if switching to quick-open.
+    if (!current) {
+      ref.read(scribeRecentFilesPanelVisibleProvider.notifier).state = false;
+    }
+  }
+
+  /// Closes the quick-open overlay.
+  void _handleCloseQuickOpen() {
+    ref.read(scribeQuickOpenVisibleProvider.notifier).state = false;
+  }
+
+  /// Opens a file from the recent files list.
+  Future<void> _handleOpenRecentFile(String filePath) async {
+    try {
+      final file = File(filePath);
+      if (!file.existsSync()) {
+        log.w(_tag, 'Recent file no longer exists: $filePath');
+        return;
+      }
+      final content = await file.readAsString();
+      final tab = ScribeTab.fromFile(filePath: filePath, content: content);
+      ref.read(scribeTabsProvider.notifier).openTab(
+            title: tab.title,
+            content: tab.content,
+            language: tab.language,
+            filePath: tab.filePath,
+          );
+    } on FormatException catch (e) {
+      log.w(_tag, 'Cannot open binary file: $filePath', e);
+    } on FileSystemException catch (e) {
+      log.w(_tag, 'Cannot read file: $filePath', e);
+    }
+  }
+
+  /// Removes a file from the recent files list.
+  Future<void> _handleRemoveRecentFile(String filePath) async {
+    final recentFiles = [...ref.read(scribeRecentFilesProvider)];
+    recentFiles.remove(filePath);
+    ref.read(scribeRecentFilesProvider.notifier).state = recentFiles;
+    final fileService = ref.read(scribeFileServiceProvider);
+    await fileService.clearRecentFiles();
+    for (final f in recentFiles) {
+      await fileService.addRecentFile(f);
+    }
+  }
+
+  /// Clears all recent files.
+  Future<void> _handleClearRecentFiles() async {
+    ref.read(scribeRecentFilesProvider.notifier).state = [];
+    await ref.read(scribeFileServiceProvider).clearRecentFiles();
+  }
+
+  /// Builds the list of quick-open items from open tabs and recent files.
+  List<QuickOpenItem> _buildQuickOpenItems() {
+    final tabs = ref.read(scribeTabsProvider);
+    final recentFiles = ref.read(scribeRecentFilesProvider);
+    final items = <QuickOpenItem>[];
+
+    // Open tabs first.
+    for (final tab in tabs) {
+      items.add(QuickOpenItem(
+        title: tab.title,
+        subtitle: tab.filePath ?? 'Unsaved',
+        id: tab.id,
+        isOpenTab: true,
+      ));
+    }
+
+    // Recent files (skip any that are already open).
+    final openPaths = tabs.map((t) => t.filePath).whereType<String>().toSet();
+    for (final path in recentFiles) {
+      if (openPaths.contains(path)) continue;
+      final lastSlash = path.lastIndexOf('/');
+      final fileName = lastSlash >= 0 ? path.substring(lastSlash + 1) : path;
+      items.add(QuickOpenItem(
+        title: fileName,
+        subtitle: path,
+        id: path,
+        isOpenTab: false,
+      ));
+    }
+
+    return items;
+  }
+
+  /// Handles selecting an item from the quick-open overlay.
+  void _handleQuickOpenSelect(QuickOpenItem item) {
+    _handleCloseQuickOpen();
+
+    if (item.isOpenTab) {
+      // Switch to the open tab.
+      _handleTabSelected(item.id);
+    } else {
+      // Open from recent files.
+      _handleOpenRecentFile(item.id);
+    }
+  }
+
+  /// Reloads the file content from disk for the given tab.
+  Future<void> _handleReloadFromDisk(String tabId) async {
+    final tab = ref.read(scribeTabsProvider)
+        .where((t) => t.id == tabId)
+        .firstOrNull;
+    if (tab?.filePath == null) return;
+
+    try {
+      final content = await File(tab!.filePath!).readAsString();
+      ref.read(scribeTabsProvider.notifier).updateContent(tabId, content);
+      ref.read(scribeTabsProvider.notifier).markClean(tabId);
+    } on FileSystemException catch (e) {
+      log.e(_tag, 'Failed to reload file: ${tab!.filePath}', e);
+    }
+
+    // Clear the changed flag.
+    final changed = {...ref.read(scribeFileChangedTabsProvider)};
+    changed.remove(tabId);
+    ref.read(scribeFileChangedTabsProvider.notifier).state = changed;
+  }
+
+  /// Keeps the current tab content and dismisses the file-changed banner.
+  void _handleKeepContent(String tabId) {
+    final changed = {...ref.read(scribeFileChangedTabsProvider)};
+    changed.remove(tabId);
+    ref.read(scribeFileChangedTabsProvider.notifier).state = changed;
+  }
+
+  // ---------------------------------------------------------------------------
   // Editor callbacks
   // ---------------------------------------------------------------------------
 
@@ -770,6 +1012,13 @@ class _ScribePageState extends ConsumerState<ScribePage> {
       _cursorLine = line;
       _cursorColumn = column;
     });
+    // Persist cursor position (debounced via provider).
+    final activeId = ref.read(activeScribeTabIdProvider);
+    if (activeId != null) {
+      ref
+          .read(scribeTabsProvider.notifier)
+          .updateCursorPosition(activeId, line, column);
+    }
   }
 
   /// Handles language mode changes from the status bar.

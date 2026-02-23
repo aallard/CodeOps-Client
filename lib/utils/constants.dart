@@ -352,4 +352,29 @@ class AppConstants {
 
   /// Height of the diff summary bar in logical pixels.
   static const double scribeDiffSummaryBarHeight = 32.0;
+
+  // -------------------------------------------------------------------------
+  // Scribe constants (CS-008 — Session Persistence)
+  // -------------------------------------------------------------------------
+
+  /// Debounce duration in milliseconds for session auto-persist.
+  static const int scribeSessionPersistDebounceMs = 5000;
+
+  /// Maximum number of results shown in the quick-open overlay.
+  static const int scribeQuickOpenMaxResults = 50;
+
+  /// Debounce duration in milliseconds for quick-open search input.
+  static const int scribeQuickOpenSearchDebounceMs = 200;
+
+  /// Height of the file-changed-on-disk banner in logical pixels.
+  static const double scribeFileChangedBannerHeight = 36.0;
+
+  /// Width of the recent files panel in logical pixels.
+  static const double scribeRecentFilesPanelWidth = 320.0;
+
+  /// Height of the quick-open overlay in logical pixels.
+  static const double scribeQuickOpenHeight = 400.0;
+
+  /// Width of the quick-open overlay in logical pixels.
+  static const double scribeQuickOpenWidth = 500.0;
 }

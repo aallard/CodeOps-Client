@@ -115,6 +115,39 @@ class ScribePersistenceService {
     );
   }
 
+  /// Saves session metadata (active tab ID and timestamp).
+  ///
+  /// Stored in the ScribeSettings table under the key `session_metadata`.
+  Future<void> saveSessionMetadata({
+    required String? activeTabId,
+  }) async {
+    final json = jsonEncode({
+      'activeTabId': activeTabId,
+      'timestamp': DateTime.now().toIso8601String(),
+    });
+    await saveSettingsValue('session_metadata', json);
+  }
+
+  /// Loads session metadata, returning the active tab ID and timestamp.
+  ///
+  /// Returns `null` values if no metadata is persisted.
+  Future<({String? activeTabId, DateTime? timestamp})>
+      loadSessionMetadata() async {
+    final raw = await loadSettingsValue('session_metadata');
+    if (raw == null) return (activeTabId: null, timestamp: null);
+    try {
+      final map = jsonDecode(raw) as Map<String, dynamic>;
+      return (
+        activeTabId: map['activeTabId'] as String?,
+        timestamp: map['timestamp'] != null
+            ? DateTime.tryParse(map['timestamp'] as String)
+            : null,
+      );
+    } on FormatException {
+      return (activeTabId: null, timestamp: null);
+    }
+  }
+
   /// Converts a [ScribeTab] to a Drift companion for insertion.
   ScribeTabsCompanion _tabToCompanion(ScribeTab tab, int displayOrder) {
     return ScribeTabsCompanion.insert(
