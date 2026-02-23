@@ -21,10 +21,14 @@ import '../models/scribe_models.dart';
 import '../providers/scribe_providers.dart';
 import '../services/logging/log_service.dart';
 import '../theme/colors.dart';
+import '../utils/constants.dart';
 import '../widgets/scribe/scribe_drop_target.dart';
 import '../widgets/scribe/scribe_editor.dart';
 import '../widgets/scribe/scribe_empty_state.dart';
 import '../widgets/scribe/scribe_language.dart';
+import '../widgets/scribe/scribe_markdown_split.dart';
+import '../widgets/scribe/scribe_markdown_toc.dart';
+import '../widgets/scribe/scribe_preview_controls.dart';
 import '../widgets/scribe/scribe_save_dialog.dart';
 import '../widgets/scribe/scribe_settings_panel.dart';
 import '../widgets/scribe/scribe_sidebar.dart';
@@ -95,6 +99,8 @@ class _ScribePageState extends ConsumerState<ScribePage> {
             control: true, shift: true): _handleSaveAs,
         const SingleActivator(LogicalKeyboardKey.keyS,
             control: true, alt: true): _handleSaveAll,
+        const SingleActivator(LogicalKeyboardKey.keyV,
+            control: true, shift: true): _handleTogglePreview,
       },
       child: Focus(
         autofocus: true,
@@ -123,6 +129,21 @@ class _ScribePageState extends ConsumerState<ScribePage> {
                         sidebarVisible: sidebarVisible,
                       ),
                     ),
+                    if (activeTab != null &&
+                        activeTab.language == 'markdown') ...[
+                      ScribeMarkdownToc(
+                        content: activeTab.content,
+                        currentLine: _cursorLine,
+                        onHeadingSelected: _handleHeadingSelected,
+                      ),
+                      const SizedBox(width: 4),
+                      ScribePreviewControls(
+                        mode: _getPreviewMode(activeTab.id),
+                        onModeChanged: (mode) =>
+                            _handlePreviewModeChanged(activeTab.id, mode),
+                      ),
+                      const SizedBox(width: 4),
+                    ],
                     _SettingsGearButton(
                       isActive: settingsPanelVisible,
                       onPressed: _handleToggleSettingsPanel,
@@ -146,14 +167,7 @@ class _ScribePageState extends ConsumerState<ScribePage> {
                           color: CodeOpsColors.border,
                         ),
                       Expanded(
-                        child: _EditorArea(
-                          key: ValueKey(activeTab.id),
-                          tab: activeTab,
-                          settings: settings,
-                          onChanged: (value) =>
-                              _handleContentChanged(activeTab, value),
-                          onCursorChanged: _handleCursorChanged,
-                        ),
+                        child: _buildEditorWithPreview(activeTab, settings),
                       ),
                       if (settingsPanelVisible) ...[
                         const VerticalDivider(
@@ -541,6 +555,94 @@ class _ScribePageState extends ConsumerState<ScribePage> {
         _saveTab(tab);
       }
     }
+  }
+
+  // ---------------------------------------------------------------------------
+  // Markdown preview (CS-006)
+  // ---------------------------------------------------------------------------
+
+  /// Returns the current [ScribePreviewMode] for the given tab.
+  ScribePreviewMode _getPreviewMode(String tabId) {
+    final modes = ref.read(scribePreviewModeProvider);
+    final modeStr = modes[tabId] ?? 'editor';
+    return ScribePreviewMode.values.firstWhere(
+      (m) => m.name == modeStr,
+      orElse: () => ScribePreviewMode.editor,
+    );
+  }
+
+  /// Returns the current split ratio for the given tab.
+  double _getSplitRatio(String tabId) {
+    final ratios = ref.read(scribeSplitRatioProvider);
+    return ratios[tabId] ?? AppConstants.scribeDefaultSplitRatio;
+  }
+
+  /// Handles preview mode changes from the controls.
+  void _handlePreviewModeChanged(String tabId, ScribePreviewMode mode) {
+    final modes = {...ref.read(scribePreviewModeProvider)};
+    modes[tabId] = mode.name;
+    ref.read(scribePreviewModeProvider.notifier).state = modes;
+  }
+
+  /// Handles split ratio changes from the divider drag.
+  void _handleSplitRatioChanged(String tabId, double ratio) {
+    final ratios = {...ref.read(scribeSplitRatioProvider)};
+    ratios[tabId] = ratio;
+    ref.read(scribeSplitRatioProvider.notifier).state = ratios;
+  }
+
+  /// Toggles the preview mode for the active tab via Ctrl+Shift+V.
+  ///
+  /// Cycles: editor → split → preview → editor. Only applies to
+  /// markdown tabs; no-op for non-markdown tabs.
+  void _handleTogglePreview() {
+    final activeTab = ref.read(activeScribeTabProvider);
+    if (activeTab == null || activeTab.language != 'markdown') return;
+
+    final current = _getPreviewMode(activeTab.id);
+    final next = switch (current) {
+      ScribePreviewMode.editor => ScribePreviewMode.split,
+      ScribePreviewMode.split => ScribePreviewMode.preview,
+      ScribePreviewMode.preview => ScribePreviewMode.editor,
+    };
+    _handlePreviewModeChanged(activeTab.id, next);
+  }
+
+  /// Handles heading selection from the TOC dropdown.
+  void _handleHeadingSelected(int line) {
+    // Update cursor position to the heading line.
+    setState(() {
+      _cursorLine = line;
+      _cursorColumn = 0;
+    });
+  }
+
+  /// Builds the editor area, wrapping in [ScribeMarkdownSplit] for
+  /// markdown tabs.
+  Widget _buildEditorWithPreview(ScribeTab tab, ScribeSettings settings) {
+    final editorWidget = _EditorArea(
+      key: ValueKey('editor-${tab.id}'),
+      tab: tab,
+      settings: settings,
+      onChanged: (value) => _handleContentChanged(tab, value),
+      onCursorChanged: _handleCursorChanged,
+    );
+
+    if (tab.language != 'markdown') {
+      return editorWidget;
+    }
+
+    final mode = _getPreviewMode(tab.id);
+    final ratio = _getSplitRatio(tab.id);
+
+    return ScribeMarkdownSplit(
+      key: ValueKey('split-${tab.id}'),
+      editor: editorWidget,
+      content: tab.content,
+      mode: mode,
+      splitRatio: ratio,
+      onSplitRatioChanged: (r) => _handleSplitRatioChanged(tab.id, r),
+    );
   }
 
   // ---------------------------------------------------------------------------

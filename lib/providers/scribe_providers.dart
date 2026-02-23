@@ -54,6 +54,21 @@ final scribeSidebarVisibleProvider = StateProvider<bool>((ref) => false);
 /// Whether the Scribe settings panel is visible.
 final scribeSettingsPanelVisibleProvider = StateProvider<bool>((ref) => false);
 
+/// Per-tab preview mode: `'editor'`, `'split'`, or `'preview'`.
+///
+/// Ephemeral state — not persisted to the database.
+/// Keys are tab IDs. Missing entries default to `'editor'`.
+final scribePreviewModeProvider =
+    StateProvider<Map<String, String>>((ref) => {});
+
+/// Per-tab split ratio (0.0–1.0).
+///
+/// Ephemeral state — not persisted to the database.
+/// Keys are tab IDs. Missing entries default to
+/// [AppConstants.scribeDefaultSplitRatio].
+final scribeSplitRatioProvider =
+    StateProvider<Map<String, double>>((ref) => {});
+
 /// Stack of recently closed tabs for Ctrl+Shift+T reopen.
 ///
 /// Capped at [ScribeTabsNotifier.maxClosedHistory] entries.

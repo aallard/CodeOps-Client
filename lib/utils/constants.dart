@@ -317,4 +317,20 @@ class AppConstants {
 
   /// Width of the Scribe settings panel in logical pixels.
   static const double scribeSettingsPanelWidth = 320.0;
+
+  // -------------------------------------------------------------------------
+  // Scribe constants (CS-006)
+  // -------------------------------------------------------------------------
+
+  /// Debounce duration in milliseconds for markdown preview rendering.
+  static const int scribeMarkdownPreviewDebounceMs = 300;
+
+  /// Minimum width in logical pixels for each pane in the split view.
+  static const double scribeMinSplitPaneWidth = 200.0;
+
+  /// Default split ratio (0.0–1.0) for the editor/preview split view.
+  static const double scribeDefaultSplitRatio = 0.5;
+
+  /// Cooldown in milliseconds for bidirectional scroll synchronization.
+  static const int scribeScrollSyncCooldownMs = 100;
 }

@@ -1028,4 +1028,52 @@ void main() {
       expect(modified.highlightActiveLine, isFalse);
     });
   });
+
+  group('Preview state providers (CS-006)', () {
+    test('scribePreviewModeProvider initializes empty', () {
+      final container = createContainer();
+      expect(container.read(scribePreviewModeProvider), isEmpty);
+    });
+
+    test('scribePreviewModeProvider can store per-tab modes', () {
+      final container = createContainer();
+
+      container.read(scribePreviewModeProvider.notifier).state = {
+        'tab-1': 'split',
+        'tab-2': 'preview',
+      };
+
+      final modes = container.read(scribePreviewModeProvider);
+      expect(modes['tab-1'], 'split');
+      expect(modes['tab-2'], 'preview');
+    });
+
+    test('scribeSplitRatioProvider initializes empty', () {
+      final container = createContainer();
+      expect(container.read(scribeSplitRatioProvider), isEmpty);
+    });
+
+    test('scribeSplitRatioProvider can store per-tab ratios', () {
+      final container = createContainer();
+
+      container.read(scribeSplitRatioProvider.notifier).state = {
+        'tab-1': 0.6,
+        'tab-2': 0.3,
+      };
+
+      final ratios = container.read(scribeSplitRatioProvider);
+      expect(ratios['tab-1'], 0.6);
+      expect(ratios['tab-2'], 0.3);
+    });
+
+    test('missing tab ID returns null (default handled by consumer)', () {
+      final container = createContainer();
+
+      final modes = container.read(scribePreviewModeProvider);
+      expect(modes['nonexistent'], isNull);
+
+      final ratios = container.read(scribeSplitRatioProvider);
+      expect(ratios['nonexistent'], isNull);
+    });
+  });
 }

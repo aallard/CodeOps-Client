@@ -438,5 +438,54 @@ void main() {
 
       expect(find.text('Scribe'), findsOneWidget);
     });
+
+    testWidgets('Ctrl+Shift+V does not crash on non-markdown tab',
+        (tester) async {
+      final tabs = [makeTab(1, language: 'dart')];
+      await tester.pumpWidget(createWidget(
+        tabs: tabs,
+        activeTabId: 'tab-1',
+      ));
+      await tester.pumpAndSettle();
+
+      // Press Ctrl+Shift+V — should be a no-op for non-markdown.
+      await tester.sendKeyDownEvent(LogicalKeyboardKey.controlLeft);
+      await tester.sendKeyDownEvent(LogicalKeyboardKey.shiftLeft);
+      await tester.sendKeyEvent(LogicalKeyboardKey.keyV);
+      await tester.sendKeyUpEvent(LogicalKeyboardKey.shiftLeft);
+      await tester.sendKeyUpEvent(LogicalKeyboardKey.controlLeft);
+      await tester.pumpAndSettle();
+
+      // Page still renders.
+      expect(find.text('File-1.dart'), findsOneWidget);
+    });
+
+    testWidgets('preview controls not shown for non-markdown tab',
+        (tester) async {
+      final tabs = [makeTab(1, language: 'dart')];
+      await tester.pumpWidget(createWidget(
+        tabs: tabs,
+        activeTabId: 'tab-1',
+      ));
+      await tester.pumpAndSettle();
+
+      // Preview controls should not appear for Dart tabs.
+      expect(find.text('TOC'), findsNothing);
+      expect(find.byIcon(Icons.edit), findsNothing);
+    });
+
+    testWidgets('preview controls shown for markdown tab', (tester) async {
+      final tabs = [makeTab(1, language: 'markdown', content: '# Title')];
+      await tester.pumpWidget(createWidget(
+        tabs: tabs,
+        activeTabId: 'tab-1',
+      ));
+      await tester.pumpAndSettle();
+
+      // Preview controls should appear for Markdown tabs.
+      expect(find.text('TOC'), findsOneWidget);
+      // The preview controls contain editor/split/preview icons.
+      expect(find.byIcon(Icons.edit), findsOneWidget);
+    });
   });
 }
