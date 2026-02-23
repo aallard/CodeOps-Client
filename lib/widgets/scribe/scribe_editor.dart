@@ -99,6 +99,14 @@ class ScribeEditor extends ConsumerStatefulWidget {
   /// is reserved for future use and is currently a no-op.
   final bool showMinimap;
 
+  /// Override font family for the editor. When `null`, uses the theme
+  /// default (`JetBrains Mono`).
+  final String? fontFamily;
+
+  /// Editor theme mode. `'dark'` uses [ScribeTheme.dark], `'light'` uses
+  /// [ScribeTheme.light]. Defaults to `'dark'`.
+  final String themeMode;
+
   /// Whether to highlight the line containing the cursor.
   /// Defaults to `true`.
   final bool highlightActiveLine;
@@ -154,6 +162,8 @@ class ScribeEditor extends ConsumerStatefulWidget {
     this.minHeight,
     this.maxHeight,
     this.showMinimap = false,
+    this.fontFamily,
+    this.themeMode = 'dark',
     this.highlightActiveLine = true,
     this.showBracketMatching = true,
     this.autoCloseBrackets = true,
@@ -202,8 +212,10 @@ class _ScribeEditorState extends ConsumerState<ScribeEditor> {
       _internalController.text = widget.content;
     }
 
-    // Language changed — rebuild highlight theme.
-    if (widget.language != oldWidget.language) {
+    // Language or theme changed — rebuild highlight theme.
+    if (widget.language != oldWidget.language ||
+        widget.themeMode != oldWidget.themeMode) {
+      _lastLanguage = null; // Force rebuild.
       _buildHighlightTheme();
     }
 
@@ -243,6 +255,13 @@ class _ScribeEditorState extends ConsumerState<ScribeEditor> {
     widget.controller?.focusNode = _effectiveFocusNode;
   }
 
+  /// Returns the active [ScribeThemeData] based on [widget.themeMode].
+  ScribeThemeData _resolveTheme() {
+    return widget.themeMode == 'light'
+        ? ScribeTheme.light()
+        : ScribeTheme.dark();
+  }
+
   void _buildHighlightTheme() {
     final modeKey =
         ScribeLanguage.highlightModeKeys[widget.language] ?? 'plaintext';
@@ -258,7 +277,7 @@ class _ScribeEditorState extends ConsumerState<ScribeEditor> {
       return;
     }
 
-    final themeData = ScribeTheme.dark();
+    final themeData = _resolveTheme();
     _highlightTheme = CodeHighlightTheme(
       languages: <String, CodeHighlightThemeMode>{
         modeKey: CodeHighlightThemeMode(mode: mode),
@@ -269,7 +288,8 @@ class _ScribeEditorState extends ConsumerState<ScribeEditor> {
 
   @override
   Widget build(BuildContext context) {
-    final themeData = ScribeTheme.dark();
+    final themeData = _resolveTheme();
+    final effectiveFontFamily = widget.fontFamily ?? themeData.fontFamily;
     final autoComplete = widget.autoCloseBrackets && widget.autoCloseQuotes;
 
     Widget editor = CodeEditor(
@@ -283,7 +303,7 @@ class _ScribeEditorState extends ConsumerState<ScribeEditor> {
       shortcutOverrideActions: _buildShortcutOverrides(),
       style: CodeEditorStyle(
         fontSize: widget.fontSize,
-        fontFamily: themeData.fontFamily,
+        fontFamily: effectiveFontFamily,
         fontFamilyFallback: const ['Fira Code', 'monospace'],
         fontHeight: 1.5,
         backgroundColor: themeData.background,
@@ -348,12 +368,12 @@ class _ScribeEditorState extends ConsumerState<ScribeEditor> {
               controller: editingController,
               notifier: notifier,
               textStyle: TextStyle(
-                fontFamily: themeData.fontFamily,
+                fontFamily: widget.fontFamily ?? themeData.fontFamily,
                 fontSize: widget.fontSize - 1,
                 color: themeData.gutterText,
               ),
               focusedTextStyle: TextStyle(
-                fontFamily: themeData.fontFamily,
+                fontFamily: widget.fontFamily ?? themeData.fontFamily,
                 fontSize: widget.fontSize - 1,
                 color: themeData.cursor,
               ),

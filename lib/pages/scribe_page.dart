@@ -10,6 +10,7 @@
 /// Plane modules (Courier, DataLens, Logger, Registry, Vault).
 library;
 
+import 'dart:async';
 import 'dart:io';
 
 import 'package:flutter/material.dart';
@@ -25,6 +26,7 @@ import '../widgets/scribe/scribe_editor.dart';
 import '../widgets/scribe/scribe_empty_state.dart';
 import '../widgets/scribe/scribe_language.dart';
 import '../widgets/scribe/scribe_save_dialog.dart';
+import '../widgets/scribe/scribe_settings_panel.dart';
 import '../widgets/scribe/scribe_sidebar.dart';
 import '../widgets/scribe/scribe_status_bar.dart';
 import '../widgets/scribe/scribe_tab_bar.dart';
@@ -44,6 +46,10 @@ class _ScribePageState extends ConsumerState<ScribePage> {
   int _cursorLine = 0;
   int _cursorColumn = 0;
 
+  Timer? _autoSaveTimer;
+  bool _autoSaveEnabled = false;
+  int _autoSaveIntervalSeconds = 30;
+
   @override
   void initState() {
     super.initState();
@@ -52,10 +58,22 @@ class _ScribePageState extends ConsumerState<ScribePage> {
   }
 
   @override
+  void dispose() {
+    _autoSaveTimer?.cancel();
+    super.dispose();
+  }
+
+  @override
   Widget build(BuildContext context) {
     final tabs = ref.watch(scribeTabsProvider);
     final activeTab = ref.watch(activeScribeTabProvider);
     final sidebarVisible = ref.watch(scribeSidebarVisibleProvider);
+    final settingsPanelVisible =
+        ref.watch(scribeSettingsPanelVisibleProvider);
+    final settings = ref.watch(scribeSettingsProvider);
+
+    // Manage auto-save timer when settings change.
+    _updateAutoSaveTimer(settings);
 
     return CallbackShortcuts(
       bindings: <ShortcutActivator, VoidCallback>{
@@ -85,21 +103,31 @@ class _ScribePageState extends ConsumerState<ScribePage> {
           child: Column(
             children: [
               if (tabs.isNotEmpty)
-                ScribeTabBar(
-                  tabs: tabs,
-                  activeTabId: activeTab?.id,
-                  onTabSelected: _handleTabSelected,
-                  onTabClosed: _handleTabClosed,
-                  onNewTab: _handleNewTab,
-                  onCloseOthers: _handleCloseOtherTabs,
-                  onCloseAll: _handleCloseAllTabs,
-                  onCloseToRight: _handleCloseToRight,
-                  onCloseSaved: _handleCloseSavedTabs,
-                  onCopyFilePath: _handleCopyFilePath,
-                  onRevealInFinder: _handleRevealInFinder,
-                  onReorder: _handleReorderTabs,
-                  onToggleSidebar: _handleToggleSidebar,
-                  sidebarVisible: sidebarVisible,
+                Row(
+                  children: [
+                    Expanded(
+                      child: ScribeTabBar(
+                        tabs: tabs,
+                        activeTabId: activeTab?.id,
+                        onTabSelected: _handleTabSelected,
+                        onTabClosed: _handleTabClosed,
+                        onNewTab: _handleNewTab,
+                        onCloseOthers: _handleCloseOtherTabs,
+                        onCloseAll: _handleCloseAllTabs,
+                        onCloseToRight: _handleCloseToRight,
+                        onCloseSaved: _handleCloseSavedTabs,
+                        onCopyFilePath: _handleCopyFilePath,
+                        onRevealInFinder: _handleRevealInFinder,
+                        onReorder: _handleReorderTabs,
+                        onToggleSidebar: _handleToggleSidebar,
+                        sidebarVisible: sidebarVisible,
+                      ),
+                    ),
+                    _SettingsGearButton(
+                      isActive: settingsPanelVisible,
+                      onPressed: _handleToggleSettingsPanel,
+                    ),
+                  ],
                 ),
               if (tabs.isNotEmpty && activeTab != null)
                 Expanded(
@@ -121,12 +149,22 @@ class _ScribePageState extends ConsumerState<ScribePage> {
                         child: _EditorArea(
                           key: ValueKey(activeTab.id),
                           tab: activeTab,
-                          settings: ref.watch(scribeSettingsProvider),
+                          settings: settings,
                           onChanged: (value) =>
                               _handleContentChanged(activeTab, value),
                           onCursorChanged: _handleCursorChanged,
                         ),
                       ),
+                      if (settingsPanelVisible) ...[
+                        const VerticalDivider(
+                          width: 1,
+                          thickness: 1,
+                          color: CodeOpsColors.border,
+                        ),
+                        ScribeSettingsPanel(
+                          onClose: _handleToggleSettingsPanel,
+                        ),
+                      ],
                     ],
                   ),
                 )
@@ -463,6 +501,48 @@ class _ScribePageState extends ConsumerState<ScribePage> {
         !ref.read(scribeSidebarVisibleProvider);
   }
 
+  /// Toggles the settings panel visibility.
+  void _handleToggleSettingsPanel() {
+    ref.read(scribeSettingsPanelVisibleProvider.notifier).state =
+        !ref.read(scribeSettingsPanelVisibleProvider);
+  }
+
+  // ---------------------------------------------------------------------------
+  // Auto-save (CS-005)
+  // ---------------------------------------------------------------------------
+
+  /// Updates the auto-save timer when settings change.
+  ///
+  /// Compares cached values to avoid unnecessary timer recreation.
+  void _updateAutoSaveTimer(ScribeSettings settings) {
+    if (settings.autoSave == _autoSaveEnabled &&
+        settings.autoSaveIntervalSeconds == _autoSaveIntervalSeconds) {
+      return;
+    }
+
+    _autoSaveEnabled = settings.autoSave;
+    _autoSaveIntervalSeconds = settings.autoSaveIntervalSeconds;
+    _autoSaveTimer?.cancel();
+    _autoSaveTimer = null;
+
+    if (_autoSaveEnabled) {
+      _autoSaveTimer = Timer.periodic(
+        Duration(seconds: _autoSaveIntervalSeconds),
+        (_) => _handleAutoSave(),
+      );
+    }
+  }
+
+  /// Saves all dirty tabs that have a file path (auto-save tick).
+  void _handleAutoSave() {
+    final tabs = ref.read(scribeTabsProvider);
+    for (final tab in tabs) {
+      if (tab.isDirty && tab.filePath != null) {
+        _saveTab(tab);
+      }
+    }
+  }
+
   // ---------------------------------------------------------------------------
   // Editor callbacks
   // ---------------------------------------------------------------------------
@@ -531,6 +611,43 @@ class _ScribePageState extends ConsumerState<ScribePage> {
   }
 }
 
+/// Gear icon button to toggle the settings panel.
+class _SettingsGearButton extends StatelessWidget {
+  /// Whether the settings panel is currently open.
+  final bool isActive;
+
+  /// Callback when the button is pressed.
+  final VoidCallback onPressed;
+
+  const _SettingsGearButton({
+    required this.isActive,
+    required this.onPressed,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      height: 36,
+      padding: const EdgeInsets.only(right: 8),
+      color: CodeOpsColors.surface,
+      child: IconButton(
+        icon: Icon(
+          Icons.settings,
+          size: 16,
+          color: isActive
+              ? CodeOpsColors.primary
+              : CodeOpsColors.textTertiary,
+        ),
+        onPressed: onPressed,
+        splashRadius: 14,
+        tooltip: 'Editor settings',
+        padding: EdgeInsets.zero,
+        constraints: const BoxConstraints(minWidth: 28, minHeight: 28),
+      ),
+    );
+  }
+}
+
 /// The editor area that renders a [ScribeEditor] for the active tab.
 class _EditorArea extends StatefulWidget {
   final ScribeTab tab;
@@ -559,11 +676,16 @@ class _EditorAreaState extends State<_EditorArea> {
         content: widget.tab.content,
         language: widget.tab.language,
         fontSize: widget.settings.fontSize,
+        fontFamily: widget.settings.fontFamily,
         tabSize: widget.settings.tabSize,
         insertSpaces: widget.settings.insertSpaces,
         wordWrap: widget.settings.wordWrap,
         showLineNumbers: widget.settings.showLineNumbers,
         showMinimap: widget.settings.showMinimap,
+        themeMode: widget.settings.themeMode,
+        highlightActiveLine: widget.settings.highlightActiveLine,
+        showBracketMatching: widget.settings.bracketMatching,
+        autoCloseBrackets: widget.settings.autoCloseBrackets,
         onChanged: widget.onChanged,
       ),
     );

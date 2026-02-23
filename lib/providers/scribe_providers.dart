@@ -4,6 +4,8 @@
 /// session persistence for the Scribe code editor.
 library;
 
+import 'dart:async';
+
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:uuid/uuid.dart';
 
@@ -48,6 +50,9 @@ final scribeUntitledCounterProvider = StateProvider<int>((ref) => 1);
 
 /// Whether the Scribe sidebar is visible.
 final scribeSidebarVisibleProvider = StateProvider<bool>((ref) => false);
+
+/// Whether the Scribe settings panel is visible.
+final scribeSettingsPanelVisibleProvider = StateProvider<bool>((ref) => false);
 
 /// Stack of recently closed tabs for Ctrl+Shift+T reopen.
 ///
@@ -398,19 +403,32 @@ class ScribeTabsNotifier extends StateNotifier<List<ScribeTab>> {
 // ScribeSettingsNotifier
 // ---------------------------------------------------------------------------
 
-/// Notifier that manages editor settings with persistence.
+/// Notifier that manages editor settings with debounced persistence.
 ///
-/// All settings changes are persisted to the local Drift database.
+/// All settings changes are applied instantly to the state and persisted
+/// to the local Drift database with a 500ms debounce to avoid excessive
+/// writes during rapid changes (e.g., dragging a font size slider).
 class ScribeSettingsNotifier extends StateNotifier<ScribeSettings> {
   final ScribePersistenceService _persistence;
+  Timer? _debounceTimer;
 
   /// Creates a [ScribeSettingsNotifier].
   ScribeSettingsNotifier(this._persistence) : super(const ScribeSettings());
+
+  @override
+  void dispose() {
+    _debounceTimer?.cancel();
+    super.dispose();
+  }
 
   /// Loads settings from the local database.
   Future<void> loadFromPersistence() async {
     state = await _persistence.loadSettings();
   }
+
+  // -------------------------------------------------------------------------
+  // Appearance settings
+  // -------------------------------------------------------------------------
 
   /// Updates the font size, clamped to the valid range.
   void updateFontSize(double fontSize) {
@@ -420,42 +438,134 @@ class ScribeSettingsNotifier extends StateNotifier<ScribeSettings> {
         AppConstants.scribeMaxFontSize,
       ),
     );
-    _persist();
+    _persistDebounced();
   }
 
-  /// Sets the tab width (2, 4, or 8).
-  void updateTabSize(int tabSize) {
-    if (tabSize != 2 && tabSize != 4 && tabSize != 8) return;
-    state = state.copyWith(tabSize: tabSize);
-    _persist();
-  }
-
-  /// Toggles word wrap on/off.
-  void toggleWordWrap() {
-    state = state.copyWith(wordWrap: !state.wordWrap);
-    _persist();
-  }
-
-  /// Toggles line numbers on/off.
-  void toggleLineNumbers() {
-    state = state.copyWith(showLineNumbers: !state.showLineNumbers);
-    _persist();
-  }
-
-  /// Toggles the minimap on/off.
-  void toggleMinimap() {
-    state = state.copyWith(showMinimap: !state.showMinimap);
-    _persist();
+  /// Sets the font family.
+  void updateFontFamily(String fontFamily) {
+    if (fontFamily.isEmpty) return;
+    state = state.copyWith(fontFamily: fontFamily);
+    _persistDebounced();
   }
 
   /// Sets the theme mode ("dark" or "light").
   void setThemeMode(String mode) {
     if (mode != 'dark' && mode != 'light') return;
     state = state.copyWith(themeMode: mode);
-    _persist();
+    _persistDebounced();
   }
 
-  void _persist() {
-    _persistence.saveSettings(state);
+  // -------------------------------------------------------------------------
+  // Editor behavior settings
+  // -------------------------------------------------------------------------
+
+  /// Sets the tab width (2, 4, or 8).
+  void updateTabSize(int tabSize) {
+    if (tabSize != 2 && tabSize != 4 && tabSize != 8) return;
+    state = state.copyWith(tabSize: tabSize);
+    _persistDebounced();
+  }
+
+  /// Toggles spaces vs. tabs.
+  void toggleInsertSpaces() {
+    state = state.copyWith(insertSpaces: !state.insertSpaces);
+    _persistDebounced();
+  }
+
+  /// Toggles word wrap on/off.
+  void toggleWordWrap() {
+    state = state.copyWith(wordWrap: !state.wordWrap);
+    _persistDebounced();
+  }
+
+  /// Toggles line numbers on/off.
+  void toggleLineNumbers() {
+    state = state.copyWith(showLineNumbers: !state.showLineNumbers);
+    _persistDebounced();
+  }
+
+  /// Toggles the minimap on/off.
+  void toggleMinimap() {
+    state = state.copyWith(showMinimap: !state.showMinimap);
+    _persistDebounced();
+  }
+
+  /// Toggles active line highlighting on/off.
+  void toggleHighlightActiveLine() {
+    state = state.copyWith(
+      highlightActiveLine: !state.highlightActiveLine,
+    );
+    _persistDebounced();
+  }
+
+  /// Toggles bracket matching on/off.
+  void toggleBracketMatching() {
+    state = state.copyWith(bracketMatching: !state.bracketMatching);
+    _persistDebounced();
+  }
+
+  /// Toggles auto-close brackets on/off.
+  void toggleAutoCloseBrackets() {
+    state = state.copyWith(autoCloseBrackets: !state.autoCloseBrackets);
+    _persistDebounced();
+  }
+
+  /// Toggles whitespace rendering on/off.
+  void toggleShowWhitespace() {
+    state = state.copyWith(showWhitespace: !state.showWhitespace);
+    _persistDebounced();
+  }
+
+  /// Toggles scroll beyond last line on/off.
+  void toggleScrollBeyondLastLine() {
+    state = state.copyWith(
+      scrollBeyondLastLine: !state.scrollBeyondLastLine,
+    );
+    _persistDebounced();
+  }
+
+  // -------------------------------------------------------------------------
+  // Auto-save settings
+  // -------------------------------------------------------------------------
+
+  /// Toggles auto-save on/off.
+  void toggleAutoSave() {
+    state = state.copyWith(autoSave: !state.autoSave);
+    _persistDebounced();
+  }
+
+  /// Updates the auto-save interval in seconds, clamped to the valid range.
+  void updateAutoSaveInterval(int seconds) {
+    state = state.copyWith(
+      autoSaveIntervalSeconds: seconds.clamp(
+        AppConstants.scribeMinAutoSaveIntervalSeconds,
+        AppConstants.scribeMaxAutoSaveIntervalSeconds,
+      ),
+    );
+    _persistDebounced();
+  }
+
+  // -------------------------------------------------------------------------
+  // Reset
+  // -------------------------------------------------------------------------
+
+  /// Resets all settings to their default values.
+  void resetToDefaults() {
+    state = const ScribeSettings();
+    _persistDebounced();
+  }
+
+  // -------------------------------------------------------------------------
+  // Persistence
+  // -------------------------------------------------------------------------
+
+  void _persistDebounced() {
+    _debounceTimer?.cancel();
+    _debounceTimer = Timer(
+      const Duration(
+        milliseconds: AppConstants.scribeSettingsPersistDebounceMs,
+      ),
+      () => _persistence.saveSettings(state),
+    );
   }
 }

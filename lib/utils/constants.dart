@@ -295,4 +295,26 @@ class AppConstants {
 
   /// Maximum file size in bytes that Scribe will open (10 MB).
   static const int scribeMaxFileSizeBytes = 10485760;
+
+  // -------------------------------------------------------------------------
+  // Scribe constants (CS-005)
+  // -------------------------------------------------------------------------
+
+  /// Default font family for the Scribe editor.
+  static const String scribeDefaultFontFamily = 'JetBrains Mono';
+
+  /// Default auto-save interval in seconds.
+  static const int scribeDefaultAutoSaveIntervalSeconds = 30;
+
+  /// Minimum auto-save interval in seconds.
+  static const int scribeMinAutoSaveIntervalSeconds = 5;
+
+  /// Maximum auto-save interval in seconds.
+  static const int scribeMaxAutoSaveIntervalSeconds = 300;
+
+  /// Debounce duration in milliseconds for settings persistence.
+  static const int scribeSettingsPersistDebounceMs = 500;
+
+  /// Width of the Scribe settings panel in logical pixels.
+  static const double scribeSettingsPanelWidth = 320.0;
 }

@@ -695,6 +695,337 @@ void main() {
       expect(settings.showLineNumbers, isTrue);
       expect(settings.showMinimap, isFalse);
       expect(settings.themeMode, 'dark');
+      expect(settings.fontFamily, 'JetBrains Mono');
+      expect(settings.autoSave, isFalse);
+      expect(settings.autoSaveIntervalSeconds, 30);
+      expect(settings.showWhitespace, isFalse);
+      expect(settings.bracketMatching, isTrue);
+      expect(settings.autoCloseBrackets, isTrue);
+      expect(settings.highlightActiveLine, isTrue);
+      expect(settings.scrollBeyondLastLine, isTrue);
+    });
+
+    test('scribeSettingsPanelVisibleProvider initializes false', () {
+      final container = createContainer();
+      expect(container.read(scribeSettingsPanelVisibleProvider), isFalse);
+    });
+  });
+
+  group('ScribeSettingsNotifier — new fields (CS-005)', () {
+    test('updateFontFamily changes font family', () {
+      final container = createContainer();
+
+      container
+          .read(scribeSettingsProvider.notifier)
+          .updateFontFamily('Fira Code');
+      expect(
+        container.read(scribeSettingsProvider).fontFamily,
+        'Fira Code',
+      );
+    });
+
+    test('updateFontFamily rejects empty string', () {
+      final container = createContainer();
+
+      container.read(scribeSettingsProvider.notifier).updateFontFamily('');
+      expect(
+        container.read(scribeSettingsProvider).fontFamily,
+        'JetBrains Mono',
+      );
+    });
+
+    test('toggleInsertSpaces toggles', () {
+      final container = createContainer();
+
+      expect(container.read(scribeSettingsProvider).insertSpaces, isTrue);
+
+      container.read(scribeSettingsProvider.notifier).toggleInsertSpaces();
+      expect(container.read(scribeSettingsProvider).insertSpaces, isFalse);
+
+      container.read(scribeSettingsProvider.notifier).toggleInsertSpaces();
+      expect(container.read(scribeSettingsProvider).insertSpaces, isTrue);
+    });
+
+    test('toggleHighlightActiveLine toggles', () {
+      final container = createContainer();
+
+      expect(
+        container.read(scribeSettingsProvider).highlightActiveLine,
+        isTrue,
+      );
+
+      container
+          .read(scribeSettingsProvider.notifier)
+          .toggleHighlightActiveLine();
+      expect(
+        container.read(scribeSettingsProvider).highlightActiveLine,
+        isFalse,
+      );
+    });
+
+    test('toggleBracketMatching toggles', () {
+      final container = createContainer();
+
+      expect(
+        container.read(scribeSettingsProvider).bracketMatching,
+        isTrue,
+      );
+
+      container
+          .read(scribeSettingsProvider.notifier)
+          .toggleBracketMatching();
+      expect(
+        container.read(scribeSettingsProvider).bracketMatching,
+        isFalse,
+      );
+    });
+
+    test('toggleAutoCloseBrackets toggles', () {
+      final container = createContainer();
+
+      expect(
+        container.read(scribeSettingsProvider).autoCloseBrackets,
+        isTrue,
+      );
+
+      container
+          .read(scribeSettingsProvider.notifier)
+          .toggleAutoCloseBrackets();
+      expect(
+        container.read(scribeSettingsProvider).autoCloseBrackets,
+        isFalse,
+      );
+    });
+
+    test('toggleShowWhitespace toggles', () {
+      final container = createContainer();
+
+      expect(
+        container.read(scribeSettingsProvider).showWhitespace,
+        isFalse,
+      );
+
+      container
+          .read(scribeSettingsProvider.notifier)
+          .toggleShowWhitespace();
+      expect(
+        container.read(scribeSettingsProvider).showWhitespace,
+        isTrue,
+      );
+    });
+
+    test('toggleScrollBeyondLastLine toggles', () {
+      final container = createContainer();
+
+      expect(
+        container.read(scribeSettingsProvider).scrollBeyondLastLine,
+        isTrue,
+      );
+
+      container
+          .read(scribeSettingsProvider.notifier)
+          .toggleScrollBeyondLastLine();
+      expect(
+        container.read(scribeSettingsProvider).scrollBeyondLastLine,
+        isFalse,
+      );
+    });
+
+    test('toggleAutoSave toggles', () {
+      final container = createContainer();
+
+      expect(container.read(scribeSettingsProvider).autoSave, isFalse);
+
+      container.read(scribeSettingsProvider.notifier).toggleAutoSave();
+      expect(container.read(scribeSettingsProvider).autoSave, isTrue);
+
+      container.read(scribeSettingsProvider.notifier).toggleAutoSave();
+      expect(container.read(scribeSettingsProvider).autoSave, isFalse);
+    });
+
+    test('updateAutoSaveInterval clamps to valid range', () {
+      final container = createContainer();
+
+      container
+          .read(scribeSettingsProvider.notifier)
+          .updateAutoSaveInterval(2);
+      expect(
+        container.read(scribeSettingsProvider).autoSaveIntervalSeconds,
+        5,
+      );
+
+      container
+          .read(scribeSettingsProvider.notifier)
+          .updateAutoSaveInterval(600);
+      expect(
+        container.read(scribeSettingsProvider).autoSaveIntervalSeconds,
+        300,
+      );
+
+      container
+          .read(scribeSettingsProvider.notifier)
+          .updateAutoSaveInterval(60);
+      expect(
+        container.read(scribeSettingsProvider).autoSaveIntervalSeconds,
+        60,
+      );
+    });
+
+    test('resetToDefaults restores all settings', () {
+      final container = createContainer();
+
+      // Change several settings.
+      container.read(scribeSettingsProvider.notifier).updateFontSize(20.0);
+      container.read(scribeSettingsProvider.notifier).updateTabSize(4);
+      container.read(scribeSettingsProvider.notifier).toggleWordWrap();
+      container.read(scribeSettingsProvider.notifier).setThemeMode('light');
+      container
+          .read(scribeSettingsProvider.notifier)
+          .updateFontFamily('Fira Code');
+      container.read(scribeSettingsProvider.notifier).toggleAutoSave();
+      container
+          .read(scribeSettingsProvider.notifier)
+          .toggleHighlightActiveLine();
+
+      // Reset.
+      container.read(scribeSettingsProvider.notifier).resetToDefaults();
+
+      final settings = container.read(scribeSettingsProvider);
+      expect(settings.fontSize, 14.0);
+      expect(settings.tabSize, 2);
+      expect(settings.wordWrap, isFalse);
+      expect(settings.themeMode, 'dark');
+      expect(settings.fontFamily, 'JetBrains Mono');
+      expect(settings.autoSave, isFalse);
+      expect(settings.highlightActiveLine, isTrue);
+    });
+
+    test('debounced persistence calls saveSettings after delay', () async {
+      final container = createContainer();
+
+      container.read(scribeSettingsProvider.notifier).updateFontSize(20.0);
+
+      // Persistence should not be called immediately.
+      verifyNever(() => mockPersistence.saveSettings(any()));
+
+      // Wait for the debounce timer to fire.
+      await Future<void>.delayed(const Duration(milliseconds: 600));
+
+      verify(() => mockPersistence.saveSettings(any())).called(1);
+    });
+
+    test('rapid changes result in single persistence call', () async {
+      final container = createContainer();
+
+      container.read(scribeSettingsProvider.notifier).updateFontSize(16.0);
+      container.read(scribeSettingsProvider.notifier).updateFontSize(18.0);
+      container.read(scribeSettingsProvider.notifier).updateFontSize(20.0);
+
+      // Wait for debounce.
+      await Future<void>.delayed(const Duration(milliseconds: 600));
+
+      // Only the last debounce fires — single call.
+      verify(() => mockPersistence.saveSettings(any())).called(1);
+    });
+  });
+
+  group('ScribeSettings model — JSON round-trip (CS-005)', () {
+    test('toJson and fromJson preserve all 15 fields', () {
+      const original = ScribeSettings(
+        fontSize: 18.0,
+        tabSize: 4,
+        insertSpaces: false,
+        wordWrap: true,
+        showLineNumbers: false,
+        showMinimap: true,
+        themeMode: 'light',
+        fontFamily: 'Fira Code',
+        autoSave: true,
+        autoSaveIntervalSeconds: 60,
+        showWhitespace: true,
+        bracketMatching: false,
+        autoCloseBrackets: false,
+        highlightActiveLine: false,
+        scrollBeyondLastLine: false,
+      );
+
+      final json = original.toJson();
+      final restored = ScribeSettings.fromJson(json);
+
+      expect(restored.fontSize, 18.0);
+      expect(restored.tabSize, 4);
+      expect(restored.insertSpaces, isFalse);
+      expect(restored.wordWrap, isTrue);
+      expect(restored.showLineNumbers, isFalse);
+      expect(restored.showMinimap, isTrue);
+      expect(restored.themeMode, 'light');
+      expect(restored.fontFamily, 'Fira Code');
+      expect(restored.autoSave, isTrue);
+      expect(restored.autoSaveIntervalSeconds, 60);
+      expect(restored.showWhitespace, isTrue);
+      expect(restored.bracketMatching, isFalse);
+      expect(restored.autoCloseBrackets, isFalse);
+      expect(restored.highlightActiveLine, isFalse);
+      expect(restored.scrollBeyondLastLine, isFalse);
+    });
+
+    test('fromJson uses defaults for missing new fields', () {
+      // Simulate loading old settings that lack the new CS-005 fields.
+      final oldJson = <String, dynamic>{
+        'fontSize': 16.0,
+        'tabSize': 4,
+        'insertSpaces': true,
+        'wordWrap': false,
+        'showLineNumbers': true,
+        'showMinimap': false,
+        'themeMode': 'dark',
+      };
+
+      final settings = ScribeSettings.fromJson(oldJson);
+
+      expect(settings.fontSize, 16.0);
+      expect(settings.tabSize, 4);
+      // New fields get defaults.
+      expect(settings.fontFamily, 'JetBrains Mono');
+      expect(settings.autoSave, isFalse);
+      expect(settings.autoSaveIntervalSeconds, 30);
+      expect(settings.showWhitespace, isFalse);
+      expect(settings.bracketMatching, isTrue);
+      expect(settings.autoCloseBrackets, isTrue);
+      expect(settings.highlightActiveLine, isTrue);
+      expect(settings.scrollBeyondLastLine, isTrue);
+    });
+
+    test('toJsonString and fromJsonString round-trip', () {
+      const original = ScribeSettings(
+        fontSize: 20.0,
+        fontFamily: 'Monaco',
+        autoSave: true,
+        autoSaveIntervalSeconds: 45,
+      );
+
+      final jsonString = original.toJsonString();
+      final restored = ScribeSettings.fromJsonString(jsonString);
+
+      expect(restored.fontSize, 20.0);
+      expect(restored.fontFamily, 'Monaco');
+      expect(restored.autoSave, isTrue);
+      expect(restored.autoSaveIntervalSeconds, 45);
+    });
+
+    test('copyWith preserves unmodified new fields', () {
+      const original = ScribeSettings(
+        fontFamily: 'Menlo',
+        autoSave: true,
+        highlightActiveLine: false,
+      );
+
+      final modified = original.copyWith(fontSize: 20.0);
+
+      expect(modified.fontSize, 20.0);
+      expect(modified.fontFamily, 'Menlo');
+      expect(modified.autoSave, isTrue);
+      expect(modified.highlightActiveLine, isFalse);
     });
   });
 }

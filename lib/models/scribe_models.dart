@@ -173,6 +173,10 @@ class ScribeTab {
 }
 
 /// Settings for the Scribe editor that persist across sessions.
+///
+/// Contains 15 configurable fields covering appearance, editor behavior,
+/// and auto-save. All changes are applied instantly and persisted with
+/// a 500ms debounce.
 class ScribeSettings {
   /// Font size (12.0 - 24.0). Default: 14.0.
   final double fontSize;
@@ -195,6 +199,30 @@ class ScribeSettings {
   /// Theme mode ("dark" or "light"). Default: "dark".
   final String themeMode;
 
+  /// Font family for the editor. Default: "JetBrains Mono".
+  final String fontFamily;
+
+  /// Whether auto-save is enabled. Default: false.
+  final bool autoSave;
+
+  /// Auto-save interval in seconds (5 - 300). Default: 30.
+  final int autoSaveIntervalSeconds;
+
+  /// Whether to render whitespace characters. Default: false.
+  final bool showWhitespace;
+
+  /// Whether to highlight matching brackets. Default: true.
+  final bool bracketMatching;
+
+  /// Whether to auto-insert closing brackets. Default: true.
+  final bool autoCloseBrackets;
+
+  /// Whether to highlight the line containing the cursor. Default: true.
+  final bool highlightActiveLine;
+
+  /// Whether to allow scrolling beyond the last line. Default: true.
+  final bool scrollBeyondLastLine;
+
   /// Creates [ScribeSettings] with sensible defaults.
   const ScribeSettings({
     this.fontSize = 14.0,
@@ -204,6 +232,14 @@ class ScribeSettings {
     this.showLineNumbers = true,
     this.showMinimap = false,
     this.themeMode = 'dark',
+    this.fontFamily = 'JetBrains Mono',
+    this.autoSave = false,
+    this.autoSaveIntervalSeconds = 30,
+    this.showWhitespace = false,
+    this.bracketMatching = true,
+    this.autoCloseBrackets = true,
+    this.highlightActiveLine = true,
+    this.scrollBeyondLastLine = true,
   });
 
   /// Creates a copy of these settings with the given fields replaced.
@@ -215,6 +251,14 @@ class ScribeSettings {
     bool? showLineNumbers,
     bool? showMinimap,
     String? themeMode,
+    String? fontFamily,
+    bool? autoSave,
+    int? autoSaveIntervalSeconds,
+    bool? showWhitespace,
+    bool? bracketMatching,
+    bool? autoCloseBrackets,
+    bool? highlightActiveLine,
+    bool? scrollBeyondLastLine,
   }) {
     return ScribeSettings(
       fontSize: fontSize ?? this.fontSize,
@@ -224,6 +268,15 @@ class ScribeSettings {
       showLineNumbers: showLineNumbers ?? this.showLineNumbers,
       showMinimap: showMinimap ?? this.showMinimap,
       themeMode: themeMode ?? this.themeMode,
+      fontFamily: fontFamily ?? this.fontFamily,
+      autoSave: autoSave ?? this.autoSave,
+      autoSaveIntervalSeconds:
+          autoSaveIntervalSeconds ?? this.autoSaveIntervalSeconds,
+      showWhitespace: showWhitespace ?? this.showWhitespace,
+      bracketMatching: bracketMatching ?? this.bracketMatching,
+      autoCloseBrackets: autoCloseBrackets ?? this.autoCloseBrackets,
+      highlightActiveLine: highlightActiveLine ?? this.highlightActiveLine,
+      scrollBeyondLastLine: scrollBeyondLastLine ?? this.scrollBeyondLastLine,
     );
   }
 
@@ -237,6 +290,14 @@ class ScribeSettings {
       'showLineNumbers': showLineNumbers,
       'showMinimap': showMinimap,
       'themeMode': themeMode,
+      'fontFamily': fontFamily,
+      'autoSave': autoSave,
+      'autoSaveIntervalSeconds': autoSaveIntervalSeconds,
+      'showWhitespace': showWhitespace,
+      'bracketMatching': bracketMatching,
+      'autoCloseBrackets': autoCloseBrackets,
+      'highlightActiveLine': highlightActiveLine,
+      'scrollBeyondLastLine': scrollBeyondLastLine,
     };
   }
 
@@ -253,6 +314,15 @@ class ScribeSettings {
       showLineNumbers: json['showLineNumbers'] as bool? ?? true,
       showMinimap: json['showMinimap'] as bool? ?? false,
       themeMode: json['themeMode'] as String? ?? 'dark',
+      fontFamily: json['fontFamily'] as String? ?? 'JetBrains Mono',
+      autoSave: json['autoSave'] as bool? ?? false,
+      autoSaveIntervalSeconds:
+          json['autoSaveIntervalSeconds'] as int? ?? 30,
+      showWhitespace: json['showWhitespace'] as bool? ?? false,
+      bracketMatching: json['bracketMatching'] as bool? ?? true,
+      autoCloseBrackets: json['autoCloseBrackets'] as bool? ?? true,
+      highlightActiveLine: json['highlightActiveLine'] as bool? ?? true,
+      scrollBeyondLastLine: json['scrollBeyondLastLine'] as bool? ?? true,
     );
   }
 
