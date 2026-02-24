@@ -325,7 +325,7 @@ class _ServiceFormPageState extends ConsumerState<ServiceFormPage> {
                   initialValue: _environmentsJson,
                   onChanged: (value) => _environmentsJson = value,
                   placeholder:
-                      '{\n  "dev": { "baseUrl": "http://localhost:8096" },\n'
+                      '{\n  "dev": { "baseUrl": "http://localhost:8090" },\n'
                       '  "staging": { "baseUrl": "https://staging.example.com" }\n}',
                 ),
                 const SizedBox(height: 12),

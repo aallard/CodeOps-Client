@@ -14,23 +14,17 @@ class AppConstants {
   /// Current application version.
   static const String appVersion = '1.0.0';
 
-  /// Base URL for the CodeOps server API.
+  /// CodeOps-Server base URL (core + registry + logger + courier modules).
   static const String apiBaseUrl = 'http://localhost:8090';
 
   /// API path prefix for all endpoints.
   static const String apiPrefix = '/api/v1';
 
-  /// Base URL for the CodeOps Vault API.
+  /// Base URL for the CodeOps Vault API (standalone service).
   static const String vaultApiBaseUrl = 'http://localhost:8097';
 
   /// API path prefix for all Vault endpoints.
   static const String vaultApiPrefix = '/api/v1/vault';
-
-  /// Base URL for the CodeOps Registry API.
-  static const String registryApiBaseUrl = 'http://localhost:8096';
-
-  /// API path prefix for all Registry endpoints.
-  static const String registryApiPrefix = '/api/v1/registry';
 
   /// Maximum number of members allowed in a team.
   static const int maxTeamMembers = 50;

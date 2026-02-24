@@ -20,8 +20,9 @@ import 'api_exceptions.dart';
 
 /// Centralized HTTP client for CodeOps-Registry API communication.
 ///
-/// Uses the same JWT tokens as [ApiClient] (issued by CodeOps-Server)
-/// but targets the Registry service at [AppConstants.registryApiBaseUrl].
+/// Uses the same JWT tokens as [ApiClient] (issued by CodeOps-Server).
+/// Registry is a module within the consolidated CodeOps-Server, reached
+/// via the `/api/v1/registry` path prefix on the same base URL.
 class RegistryApiClient {
   late final Dio _dio;
   final SecureStorageService _secureStorage;
@@ -38,7 +39,7 @@ class RegistryApiClient {
       : _secureStorage = secureStorage {
     _dio = Dio(BaseOptions(
       baseUrl:
-          '${AppConstants.registryApiBaseUrl}${AppConstants.registryApiPrefix}',
+          '${AppConstants.apiBaseUrl}${AppConstants.apiPrefix}/registry',
       connectTimeout: const Duration(seconds: 15),
       receiveTimeout: const Duration(seconds: 30),
       sendTimeout: const Duration(seconds: 15),
@@ -236,7 +237,7 @@ class RegistryApiClient {
         );
       case DioExceptionType.connectionError:
         return const NetworkException(
-          'Unable to connect to the Registry server. Check your network connection.',
+          'Unable to connect to the server. Check your network connection.',
         );
       default:
         break;

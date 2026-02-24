@@ -27,7 +27,7 @@ import 'team_providers.dart';
 // Core Singleton Providers
 // ─────────────────────────────────────────────────────────────────────────────
 
-/// Provides the [RegistryApiClient] singleton, configured for port 8096.
+/// Provides the [RegistryApiClient] singleton for Registry module endpoints.
 final registryApiClientProvider = Provider<RegistryApiClient>((ref) {
   final secureStorage = ref.watch(secureStorageProvider);
   return RegistryApiClient(secureStorage: secureStorage);
