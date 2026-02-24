@@ -63,6 +63,12 @@ class ScribeTabBar extends ConsumerWidget {
   /// Whether the sidebar is currently visible.
   final bool sidebarVisible;
 
+  /// Callback to open the New File dialog (long-press on "+" button).
+  final VoidCallback? onNewFileDialog;
+
+  /// Callback to open the URL dialog (long-press on "+" button).
+  final VoidCallback? onOpenUrl;
+
   /// Creates a [ScribeTabBar].
   const ScribeTabBar({
     super.key,
@@ -81,6 +87,8 @@ class ScribeTabBar extends ConsumerWidget {
     this.onReorder,
     this.onToggleSidebar,
     this.sidebarVisible = false,
+    this.onNewFileDialog,
+    this.onOpenUrl,
   });
 
   @override
@@ -98,7 +106,11 @@ class ScribeTabBar extends ConsumerWidget {
           Expanded(
             child: _buildTabList(),
           ),
-          _NewTabButton(onPressed: onNewTab),
+          _NewTabButton(
+            onPressed: onNewTab,
+            onNewFileDialog: onNewFileDialog,
+            onOpenUrl: onOpenUrl,
+          ),
         ],
       ),
     );
@@ -193,23 +205,80 @@ class _SidebarToggle extends StatelessWidget {
 }
 
 /// The "+" button at the end of the tab bar.
+///
+/// Tap to create a new untitled tab. Long-press to show a popup menu
+/// with "New File..." and "Open from URL..." options.
 class _NewTabButton extends StatelessWidget {
   final VoidCallback onPressed;
+  final VoidCallback? onNewFileDialog;
+  final VoidCallback? onOpenUrl;
 
-  const _NewTabButton({required this.onPressed});
+  const _NewTabButton({
+    required this.onPressed,
+    this.onNewFileDialog,
+    this.onOpenUrl,
+  });
 
   @override
   Widget build(BuildContext context) {
-    return SizedBox(
-      width: AppConstants.scribeTabBarHeight,
-      height: AppConstants.scribeTabBarHeight,
-      child: IconButton(
-        icon: const Icon(Icons.add, size: 18),
-        onPressed: onPressed,
-        color: CodeOpsColors.textSecondary,
-        tooltip: 'New tab',
-        padding: EdgeInsets.zero,
+    return GestureDetector(
+      onLongPressStart: (onNewFileDialog != null || onOpenUrl != null)
+          ? (details) => _showMenu(context, details.globalPosition)
+          : null,
+      child: SizedBox(
+        width: AppConstants.scribeTabBarHeight,
+        height: AppConstants.scribeTabBarHeight,
+        child: IconButton(
+          icon: const Icon(Icons.add, size: 18),
+          onPressed: onPressed,
+          color: CodeOpsColors.textSecondary,
+          tooltip: 'New tab (long-press for more)',
+          padding: EdgeInsets.zero,
+        ),
       ),
     );
+  }
+
+  void _showMenu(BuildContext context, Offset position) {
+    showMenu<String>(
+      context: context,
+      position: RelativeRect.fromLTRB(
+        position.dx,
+        position.dy,
+        position.dx,
+        position.dy,
+      ),
+      color: CodeOpsColors.surface,
+      items: [
+        if (onNewFileDialog != null)
+          const PopupMenuItem<String>(
+            value: 'newFile',
+            child: Text(
+              'New File...',
+              style: TextStyle(
+                color: CodeOpsColors.textPrimary,
+                fontSize: 13,
+              ),
+            ),
+          ),
+        if (onOpenUrl != null)
+          const PopupMenuItem<String>(
+            value: 'openUrl',
+            child: Text(
+              'Open from URL...',
+              style: TextStyle(
+                color: CodeOpsColors.textPrimary,
+                fontSize: 13,
+              ),
+            ),
+          ),
+      ],
+    ).then((value) {
+      if (value == 'newFile') {
+        onNewFileDialog?.call();
+      } else if (value == 'openUrl') {
+        onOpenUrl?.call();
+      }
+    });
   }
 }

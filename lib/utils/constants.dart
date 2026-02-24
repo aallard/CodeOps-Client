@@ -377,4 +377,32 @@ class AppConstants {
 
   /// Width of the quick-open overlay in logical pixels.
   static const double scribeQuickOpenWidth = 500.0;
+
+  // -------------------------------------------------------------------------
+  // Scribe constants (CS-009 — Keyboard Shortcuts & Command Palette)
+  // -------------------------------------------------------------------------
+
+  /// Height of the command palette overlay in logical pixels.
+  static const double scribeCommandPaletteHeight = 400.0;
+
+  /// Width of the command palette overlay in logical pixels.
+  static const double scribeCommandPaletteWidth = 520.0;
+
+  /// Height of the find/replace panel in logical pixels.
+  static const double scribeFindPanelHeight = 40.0;
+
+  /// Height of the find/replace panel with replace row visible.
+  static const double scribeFindReplacePanelHeight = 80.0;
+
+  /// Width of the Go to Line dialog in logical pixels.
+  static const double scribeGoToLineDialogWidth = 300.0;
+
+  /// Width of the keyboard shortcuts help overlay in logical pixels.
+  static const double scribeShortcutsHelpWidth = 600.0;
+
+  /// Maximum height of the keyboard shortcuts help overlay.
+  static const double scribeShortcutsHelpMaxHeight = 500.0;
+
+  /// Maximum number of results shown in the command palette.
+  static const int scribeCommandPaletteMaxResults = 30;
 }

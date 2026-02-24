@@ -1,4 +1,6 @@
 // Tests for ScribePage.
+import 'dart:io';
+
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -95,6 +97,11 @@ void main() {
       ),
     );
   }
+
+  /// The platform-appropriate modifier key (Cmd on macOS, Ctrl elsewhere).
+  final modifierKey = Platform.isMacOS
+      ? LogicalKeyboardKey.metaLeft
+      : LogicalKeyboardKey.controlLeft;
 
   group('ScribePage', () {
     testWidgets('renders empty state when no tabs are open', (tester) async {
@@ -299,10 +306,10 @@ void main() {
       ));
       await tester.pumpAndSettle();
 
-      // Press Ctrl+W.
-      await tester.sendKeyDownEvent(LogicalKeyboardKey.controlLeft);
+      // Press Ctrl+W (Cmd+W on macOS).
+      await tester.sendKeyDownEvent(modifierKey);
       await tester.sendKeyEvent(LogicalKeyboardKey.keyW);
-      await tester.sendKeyUpEvent(LogicalKeyboardKey.controlLeft);
+      await tester.sendKeyUpEvent(modifierKey);
       await tester.pumpAndSettle();
 
       // Tab 1 should be closed.
@@ -318,10 +325,10 @@ void main() {
       ));
       await tester.pumpAndSettle();
 
-      // Press Ctrl+Tab — should cycle from tab-1 to tab-2.
-      await tester.sendKeyDownEvent(LogicalKeyboardKey.controlLeft);
+      // Press Ctrl+Tab (Cmd+Tab on macOS).
+      await tester.sendKeyDownEvent(modifierKey);
       await tester.sendKeyEvent(LogicalKeyboardKey.tab);
-      await tester.sendKeyUpEvent(LogicalKeyboardKey.controlLeft);
+      await tester.sendKeyUpEvent(modifierKey);
       await tester.pumpAndSettle();
 
       // All 3 tabs still visible.
@@ -338,12 +345,12 @@ void main() {
       ));
       await tester.pumpAndSettle();
 
-      // Press Ctrl+Shift+Tab — should cycle from tab-2 to tab-1.
-      await tester.sendKeyDownEvent(LogicalKeyboardKey.controlLeft);
+      // Press Ctrl+Shift+Tab (Cmd+Shift+Tab on macOS).
+      await tester.sendKeyDownEvent(modifierKey);
       await tester.sendKeyDownEvent(LogicalKeyboardKey.shiftLeft);
       await tester.sendKeyEvent(LogicalKeyboardKey.tab);
       await tester.sendKeyUpEvent(LogicalKeyboardKey.shiftLeft);
-      await tester.sendKeyUpEvent(LogicalKeyboardKey.controlLeft);
+      await tester.sendKeyUpEvent(modifierKey);
       await tester.pumpAndSettle();
 
       // All tabs still visible.
@@ -360,19 +367,20 @@ void main() {
       ));
       await tester.pumpAndSettle();
 
-      // Close tab-1 first (it's clean so no dialog).
-      final closeButtons = find.byIcon(Icons.close);
-      await tester.tap(closeButtons.first);
+      // Close tab-1 first via Cmd/Ctrl+W.
+      await tester.sendKeyDownEvent(modifierKey);
+      await tester.sendKeyEvent(LogicalKeyboardKey.keyW);
+      await tester.sendKeyUpEvent(modifierKey);
       await tester.pumpAndSettle();
 
       expect(find.text('File-1.dart'), findsNothing);
 
-      // Now reopen with Ctrl+Shift+T.
-      await tester.sendKeyDownEvent(LogicalKeyboardKey.controlLeft);
+      // Now reopen with Ctrl+Shift+T (Cmd+Shift+T on macOS).
+      await tester.sendKeyDownEvent(modifierKey);
       await tester.sendKeyDownEvent(LogicalKeyboardKey.shiftLeft);
       await tester.sendKeyEvent(LogicalKeyboardKey.keyT);
       await tester.sendKeyUpEvent(LogicalKeyboardKey.shiftLeft);
-      await tester.sendKeyUpEvent(LogicalKeyboardKey.controlLeft);
+      await tester.sendKeyUpEvent(modifierKey);
       await tester.pumpAndSettle();
 
       // Tab should be reopened.
@@ -416,10 +424,10 @@ void main() {
       await tester.pumpWidget(createWidget());
       await tester.pumpAndSettle();
 
-      // Press Ctrl+S with no active tab — should be a no-op.
-      await tester.sendKeyDownEvent(LogicalKeyboardKey.controlLeft);
+      // Press Ctrl+S (Cmd+S on macOS) with no active tab — should be a no-op.
+      await tester.sendKeyDownEvent(modifierKey);
       await tester.sendKeyEvent(LogicalKeyboardKey.keyS);
-      await tester.sendKeyUpEvent(LogicalKeyboardKey.controlLeft);
+      await tester.sendKeyUpEvent(modifierKey);
       await tester.pumpAndSettle();
 
       // Page still renders.
@@ -431,12 +439,12 @@ void main() {
       await tester.pumpWidget(createWidget());
       await tester.pumpAndSettle();
 
-      // Press Ctrl+Alt+S with no active tab — should be a no-op.
-      await tester.sendKeyDownEvent(LogicalKeyboardKey.controlLeft);
+      // Press Ctrl+Alt+S (Cmd+Alt+S on macOS) — should be a no-op.
+      await tester.sendKeyDownEvent(modifierKey);
       await tester.sendKeyDownEvent(LogicalKeyboardKey.altLeft);
       await tester.sendKeyEvent(LogicalKeyboardKey.keyS);
       await tester.sendKeyUpEvent(LogicalKeyboardKey.altLeft);
-      await tester.sendKeyUpEvent(LogicalKeyboardKey.controlLeft);
+      await tester.sendKeyUpEvent(modifierKey);
       await tester.pumpAndSettle();
 
       expect(find.text('Scribe'), findsOneWidget);
@@ -451,12 +459,12 @@ void main() {
       ));
       await tester.pumpAndSettle();
 
-      // Press Ctrl+Shift+V — should be a no-op for non-markdown.
-      await tester.sendKeyDownEvent(LogicalKeyboardKey.controlLeft);
+      // Press Ctrl+Shift+V (Cmd+Shift+V on macOS) — no-op for non-markdown.
+      await tester.sendKeyDownEvent(modifierKey);
       await tester.sendKeyDownEvent(LogicalKeyboardKey.shiftLeft);
       await tester.sendKeyEvent(LogicalKeyboardKey.keyV);
       await tester.sendKeyUpEvent(LogicalKeyboardKey.shiftLeft);
-      await tester.sendKeyUpEvent(LogicalKeyboardKey.controlLeft);
+      await tester.sendKeyUpEvent(modifierKey);
       await tester.pumpAndSettle();
 
       // Page still renders.

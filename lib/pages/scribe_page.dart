@@ -23,23 +23,30 @@ import '../providers/scribe_providers.dart';
 import '../services/logging/log_service.dart';
 import '../theme/colors.dart';
 import '../utils/constants.dart';
+import '../widgets/scribe/scribe_command_palette.dart';
 import '../widgets/scribe/scribe_diff_editor.dart';
 import '../widgets/scribe/scribe_diff_selector.dart';
 import '../widgets/scribe/scribe_drop_target.dart';
 import '../widgets/scribe/scribe_editor.dart';
 import '../widgets/scribe/scribe_empty_state.dart';
 import '../widgets/scribe/scribe_file_changed_banner.dart';
+import '../widgets/scribe/scribe_find_panel.dart';
+import '../widgets/scribe/scribe_go_to_line_dialog.dart';
 import '../widgets/scribe/scribe_language.dart';
 import '../widgets/scribe/scribe_markdown_split.dart';
 import '../widgets/scribe/scribe_markdown_toc.dart';
+import '../widgets/scribe/scribe_new_file_dialog.dart';
 import '../widgets/scribe/scribe_preview_controls.dart';
 import '../widgets/scribe/scribe_quick_open.dart';
 import '../widgets/scribe/scribe_recent_files.dart';
 import '../widgets/scribe/scribe_save_dialog.dart';
 import '../widgets/scribe/scribe_settings_panel.dart';
+import '../widgets/scribe/scribe_shortcut_registry.dart';
+import '../widgets/scribe/scribe_shortcuts_help.dart';
 import '../widgets/scribe/scribe_sidebar.dart';
 import '../widgets/scribe/scribe_status_bar.dart';
 import '../widgets/scribe/scribe_tab_bar.dart';
+import '../widgets/scribe/scribe_url_dialog.dart';
 
 /// The Scribe page — multi-tab code editor at `/scribe`.
 class ScribePage extends ConsumerStatefulWidget {
@@ -131,37 +138,38 @@ class _ScribePageState extends ConsumerState<ScribePage>
         ref.watch(scribeRecentFilesPanelVisibleProvider);
     final quickOpenVisible = ref.watch(scribeQuickOpenVisibleProvider);
     final fileChangedTabs = ref.watch(scribeFileChangedTabsProvider);
+    final findPanelVisible = ref.watch(scribeFindPanelVisibleProvider);
+    final findReplaceVisible = ref.watch(scribeFindReplaceVisibleProvider);
+    final commandPaletteVisible =
+        ref.watch(scribeCommandPaletteVisibleProvider);
+    final shortcutsHelpVisible =
+        ref.watch(scribeShortcutsHelpVisibleProvider);
 
     // Manage auto-save timer when settings change.
     _updateAutoSaveTimer(settings);
 
     return CallbackShortcuts(
-      bindings: <ShortcutActivator, VoidCallback>{
-        const SingleActivator(LogicalKeyboardKey.keyN, control: true):
-            _handleNewTab,
-        const SingleActivator(LogicalKeyboardKey.keyO, control: true):
-            _handleOpenFile,
-        const SingleActivator(LogicalKeyboardKey.keyW, control: true):
-            _handleCloseActiveTab,
-        const SingleActivator(LogicalKeyboardKey.tab, control: true):
-            _handleNextTab,
-        const SingleActivator(LogicalKeyboardKey.tab,
-            control: true, shift: true): _handlePrevTab,
-        const SingleActivator(LogicalKeyboardKey.keyT,
-            control: true, shift: true): _handleReopenLastClosed,
-        const SingleActivator(LogicalKeyboardKey.keyS, control: true):
-            _handleSave,
-        const SingleActivator(LogicalKeyboardKey.keyS,
-            control: true, shift: true): _handleSaveAs,
-        const SingleActivator(LogicalKeyboardKey.keyS,
-            control: true, alt: true): _handleSaveAll,
-        const SingleActivator(LogicalKeyboardKey.keyV,
-            control: true, shift: true): _handleTogglePreview,
-        const SingleActivator(LogicalKeyboardKey.keyO,
-            control: true, shift: true): _handleToggleRecentFiles,
-        const SingleActivator(LogicalKeyboardKey.keyP, control: true):
-            _handleToggleQuickOpen,
-      },
+      bindings: ScribeShortcutRegistry.buildBindings({
+        'file.new': _handleNewTab,
+        'file.open': _handleOpenFile,
+        'file.newDialog': _handleNewFileDialog,
+        'file.save': _handleSave,
+        'file.saveAs': _handleSaveAs,
+        'file.saveAll': _handleSaveAll,
+        'editor.find': _handleToggleFind,
+        'editor.findReplace': _handleToggleFindReplace,
+        'editor.goToLine': _handleGoToLine,
+        'view.sidebar': _handleToggleSidebar,
+        'view.preview': _handleTogglePreview,
+        'view.recentFiles': _handleToggleRecentFiles,
+        'view.quickOpen': _handleToggleQuickOpen,
+        'view.commandPalette': _handleToggleCommandPalette,
+        'view.shortcutsHelp': _handleToggleShortcutsHelp,
+        'tabs.close': _handleCloseActiveTab,
+        'tabs.next': _handleNextTab,
+        'tabs.prev': _handlePrevTab,
+        'tabs.reopen': _handleReopenLastClosed,
+      }),
       child: Focus(
         autofocus: true,
         child: ScribeDropTarget(
@@ -188,6 +196,8 @@ class _ScribePageState extends ConsumerState<ScribePage>
                         onReorder: _handleReorderTabs,
                         onToggleSidebar: _handleToggleSidebar,
                         sidebarVisible: sidebarVisible,
+                        onNewFileDialog: _handleNewFileDialog,
+                        onOpenUrl: _handleOpenUrlDialog,
                       ),
                     ),
                     if (activeTab != null &&
@@ -227,6 +237,13 @@ class _ScribePageState extends ConsumerState<ScribePage>
                   onReload: () => _handleReloadFromDisk(activeTab.id),
                   onKeep: () => _handleKeepContent(activeTab.id),
                 ),
+              // Find panel (CS-009).
+              if (findPanelVisible && activeTab != null)
+                ScribeFindPanel(
+                  showReplace: findReplaceVisible,
+                  onClose: _handleCloseFind,
+                  onToggleReplace: _handleToggleFindReplaceRow,
+                ),
               if (tabs.isNotEmpty && activeTab != null)
                 Expanded(
                   child: Stack(
@@ -253,6 +270,39 @@ class _ScribePageState extends ConsumerState<ScribePage>
                                 items: _buildQuickOpenItems(),
                                 onSelect: _handleQuickOpenSelect,
                                 onClose: _handleCloseQuickOpen,
+                              ),
+                            ),
+                          ),
+                        ),
+                      // Command palette overlay (CS-009).
+                      if (commandPaletteVisible)
+                        Positioned.fill(
+                          child: GestureDetector(
+                            onTap: _handleCloseCommandPalette,
+                            behavior: HitTestBehavior.opaque,
+                            child: Container(
+                              color: Colors.black26,
+                              alignment: Alignment.topCenter,
+                              padding: const EdgeInsets.only(top: 40),
+                              child: ScribeCommandPalette(
+                                commands: ScribeShortcutRegistry.commands,
+                                onSelect: _handleCommandPaletteSelect,
+                                onClose: _handleCloseCommandPalette,
+                              ),
+                            ),
+                          ),
+                        ),
+                      // Keyboard shortcuts help overlay (CS-009).
+                      if (shortcutsHelpVisible)
+                        Positioned.fill(
+                          child: GestureDetector(
+                            onTap: _handleCloseShortcutsHelp,
+                            behavior: HitTestBehavior.opaque,
+                            child: Container(
+                              color: Colors.black26,
+                              alignment: Alignment.center,
+                              child: ScribeShortcutsHelp(
+                                onClose: _handleCloseShortcutsHelp,
                               ),
                             ),
                           ),
@@ -995,6 +1045,169 @@ class _ScribePageState extends ConsumerState<ScribePage>
     final changed = {...ref.read(scribeFileChangedTabsProvider)};
     changed.remove(tabId);
     ref.read(scribeFileChangedTabsProvider.notifier).state = changed;
+  }
+
+  // ---------------------------------------------------------------------------
+  // Find & Replace (CS-009)
+  // ---------------------------------------------------------------------------
+
+  /// Opens the find panel (Ctrl+F).
+  void _handleToggleFind() {
+    final current = ref.read(scribeFindPanelVisibleProvider);
+    ref.read(scribeFindPanelVisibleProvider.notifier).state = !current;
+    if (current) {
+      ref.read(scribeFindReplaceVisibleProvider.notifier).state = false;
+    }
+  }
+
+  /// Opens the find and replace panel (Ctrl+H).
+  void _handleToggleFindReplace() {
+    ref.read(scribeFindPanelVisibleProvider.notifier).state = true;
+    ref.read(scribeFindReplaceVisibleProvider.notifier).state = true;
+  }
+
+  /// Closes the find panel.
+  void _handleCloseFind() {
+    ref.read(scribeFindPanelVisibleProvider.notifier).state = false;
+    ref.read(scribeFindReplaceVisibleProvider.notifier).state = false;
+  }
+
+  /// Toggles the replace row within the find panel.
+  void _handleToggleFindReplaceRow() {
+    final current = ref.read(scribeFindReplaceVisibleProvider);
+    ref.read(scribeFindReplaceVisibleProvider.notifier).state = !current;
+  }
+
+  // ---------------------------------------------------------------------------
+  // Go to Line (CS-009)
+  // ---------------------------------------------------------------------------
+
+  /// Opens the Go to Line dialog (Ctrl+G).
+  Future<void> _handleGoToLine() async {
+    final activeTab = ref.read(activeScribeTabProvider);
+    if (activeTab == null) return;
+
+    // Estimate line count from content.
+    final lineCount = '\n'.allMatches(activeTab.content).length + 1;
+    if (!mounted) return;
+
+    final line = await ScribeGoToLineDialog.show(
+      context,
+      totalLines: lineCount,
+      currentLine: _cursorLine + 1,
+    );
+    if (line != null) {
+      setState(() {
+        _cursorLine = line;
+        _cursorColumn = 0;
+      });
+    }
+  }
+
+  // ---------------------------------------------------------------------------
+  // Command Palette (CS-009)
+  // ---------------------------------------------------------------------------
+
+  /// Toggles the command palette (Ctrl+Shift+P).
+  void _handleToggleCommandPalette() {
+    final current = ref.read(scribeCommandPaletteVisibleProvider);
+    ref.read(scribeCommandPaletteVisibleProvider.notifier).state = !current;
+    // Close quick-open if opening command palette.
+    if (!current) {
+      ref.read(scribeQuickOpenVisibleProvider.notifier).state = false;
+    }
+  }
+
+  /// Closes the command palette.
+  void _handleCloseCommandPalette() {
+    ref.read(scribeCommandPaletteVisibleProvider.notifier).state = false;
+  }
+
+  /// Handles a command selected from the command palette.
+  void _handleCommandPaletteSelect(ScribeCommand command) {
+    _handleCloseCommandPalette();
+
+    final handlers = <String, VoidCallback>{
+      'file.new': _handleNewTab,
+      'file.open': _handleOpenFile,
+      'file.newDialog': _handleNewFileDialog,
+      'file.openUrl': _handleOpenUrlDialog,
+      'file.save': _handleSave,
+      'file.saveAs': _handleSaveAs,
+      'file.saveAll': _handleSaveAll,
+      'editor.find': _handleToggleFind,
+      'editor.findReplace': _handleToggleFindReplace,
+      'editor.goToLine': _handleGoToLine,
+      'view.sidebar': _handleToggleSidebar,
+      'view.preview': _handleTogglePreview,
+      'view.recentFiles': _handleToggleRecentFiles,
+      'view.quickOpen': _handleToggleQuickOpen,
+      'view.commandPalette': _handleToggleCommandPalette,
+      'view.settings': _handleToggleSettingsPanel,
+      'view.shortcutsHelp': _handleToggleShortcutsHelp,
+      'tabs.close': _handleCloseActiveTab,
+      'tabs.next': _handleNextTab,
+      'tabs.prev': _handlePrevTab,
+      'tabs.reopen': _handleReopenLastClosed,
+      'tabs.closeAll': _handleCloseAllTabs,
+      'tabs.closeSaved': _handleCloseSavedTabs,
+    };
+
+    handlers[command.id]?.call();
+  }
+
+  // ---------------------------------------------------------------------------
+  // Keyboard Shortcuts Help (CS-009)
+  // ---------------------------------------------------------------------------
+
+  /// Toggles the shortcuts help overlay (Ctrl+Shift+?).
+  void _handleToggleShortcutsHelp() {
+    final current = ref.read(scribeShortcutsHelpVisibleProvider);
+    ref.read(scribeShortcutsHelpVisibleProvider.notifier).state = !current;
+  }
+
+  /// Closes the shortcuts help overlay.
+  void _handleCloseShortcutsHelp() {
+    ref.read(scribeShortcutsHelpVisibleProvider.notifier).state = false;
+  }
+
+  // ---------------------------------------------------------------------------
+  // CS-004 Dialog wiring (CS-009)
+  // ---------------------------------------------------------------------------
+
+  /// Opens the New File dialog (Ctrl+Shift+N / long-press on "+").
+  Future<void> _handleNewFileDialog() async {
+    if (!mounted) return;
+    final result = await ScribeNewFileDialog.show(context);
+    if (result == null) return;
+
+    ref.read(scribeTabsProvider.notifier).openTab(
+          title: result.fileName,
+          language: result.language,
+        );
+  }
+
+  /// Opens the Open from URL dialog (long-press on "+").
+  Future<void> _handleOpenUrlDialog() async {
+    if (!mounted) return;
+    final fileService = ref.read(scribeFileServiceProvider);
+    final result = await ScribeUrlDialog.show(
+      context,
+      fetchContent: fileService.readFromUrl,
+    );
+    if (result == null) return;
+
+    // Extract filename from URL.
+    final uri = Uri.tryParse(result.url);
+    final segments = uri?.pathSegments ?? [];
+    final fileName = segments.isNotEmpty ? segments.last : 'untitled';
+    final language = ScribeLanguage.fromFileName(fileName);
+
+    ref.read(scribeTabsProvider.notifier).openTab(
+          title: fileName,
+          content: result.content,
+          language: language,
+        );
   }
 
   // ---------------------------------------------------------------------------

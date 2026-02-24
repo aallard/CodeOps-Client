@@ -114,6 +114,22 @@ final scribeFileChangedTabsProvider =
     StateProvider<Map<String, bool>>((ref) => {});
 
 // ---------------------------------------------------------------------------
+// Keyboard Shortcuts & Command Palette Providers (CS-009)
+// ---------------------------------------------------------------------------
+
+/// Whether the find panel is visible.
+final scribeFindPanelVisibleProvider = StateProvider<bool>((ref) => false);
+
+/// Whether the find panel is showing the replace row.
+final scribeFindReplaceVisibleProvider = StateProvider<bool>((ref) => false);
+
+/// Whether the command palette is visible.
+final scribeCommandPaletteVisibleProvider = StateProvider<bool>((ref) => false);
+
+/// Whether the keyboard shortcuts help overlay is visible.
+final scribeShortcutsHelpVisibleProvider = StateProvider<bool>((ref) => false);
+
+// ---------------------------------------------------------------------------
 // StateNotifier Providers (complex state with methods)
 // ---------------------------------------------------------------------------
 
