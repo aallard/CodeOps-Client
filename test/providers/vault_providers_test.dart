@@ -6,6 +6,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 import 'package:codeops/models/health_snapshot.dart';
+import 'package:codeops/models/vault_enums.dart';
 import 'package:codeops/models/vault_models.dart';
 import 'package:codeops/providers/vault_providers.dart';
 import 'package:codeops/services/cloud/vault_api.dart';
@@ -165,6 +166,67 @@ void main() {
       container.read(vaultSecretPageProvider.notifier).state = 5;
 
       expect(container.read(vaultSecretPageProvider), 5);
+    });
+
+    test('vaultSecretPathFilterProvider can be updated', () {
+      final container = ProviderContainer();
+      addTearDown(container.dispose);
+
+      container.read(vaultSecretPathFilterProvider.notifier).state =
+          '/services/app';
+
+      expect(container.read(vaultSecretPathFilterProvider), '/services/app');
+    });
+
+    test('vaultSecretPathFilterProvider reset to empty clears filter', () {
+      final container = ProviderContainer();
+      addTearDown(container.dispose);
+
+      container.read(vaultSecretPathFilterProvider.notifier).state =
+          '/services';
+      container.read(vaultSecretPathFilterProvider.notifier).state = '';
+
+      expect(container.read(vaultSecretPathFilterProvider), '');
+    });
+
+    test('vaultSecretTypeFilterProvider can be updated', () {
+      final container = ProviderContainer();
+      addTearDown(container.dispose);
+
+      container.read(vaultSecretTypeFilterProvider.notifier).state =
+          SecretType.dynamic_;
+
+      expect(
+        container.read(vaultSecretTypeFilterProvider),
+        SecretType.dynamic_,
+      );
+    });
+
+    test('vaultSecretSearchQueryProvider can be updated', () {
+      final container = ProviderContainer();
+      addTearDown(container.dispose);
+
+      container.read(vaultSecretSearchQueryProvider.notifier).state = 'db';
+
+      expect(container.read(vaultSecretSearchQueryProvider), 'db');
+    });
+
+    test('vaultSecretSortByProvider can be updated', () {
+      final container = ProviderContainer();
+      addTearDown(container.dispose);
+
+      container.read(vaultSecretSortByProvider.notifier).state = 'name';
+
+      expect(container.read(vaultSecretSortByProvider), 'name');
+    });
+
+    test('vaultSecretSortDirProvider can be toggled', () {
+      final container = ProviderContainer();
+      addTearDown(container.dispose);
+
+      container.read(vaultSecretSortDirProvider.notifier).state = 'asc';
+
+      expect(container.read(vaultSecretSortDirProvider), 'asc');
     });
   });
 

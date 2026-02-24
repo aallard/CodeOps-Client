@@ -1,4 +1,4 @@
-// Widget tests for VaultSecretsPage.
+// Widget tests for VaultSecretsPage (CVF-002 — updated with path tree).
 import 'dart:async';
 
 import 'package:flutter/material.dart';
@@ -63,6 +63,7 @@ void main() {
   Widget createWidget({
     PageResponse<SecretResponse>? page,
     SealStatusResponse? sealStatus,
+    List<String>? paths,
   }) {
     return ProviderScope(
       overrides: [
@@ -71,6 +72,11 @@ void main() {
         ),
         vaultSecretsProvider.overrideWith(
           (ref) => Future.value(page ?? testPage),
+        ),
+        vaultSecretPathsProvider('/').overrideWith(
+          (ref) => Future.value(
+            paths ?? ['/services/app/db-password', '/services/app/api-key'],
+          ),
         ),
       ],
       child: const MaterialApp(home: Scaffold(body: VaultSecretsPage())),
@@ -106,7 +112,7 @@ void main() {
       await tester.pumpWidget(createWidget());
       await tester.pumpAndSettle();
 
-      expect(find.text('Active'), findsOneWidget);
+      expect(find.text('Active'), findsWidgets);
     });
 
     testWidgets('shows secret list items', (tester) async {
@@ -181,6 +187,9 @@ void main() {
           vaultSecretsProvider.overrideWith(
             (ref) => Completer<PageResponse<SecretResponse>>().future,
           ),
+          vaultSecretPathsProvider('/').overrideWith(
+            (ref) => Future.value(<String>[]),
+          ),
         ],
         child: const MaterialApp(home: Scaffold(body: VaultSecretsPage())),
       );
@@ -189,6 +198,51 @@ void main() {
       await tester.pump();
 
       expect(find.text('Loading secrets...'), findsOneWidget);
+    });
+
+    // ─── CVF-002: Path tree integration tests ──────────────────────────────
+
+    testWidgets('shows path tree panel with Paths header', (tester) async {
+      await tester.pumpWidget(createWidget());
+      await tester.pumpAndSettle();
+
+      expect(find.text('Paths'), findsOneWidget);
+    });
+
+    testWidgets('shows root node in path tree', (tester) async {
+      await tester.pumpWidget(createWidget());
+      await tester.pumpAndSettle();
+
+      expect(find.text('/'), findsOneWidget);
+    });
+
+    testWidgets('shows folder nodes from paths', (tester) async {
+      await tester.pumpWidget(createWidget(
+        paths: ['/services/app', '/config'],
+      ));
+      await tester.pumpAndSettle();
+
+      expect(find.text('services'), findsOneWidget);
+      expect(find.text('config'), findsOneWidget);
+    });
+
+    testWidgets('shows type badges in list items', (tester) async {
+      await tester.pumpWidget(createWidget());
+      await tester.pumpAndSettle();
+
+      // Both secrets should show type badges
+      expect(find.text('Static'), findsWidgets);
+      expect(find.text('Dynamic'), findsWidgets);
+    });
+
+    testWidgets('shows status badges in list items', (tester) async {
+      await tester.pumpWidget(createWidget());
+      await tester.pumpAndSettle();
+
+      // testSecret is active without near-expiry
+      expect(find.text('Active'), findsWidgets);
+      // testSecret2 expires in 12h so shows Urgent
+      expect(find.text('Urgent'), findsOneWidget);
     });
   });
 }

@@ -1,7 +1,8 @@
-/// Vault Secrets page with master-detail layout.
+/// Vault Secrets page with path tree and master-detail layout.
 ///
-/// Filterable, paginated list of secrets on the left with a detail panel
-/// on the right. Supports type filter chips, active toggle, sort dropdown,
+/// Three-pane layout: hierarchical path tree on the left, filterable
+/// paginated secret list in the center, and detail panel on the right.
+/// Supports type filter chips, active toggle, sort dropdown, debounced
 /// search, and pagination. Write operations are disabled when the vault
 /// is sealed.
 library;
@@ -20,8 +21,16 @@ import '../widgets/shared/error_panel.dart';
 import '../widgets/shared/loading_overlay.dart';
 import '../widgets/vault/create_secret_dialog.dart';
 import '../widgets/vault/secret_detail_panel.dart';
+import '../widgets/vault/vault_path_tree.dart';
+import '../widgets/vault/vault_secret_status_badge.dart';
+import '../widgets/vault/vault_secret_type_badge.dart';
 
-/// The Vault Secrets list page with master-detail layout.
+/// The Vault Secrets browser with path tree navigation and master-detail layout.
+///
+/// Layout (left to right):
+/// 1. **Path tree** (220 px) — hierarchical folder navigation
+/// 2. **Secret list** (flex) — filterable, sortable, paginated
+/// 3. **Detail panel** (420 px, conditional) — tabs for info/value/versions/metadata/rotation
 class VaultSecretsPage extends ConsumerStatefulWidget {
   /// Creates a [VaultSecretsPage].
   const VaultSecretsPage({super.key});
@@ -46,6 +55,7 @@ class _VaultSecretsPageState extends ConsumerState<VaultSecretsPage> {
     final secretsAsync = ref.watch(vaultSecretsProvider);
     final searchQuery = ref.watch(vaultSecretSearchQueryProvider);
     final selectedId = ref.watch(selectedVaultSecretIdProvider);
+    final pathFilter = ref.watch(vaultSecretPathFilterProvider);
     final sealAsync = ref.watch(sealStatusProvider);
     final isSealed = sealAsync.whenOrNull(
           data: (s) => s.status == SealStatus.sealed,
@@ -60,9 +70,29 @@ class _VaultSecretsPageState extends ConsumerState<VaultSecretsPage> {
         if (isSealed) _buildSealedBanner(),
         // Filter bar
         _buildFilterBar(),
-        // Main content
+        // Main content: path tree + secret list + detail panel
         Expanded(
-          child: _buildContent(secretsAsync, searchQuery, selectedId),
+          child: Row(
+            children: [
+              // Path tree pane
+              SizedBox(
+                width: 220,
+                child: VaultPathTree(
+                  selectedPath: pathFilter,
+                  onPathSelected: (path) {
+                    ref.read(vaultSecretPathFilterProvider.notifier).state =
+                        path;
+                    ref.read(vaultSecretPageProvider.notifier).state = 0;
+                  },
+                ),
+              ),
+              // Secret list + detail
+              Expanded(
+                child:
+                    _buildContent(secretsAsync, searchQuery, selectedId),
+              ),
+            ],
+          ),
         ),
       ],
     );
@@ -432,6 +462,7 @@ class _VaultSecretsPageState extends ConsumerState<VaultSecretsPage> {
     if (result == true) {
       ref.invalidate(vaultSecretsProvider);
       ref.invalidate(vaultSecretStatsProvider);
+      ref.invalidate(vaultSecretPathsProvider);
     }
   }
 }
@@ -486,20 +517,14 @@ class _SecretListItem extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final expiresAt = secret.expiresAt;
-    final remaining = expiresAt?.difference(DateTime.now());
-    final isExpiring = remaining != null && remaining.inHours < 72;
-    final isUrgent = remaining != null && remaining.inHours < 24;
-
+    final typeColor =
+        CodeOpsColors.secretTypeColors[secret.secretType] ??
+            CodeOpsColors.textTertiary;
     final typeIcon = switch (secret.secretType) {
       SecretType.static_ => Icons.key_outlined,
       SecretType.dynamic_ => Icons.refresh_outlined,
       SecretType.reference => Icons.link_outlined,
     };
-
-    final typeColor =
-        CodeOpsColors.secretTypeColors[secret.secretType] ??
-            CodeOpsColors.textTertiary;
 
     return InkWell(
       onTap: onTap,
@@ -541,21 +566,7 @@ class _SecretListItem extends StatelessWidget {
             ),
             const SizedBox(width: 8),
             // Type badge
-            Container(
-              padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-              decoration: BoxDecoration(
-                color: typeColor.withValues(alpha: 0.1),
-                borderRadius: BorderRadius.circular(4),
-              ),
-              child: Text(
-                secret.secretType.displayName,
-                style: TextStyle(
-                  fontSize: 10,
-                  fontWeight: FontWeight.w500,
-                  color: typeColor,
-                ),
-              ),
-            ),
+            VaultSecretTypeBadge(type: secret.secretType),
             const SizedBox(width: 8),
             // Version
             Text(
@@ -566,15 +577,11 @@ class _SecretListItem extends StatelessWidget {
               ),
             ),
             const SizedBox(width: 8),
-            // Expiry indicator
-            if (isExpiring)
-              Icon(
-                Icons.schedule,
-                size: 14,
-                color: isUrgent ? CodeOpsColors.error : CodeOpsColors.warning,
-              )
-            else if (secret.isActive)
-              const Icon(Icons.circle, size: 8, color: CodeOpsColors.success),
+            // Status badge
+            VaultSecretStatusBadge(
+              isActive: secret.isActive,
+              expiresAt: secret.expiresAt,
+            ),
             const SizedBox(width: 8),
             // Last accessed
             Text(
