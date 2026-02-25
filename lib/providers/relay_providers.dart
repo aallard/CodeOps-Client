@@ -12,11 +12,11 @@ library;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../models/health_snapshot.dart';
+import '../models/relay_enums.dart';
 import '../models/relay_models.dart';
 import '../services/cloud/relay_api.dart';
 import '../services/cloud/relay_websocket_service.dart';
 import 'auth_providers.dart';
-import 'team_providers.dart';
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Core Singleton Providers
@@ -252,6 +252,24 @@ final messageAttachmentsProvider =
         (ref, messageId) {
   final api = ref.watch(relayApiProvider);
   return api.getAttachmentsForMessage(messageId);
+});
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Channel Role — Derived Provider
+// ─────────────────────────────────────────────────────────────────────────────
+
+/// Resolves the current user's [MemberRole] for a specific channel.
+///
+/// Fetches the channel member list and matches the authenticated user's
+/// ID to determine their role. Returns null if the user is not a member.
+final currentUserChannelRoleProvider = FutureProvider.family<MemberRole?,
+    ({String channelId, String teamId})>((ref, params) async {
+  final members = await ref.watch(channelMembersProvider(params).future);
+  final currentUser = ref.watch(currentUserProvider);
+  if (currentUser == null) return null;
+  final match = members.where((m) => m.userId == currentUser.id);
+  if (match.isEmpty) return null;
+  return match.first.role;
 });
 
 // ─────────────────────────────────────────────────────────────────────────────
