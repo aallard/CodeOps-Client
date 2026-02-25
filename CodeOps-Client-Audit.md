@@ -174,8 +174,9 @@ Relay heartbeat: 30 seconds
 ### Connection Map
 
 ```
-Database: SQLite (local, via Drift) — stores agent configs, Anthropic model cache, Scribe sessions
+Database: SQLite (local, via Drift) — 22 tables, schema v7, offline cache + local state
 API Server: CodeOps-Server at http://localhost:8090/api/v1 (Dio HTTP client)
+Vault API: CodeOps-Vault at http://localhost:8097 (separate Dio client)
 WebSocket: Relay messaging at ws://localhost:8090/ws/relay
 External APIs: Jira Cloud (direct REST via Dio), GitHub API (direct REST via Dio), Anthropic API (direct REST via Dio)
 Cache: None (no Redis/caching layer)
@@ -217,13 +218,16 @@ Startup sequence:
 
 ### Local Database (Drift/SQLite)
 
-**`lib/database/tables.dart`** — Defines 2 Drift tables:
-- `AgentConfigs` — stores agent configuration (id, name, description, persona, model, temperature, maxTokens, enabled, builtIn, customInstructions, createdAt, updatedAt)
-- `AnthropicModels` — caches Anthropic model info (id, name, displayName, maxTokens, inputPrice, outputPrice, updatedAt)
+**`lib/database/tables.dart`** — Defines 22 Drift tables:
+Users, Teams, Projects, QaJobs, AgentRuns, Findings, RemediationTasks, Personas, Directives, TechDebtItems, DependencyScans, DependencyVulnerabilities, HealthSnapshots, ComplianceItems, Specifications, SyncMetadata, ClonedRepos, AnthropicModels, AgentDefinitions, AgentFiles, ProjectLocalConfig, ScribeTabs, ScribeSettings
+
+All enum fields stored as `text()` (SCREAMING_SNAKE_CASE).
 
 **`lib/database/database.dart`** — `CodeOpsDatabase extends _$CodeOpsDatabase`
-- Version: 2 (has migration from v1)
-- Methods: CRUD for agent configs (getAll, getById, getEnabled, insert, update, delete, deleteAll, count) and Anthropic models (getAll, upsertAll, deleteAll)
+- Schema version: 7 (incremental migrations from v1 through v7)
+- Factory: `CodeOpsDatabase.defaults()` uses platform-specific SQLite at `<appSupportDir>/codeops.db`
+- Method: `clearAllTables()` — deletes all rows (used on logout)
+- Singleton: lazy `database` getter
 
 ### Server-Synced Models (JSON-serializable)
 
@@ -1164,32 +1168,22 @@ Static TextStyle constants: h1 through body, caption, overline, code
 
 ## 16. Database Schema (Live)
 
-**Local SQLite** (managed by Drift):
+**Local SQLite** (managed by Drift, schema version 7):
+
+22 tables mirroring server PostgreSQL entities for offline cache / local state:
 
 ```
-Table: agent_configs
-  - id: TEXT (primary key, client-generated)
-  - name: TEXT (not null)
-  - description: TEXT (nullable)
-  - persona: TEXT (nullable)
-  - model: TEXT (nullable)
-  - temperature: REAL (nullable)
-  - max_tokens: INTEGER (nullable)
-  - enabled: INTEGER (boolean, not null, default 1)
-  - built_in: INTEGER (boolean, not null, default 0)
-  - custom_instructions: TEXT (nullable)
-  - created_at: INTEGER (DateTime as epoch, not null)
-  - updated_at: INTEGER (DateTime as epoch, not null)
-
-Table: anthropic_models
-  - id: TEXT (primary key)
-  - name: TEXT (not null)
-  - display_name: TEXT (not null)
-  - max_tokens: INTEGER (not null)
-  - input_price: REAL (not null)
-  - output_price: REAL (not null)
-  - updated_at: INTEGER (DateTime as epoch, not null)
+Core: Users, Teams, Projects
+QA: QaJobs, AgentRuns, Findings, RemediationTasks
+Config: Personas, Directives, AgentDefinitions, AgentFiles
+Analysis: TechDebtItems, DependencyScans, DependencyVulnerabilities
+Health: HealthSnapshots, ComplianceItems, Specifications
+Infrastructure: SyncMetadata, ClonedRepos, AnthropicModels
+Editor: ScribeTabs, ScribeSettings
+Local Config: ProjectLocalConfig
 ```
+
+All enum columns stored as TEXT (SCREAMING_SNAKE_CASE). DateTime columns stored as INTEGER (epoch ms).
 
 **No server-side database** from this client. All server data accessed via REST API from CodeOps-Server.
 
@@ -1254,3 +1248,6 @@ Downstream Consumers: None (end-user desktop client)
 | No offline support | All API services | Medium | App requires constant server connection; no offline queue |
 | DropdownButtonFormField.initialValue deprecation | tech_debt_page.dart | Low | Should use `value` instead of `initialValue` |
 | No HTTPS enforcement | constants.dart | Medium | All connections are HTTP/WS in dev; needs TLS for production |
+| Duplicate provider definitions | finding_providers.dart / job_providers.dart | Low | `findingApiProvider` and `jobFindingsProvider` defined in both files |
+| Duplicate provider definitions | jira_providers.dart / project_providers.dart | Low | `jiraConnectionsProvider` defined in both files |
+| Vault API on separate port | constants.dart | Info | Vault uses `http://localhost:8097` (not 8090 like main API) |
