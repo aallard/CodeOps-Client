@@ -1,154 +1,160 @@
 # CodeOps-Client — Quality Scorecard
 
-**Audit Date:** 2026-02-25T16:13:57Z
+**Audit Date:** 2026-02-25T21:28:14Z
 **Branch:** main
-**Commit:** fd8957b060dfb2b429e16c2a11350d877a5b761b
+**Commit:** b29c08a18a8690ffa01b8bdb8b87ccee428573b9
 
 ---
 
-## Security (10 checks, max 20)
+## Codebase Statistics
 
-> Adapted for Flutter desktop client — server-side checks replaced with client-appropriate equivalents.
-
-| Check | Score | Notes |
-|---|---|---|
-| SEC-01 Auth on all API calls | 2 | All 3 API clients (ApiClient, RegistryApiClient, VaultApiClient) enforce JWT Bearer auth via Dio interceptors. Login is the only unauthenticated path. |
-| SEC-02 No hardcoded secrets in source | 2 | No passwords, API keys, or secrets in source. All stored in OS keychain via SecureStorageService. |
-| SEC-03 Input validation on forms | 2 | Login, settings, wizard steps all validate input before submission. |
-| SEC-04 Secure token storage | 2 | Tokens stored in macOS Keychain / Linux libsecret via flutter_secure_storage, never in SharedPreferences or plaintext. |
-| SEC-05 Auto-refresh + logout on failure | 2 | 401 triggers automatic token refresh; if refresh fails, user is logged out and tokens cleared. |
-| SEC-06 Correlation ID on requests | 2 | All HTTP clients inject X-Correlation-ID header (UUID v4 prefix). |
-| SEC-07 Git credential protection | 2 | `GIT_TERMINAL_PROMPT=0` prevents interactive credential prompts. GitHub PAT stored in keychain. |
-| SEC-08 Error message sanitization | 2 | ApiException sealed hierarchy provides user-friendly messages via ErrorPanel.fromException(). Raw exceptions never shown to users. |
-| SEC-09 Token revocation / logout | 2 | Logout clears all tokens from OS keychain and resets auth state. |
-| SEC-10 Rate limit handling | 1 | JiraService handles 429 with Retry-After. API clients map 429 to RateLimitException. No explicit client-side rate limiting on outbound requests. |
-
-**Security Score: 19/20 (95%)**
+| Metric | Count |
+|---|---|
+| Dart source files (excl. generated) | 454 |
+| Generated files (.g.dart) | 21 |
+| Lines of Dart source code | 140,126 |
+| Lines of test code | 74,646 |
+| Unit test files | 359 |
+| Integration test files | 5 |
+| test() methods | ~2,650 |
+| testWidgets() methods | ~1,655 |
+| test group() blocks | ~1,053 |
+| Riverpod provider definitions | ~1,044 |
+| Log statements (log.i/w/e/d) | ~230 |
+| Files with DartDoc library comments | 406 / 454 |
 
 ---
 
-## Data Integrity (8 checks, max 16)
+## Security (adapted for client app — max 10)
 
-> Adapted for local Drift SQLite cache.
-
-| Check | Score | Notes |
-|---|---|---|
-| DAT-01 Schema migration | 2 | Drift schema versioning (v4) with explicit migration steps v3→v4. |
-| DAT-02 Cache consistency | 2 | SyncService syncs cloud data to local cache. FutureProvider invalidation on mutations ensures fresh data. |
-| DAT-03 Nullable handling | 2 | All models use nullable types (`String?`, `DateTime?`) appropriately. No forced unwrapping. |
-| DAT-04 Pagination support | 2 | `PageResponse<T>` generic model. Paginated providers use .family with page parameter. |
-| DAT-05 Offline fallback | 2 | SyncService catches NetworkException/TimeoutException and falls back to local Drift cache. |
-| DAT-06 Enum serialization safety | 2 | All 57 enums have explicit `fromJson()`/`toJson()` with custom JsonConverters. Unknown values handled gracefully. |
-| DAT-07 Type-safe JSON | 2 | All models use `@JsonSerializable()` with generated code or explicit factories. No raw Map manipulation in domain layer. |
-| DAT-08 Audit timestamps | 1 | Models have `createdAt`/`updatedAt` from server. Local Drift tables track `createdAt` but no `updatedAt` on all tables. |
-
-**Data Integrity Score: 15/16 (94%)**
-
----
-
-## API Quality (8 checks, max 16)
-
-> Adapted for API client quality (not server).
-
-| Check | Score | Notes |
-|---|---|---|
-| API-01 Consistent error handling | 2 | ApiException sealed hierarchy with 10 typed subtypes. All API clients use same error interceptor. |
-| API-02 Error messages sanitized | 2 | ErrorPanel.fromException() maps all exception types to user-friendly messages. |
-| API-03 Request correlation | 2 | UUID v4 X-Correlation-ID on every request across all 3 API clients. |
-| API-04 Pagination on list views | 2 | All list views use PageResponse with page/size parameters. |
-| API-05 Auth interceptor pattern | 2 | Identical auth/refresh/error/logging interceptor stack on all 3 API clients. |
-| API-06 API client abstraction | 2 | Domain API services abstract HTTP details. Pages/providers never call Dio directly. |
-| API-07 Retry on auth failure | 2 | All clients attempt token refresh on 401 before failing. JiraService retries on 429. |
-| API-08 Type-safe API responses | 2 | All API methods return typed models (`Future<User>`, `Future<PageResponse<Project>>`, etc.). No raw `Response` returns. |
-
-**API Quality Score: 16/16 (100%)**
+| # | Check | Result | Score |
+|---|---|---|---|
+| SEC-01 | JWT token authentication | YES — AuthService + Dio interceptor | 1 |
+| SEC-02 | Token refresh on 401 | YES — automatic retry | 1 |
+| SEC-03 | Auth state guarded routing | YES — GoRouter redirect | 1 |
+| SEC-04 | No hardcoded credentials in source | YES — tokens from login, API keys from user | 1 |
+| SEC-05 | Token secure storage | PARTIAL — SharedPreferences, not OS keychain | 0.5 |
+| SEC-06 | Input validation on forms | YES — login, forms use validation | 1 |
+| SEC-07 | No sensitive data in logs | YES — no password/token logging found | 1 |
+| SEC-08 | HTTPS for production | NO — hardcoded http://localhost | 0 |
+| SEC-09 | API error masking (no stack traces to UI) | YES — typed exceptions, user-friendly messages | 1 |
+| SEC-10 | Authorization checks (role-based UI) | YES — admin routes, team roles | 1 |
+| | **TOTAL** | | **8.5 / 10** |
 
 ---
 
-## Code Quality (10 checks, max 20)
+## Data Integrity (adapted for client app — max 8)
 
-| Check | Score | Notes |
-|---|---|---|
-| CQ-01 No TODO/FIXME/HACK | 2 | Zero actionable markers in lib/ (only string literals describing agent behavior). |
-| CQ-02 Consistent error hierarchy | 2 | ApiException sealed class with 10 subtypes. GitException for git operations. StateError for misconfiguration. |
-| CQ-03 Constants centralized | 2 | AppConstants in lib/utils/constants.dart. All magic numbers centralized. |
-| CQ-04 Async exception handling | 2 | All async operations wrapped in try/catch. No unhandled futures. LogService never throws. |
-| CQ-05 No manual HTTP calls from UI | 2 | Pages → Providers → Services → API Clients. UI never calls Dio directly. |
-| CQ-06 Logging present | 2 | LogService singleton with 6 log levels (v/d/i/w/e/f), ANSI colors, daily rotation, 7-day purge. |
-| CQ-07 No raw exception messages to UI | 2 | ErrorPanel.fromException() maps to user messages. SnackBars show sanitized text. |
-| CQ-08 Doc comments on classes | 2 | 100% DartDoc coverage on all classes (library directives + class docs on every file). |
-| CQ-09 Doc comments on public methods | 2 | 100% DartDoc coverage on all public methods. |
-| CQ-10 Consistent state management | 2 | Riverpod throughout. ~350 providers. No mixed state patterns (no setState for data, no raw ChangeNotifier for async). |
-
-**Code Quality Score: 20/20 (100%)**
+| # | Check | Result | Score |
+|---|---|---|---|
+| DI-01 | JSON serialization with type safety | YES — json_serializable on all models | 1 |
+| DI-02 | Null safety throughout | YES — Dart sound null safety | 1 |
+| DI-03 | Immutable models where appropriate | PARTIAL — most models are mutable @JsonSerializable, some immutable (AgentProgress, Scribe models) | 0.5 |
+| DI-04 | Local database with migrations | YES — Drift v2, migration from v1 to v2 | 1 |
+| DI-05 | Optimistic state updates | NO — direct API calls, no optimistic UI | 0 |
+| DI-06 | Consistent DateTime handling | YES — server timestamps parsed from JSON | 1 |
+| DI-07 | Enum serialization matches server | YES — UPPERCASE values match server (TeamMemberRole, Courier, Registry, Vault, Logger) | 1 |
+| DI-08 | Error state preservation | YES — AsyncValue error states preserved in providers | 1 |
+| | **TOTAL** | | **6.5 / 8** |
 
 ---
 
-## Test Quality (10 checks, max 20)
+## API Quality (adapted for client app — max 8)
 
-| Check | Score | Notes |
-|---|---|---|
-| TST-01 Unit test files | 2 | 348 unit test files in test/ |
-| TST-02 Integration test files | 2 | 5 integration test files in integration_test/ + 1 in-tree integration test |
-| TST-03 Source-to-test ratio | 2 | 393 source files : 353 test files = 0.90 ratio (near 1:1) |
-| TST-04 Model tests | 2 | 30 model test files, 1,264 test methods covering all serialization/deserialization |
-| TST-05 Service tests | 2 | 53 service test files, 854 test methods covering all API services and local services |
-| TST-06 Provider tests | 2 | 25 provider test files, 560 test methods covering all state management |
-| TST-07 Widget tests | 2 | 195 widget test files, 1,516 test methods covering all UI components |
-| TST-08 Page tests | 2 | 45 page test files, 489 test methods covering all route pages |
-| TST-09 Total test method count | 2 | 4,221 total test methods |
-| TST-10 Mock framework | 2 | mocktail used consistently (46 files). ProviderContainer for state tests (153 files). |
-
-**Test Quality Score: 20/20 (100%)**
+| # | Check | Result | Score |
+|---|---|---|---|
+| API-01 | Typed API client with error mapping | YES — ApiClient + typed exceptions | 1 |
+| API-02 | Pagination support | YES — startAt/maxResults on list endpoints | 1 |
+| API-03 | Token auto-refresh | YES — 401 interceptor with retry | 1 |
+| API-04 | Consistent API abstraction | YES — 27 dedicated API service classes | 1 |
+| API-05 | Request/response logging | YES — log calls in services | 1 |
+| API-06 | Error handling on all API calls | YES — try/catch + AsyncValue error states | 1 |
+| API-07 | Timeout configuration | YES — Dio timeouts configured (30s for Jira, defaults for main) | 1 |
+| API-08 | Rate limit handling | PARTIAL — Jira has 429 retry, main API does not | 0.5 |
+| | **TOTAL** | | **7.5 / 8** |
 
 ---
 
-## Infrastructure (6 checks, max 12)
+## Code Quality (max 10)
 
-> Adapted for Flutter desktop application.
+| # | Check | Result | Score |
+|---|---|---|---|
+| CQ-01 | Consistent state management | YES — Riverpod throughout (~1,044 providers) | 1 |
+| CQ-02 | No print statements | YES — all logging via LogService | 1 |
+| CQ-03 | Structured logging | YES — LogService with levels, tags, file rotation | 1 |
+| CQ-04 | DartDoc on classes/libraries | YES — 406/454 files have library-level DartDoc | 1 |
+| CQ-05 | DartDoc on public methods | YES — extensive DartDoc on service/util methods | 1 |
+| CQ-06 | Clean separation of concerns | YES — models/services/providers/pages/widgets layering | 1 |
+| CQ-07 | Code generation for boilerplate | YES — json_serializable, freezed, drift_dev, riverpod_generator | 1 |
+| CQ-08 | Consistent theming | YES — centralized CodeOpsColors, CodeOpsTypography, AppTheme | 1 |
+| CQ-09 | No magic numbers/strings | MOSTLY — Constants class used, some inline values in widgets | 0.5 |
+| CQ-10 | Lint rules configured | YES — flutter_lints package | 1 |
+| | **TOTAL** | | **9.5 / 10** |
 
-| Check | Score | Notes |
-|---|---|---|
-| INF-01 Window management | 2 | window_manager configured with 1440x900 default, 1024x700 minimum. |
-| INF-02 Build configuration | 2 | pubspec.yaml properly configured. analysis_options with flutter_lints. |
-| INF-03 Code generation | 2 | build_runner + json_serializable + drift_dev all configured and working (20 .g.dart files). |
-| INF-04 Platform targeting | 1 | macOS primary (fully configured). Linux enabled. Windows not yet configured. |
-| INF-05 Structured logging | 2 | LogService with daily rotation, level gating, ANSI colors, file output. |
-| INF-06 CI/CD config | 0 | No CI/CD pipeline detected (.github/workflows, Jenkinsfile, etc.). |
+---
 
-**Infrastructure Score: 9/12 (75%)**
+## Test Quality (max 10)
+
+| # | Check | Result | Score |
+|---|---|---|---|
+| TST-01 | Unit test files exist | YES — 359 test files | 1 |
+| TST-02 | Integration test files exist | YES — 5 integration tests | 1 |
+| TST-03 | Source-to-test ratio | GOOD — 359 tests for 454 source files (79%) | 0.75 |
+| TST-04 | Model serialization tests | YES — 29 model test files covering fromJson/toJson | 1 |
+| TST-05 | Service tests | YES — 53 service test files | 1 |
+| TST-06 | Provider tests | YES — 25 provider test files | 1 |
+| TST-07 | Page tests | YES — 46 page test files | 1 |
+| TST-08 | Widget tests | YES — 194 widget test files | 1 |
+| TST-09 | Mock framework used | YES — mocktail throughout | 1 |
+| TST-10 | Test method count | HIGH — ~4,305 test methods (2,650 test + 1,655 testWidgets) | 1 |
+| | **TOTAL** | | **9.75 / 10** |
+
+---
+
+## Infrastructure (adapted for client app — max 6)
+
+| # | Check | Result | Score |
+|---|---|---|---|
+| INF-01 | Multi-platform support | YES — macOS, Linux, Windows runners | 1 |
+| INF-02 | Window management | YES — window_manager with size constraints | 1 |
+| INF-03 | Asset bundling | YES — personas/ and templates/ in pubspec | 1 |
+| INF-04 | Local database | YES — Drift/SQLite with migration support | 1 |
+| INF-05 | CI/CD pipeline | NO — none detected | 0 |
+| INF-06 | Structured logging to files | YES — daily rotation, 7-day retention | 1 |
+| | **TOTAL** | | **5 / 6** |
 
 ---
 
 ## Scorecard Summary
 
-```
-Category             | Score | Max | %
-Security             |   19  |  20 | 95%
-Data Integrity       |   15  |  16 | 94%
-API Quality          |   16  |  16 | 100%
-Code Quality         |   20  |  20 | 100%
-Test Quality         |   20  |  20 | 100%
-Infrastructure       |    9  |  12 | 75%
-OVERALL              |   99  | 104 | 95%
+| Category | Score | Max | % |
+|---|---|---|---|
+| Security | 8.5 | 10 | 85% |
+| Data Integrity | 6.5 | 8 | 81% |
+| API Quality | 7.5 | 8 | 94% |
+| Code Quality | 9.5 | 10 | 95% |
+| Test Quality | 9.75 | 10 | 98% |
+| Infrastructure | 5 | 6 | 83% |
+| **OVERALL** | **46.75** | **52** | **90%** |
 
-Grade: A (95%)
-```
+**Grade: A (90%)**
 
-### Categories Below 60%
+---
 
-None.
+## Failing Checks (scored 0)
 
-### Checks Scored 0 (BLOCKING ISSUES)
-
-| Check | Issue | Recommendation |
+| Check | Category | Issue |
 |---|---|---|
-| INF-06 CI/CD config | No CI/CD pipeline exists | Create `.github/workflows/ci.yml` with `flutter test`, `flutter analyze`, and build steps |
+| SEC-08 | Security | No HTTPS enforcement — all URLs hardcoded as http://localhost |
+| INF-05 | Infrastructure | No CI/CD pipeline detected |
+| DI-05 | Data Integrity | No optimistic UI updates |
 
-### Checks Scored 1
+---
 
-| Check | Issue | Notes |
-|---|---|---|
-| SEC-10 Rate limit handling | No client-side rate limiting on outbound requests | Server-side rate limiting exists. Client handles 429 responses. Low risk for desktop app. |
-| DAT-08 Audit timestamps | Drift tables inconsistent on `updatedAt` columns | Low impact — Drift is a cache, server is source of truth. |
-| INF-04 Platform targeting | Windows not yet configured | macOS is primary target. Linux works. Windows is future. |
+## Recommendations
+
+1. **Add flutter_secure_storage** for token persistence instead of SharedPreferences
+2. **Externalize configuration** — move API URLs to environment variables or a config file
+3. **Add CI/CD** — GitHub Actions for flutter test, flutter analyze, flutter build
+4. **Add error boundary** — catch unhandled Flutter exceptions at the app level
+5. **Consider offline support** — queue API calls when offline, sync on reconnect
