@@ -281,3 +281,97 @@ final relayHealthProvider = FutureProvider<Map<String, dynamic>>((ref) {
   final api = ref.watch(relayApiProvider);
   return api.health();
 });
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Accumulated Messages — StateNotifier for Infinite Scroll
+// ─────────────────────────────────────────────────────────────────────────────
+
+/// Manages an accumulated list of [MessageResponse] items for a channel,
+/// supporting paginated loading (infinite scroll) and refresh.
+///
+/// The API returns newest-first pages (page 0 = newest messages). This
+/// notifier reverses each page so the list is ordered oldest-first for
+/// bottom-anchored display. Older pages are prepended to the front.
+class AccumulatedMessagesNotifier
+    extends StateNotifier<AsyncValue<List<MessageResponse>>> {
+  final RelayApiService _api;
+  final String _channelId;
+  final String _teamId;
+  int _currentPage = 0;
+  bool _hasMore = true;
+  bool _isLoadingMore = false;
+
+  /// Whether there are more pages to load.
+  bool get hasMore => _hasMore;
+
+  /// Whether a page load is currently in progress.
+  bool get isLoadingMore => _isLoadingMore;
+
+  /// Creates an [AccumulatedMessagesNotifier] and loads the initial page.
+  AccumulatedMessagesNotifier(this._api, this._channelId, this._teamId)
+      : super(const AsyncValue.loading()) {
+    _loadInitial();
+  }
+
+  /// Fetches page 0 (newest messages), reverses for oldest-first order.
+  Future<void> _loadInitial() async {
+    state = const AsyncValue.loading();
+    try {
+      final page = await _api.getChannelMessages(_channelId, _teamId);
+      _currentPage = 0;
+      _hasMore = !page.isLast;
+      state = AsyncValue.data(page.content.reversed.toList());
+    } catch (e, st) {
+      state = AsyncValue.error(e, st);
+    }
+  }
+
+  /// Loads the next older page and prepends it to the accumulated list.
+  ///
+  /// No-op if already loading or no more pages remain.
+  Future<void> loadNextPage() async {
+    if (_isLoadingMore || !_hasMore) return;
+    final current = state.valueOrNull;
+    if (current == null) return;
+
+    _isLoadingMore = true;
+    try {
+      final page = await _api.getChannelMessages(
+        _channelId,
+        _teamId,
+        page: _currentPage + 1,
+      );
+      _currentPage++;
+      _hasMore = !page.isLast;
+      state = AsyncValue.data([
+        ...page.content.reversed,
+        ...current,
+      ]);
+    } catch (e, st) {
+      state = AsyncValue.error(e, st);
+    } finally {
+      _isLoadingMore = false;
+    }
+  }
+
+  /// Resets state and reloads from page 0.
+  Future<void> refresh() async {
+    _currentPage = 0;
+    _hasMore = true;
+    _isLoadingMore = false;
+    await _loadInitial();
+  }
+}
+
+/// Provides an [AccumulatedMessagesNotifier] for a channel, keyed by
+/// channel ID and team ID.
+///
+/// Automatically loads the first page on creation. Use [loadNextPage]
+/// for infinite scroll and [refresh] after sending messages.
+final accumulatedMessagesProvider = StateNotifierProvider.family<
+    AccumulatedMessagesNotifier,
+    AsyncValue<List<MessageResponse>>,
+    ({String channelId, String teamId})>((ref, params) {
+  final api = ref.watch(relayApiProvider);
+  return AccumulatedMessagesNotifier(api, params.channelId, params.teamId);
+});

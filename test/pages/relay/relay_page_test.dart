@@ -15,7 +15,7 @@ import 'package:codeops/providers/relay_providers.dart';
 import 'package:codeops/widgets/relay/relay_detail_panel.dart';
 import 'package:codeops/widgets/relay/relay_dm_panel.dart';
 import 'package:codeops/widgets/relay/relay_empty_state.dart';
-import 'package:codeops/widgets/relay/relay_message_panel.dart';
+import 'package:codeops/widgets/relay/relay_message_feed.dart';
 import 'package:codeops/widgets/relay/relay_sidebar.dart';
 import 'package:codeops/services/auth/secure_storage.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -111,7 +111,7 @@ void main() {
       ));
       await tester.pumpAndSettle();
 
-      expect(find.byType(RelayMessagePanel), findsOneWidget);
+      expect(find.byType(RelayMessageFeed), findsOneWidget);
       expect(find.byType(RelayEmptyState), findsNothing);
     });
 
@@ -138,7 +138,7 @@ void main() {
       ));
       await tester.pumpAndSettle();
 
-      expect(find.byType(RelayMessagePanel), findsOneWidget);
+      expect(find.byType(RelayMessageFeed), findsOneWidget);
       expect(find.byType(RelayDetailPanel), findsOneWidget);
     });
 
@@ -179,7 +179,7 @@ void main() {
       ));
       await tester.pumpAndSettle();
 
-      expect(find.byType(RelayMessagePanel), findsOneWidget);
+      expect(find.byType(RelayMessageFeed), findsOneWidget);
     });
 
     testWidgets('DM selection shows DM panel', (tester) async {
@@ -207,7 +207,7 @@ void main() {
       await tester.pumpAndSettle();
 
       // Channel panel is showing, not DM
-      expect(find.byType(RelayMessagePanel), findsOneWidget);
+      expect(find.byType(RelayMessageFeed), findsOneWidget);
       expect(find.byType(RelayDmPanel), findsNothing);
     });
 
@@ -223,7 +223,7 @@ void main() {
 
       // DM panel is showing, not channel
       expect(find.byType(RelayDmPanel), findsOneWidget);
-      expect(find.byType(RelayMessagePanel), findsNothing);
+      expect(find.byType(RelayMessageFeed), findsNothing);
     });
 
     testWidgets('sidebar is present', (tester) async {

@@ -15,7 +15,7 @@ import '../../providers/relay_providers.dart';
 import '../../widgets/relay/relay_detail_panel.dart';
 import '../../widgets/relay/relay_dm_panel.dart';
 import '../../widgets/relay/relay_empty_state.dart';
-import '../../widgets/relay/relay_message_panel.dart';
+import '../../widgets/relay/relay_message_feed.dart';
 import '../../widgets/relay/relay_sidebar.dart';
 
 /// The main Relay messaging page with three-column layout.
@@ -150,7 +150,7 @@ class _RelayPageState extends ConsumerState<RelayPage> {
   /// Builds the center panel based on the current selection.
   Widget _buildCenterPanel(String? channelId, String? conversationId) {
     if (channelId != null) {
-      return RelayMessagePanel(channelId: channelId);
+      return RelayMessageFeed(channelId: channelId);
     } else if (conversationId != null) {
       return RelayDmPanel(conversationId: conversationId);
     } else {
