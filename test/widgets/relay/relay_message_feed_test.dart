@@ -173,12 +173,11 @@ void main() {
       expect(find.text('Today'), findsOneWidget);
     });
 
-    testWidgets('renders disabled composer', (tester) async {
+    testWidgets('renders composer with hint text', (tester) async {
       await tester.pumpWidget(_createFeed());
       await tester.pumpAndSettle();
 
-      final textField = tester.widget<TextField>(find.byType(TextField));
-      expect(textField.enabled, isFalse);
+      expect(find.text('Type a message...'), findsOneWidget);
     });
 
     testWidgets('shows loading indicator initially', (tester) async {

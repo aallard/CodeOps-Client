@@ -19,6 +19,7 @@ import '../../theme/colors.dart';
 import '../../widgets/shared/error_panel.dart';
 import 'relay_date_separator.dart';
 import 'relay_message_bubble.dart';
+import 'relay_message_composer.dart';
 import 'relay_message_feed_header.dart';
 
 /// Full message feed panel for a single channel.
@@ -183,7 +184,7 @@ class _RelayMessageFeedState extends ConsumerState<RelayMessageFeed> {
           ),
         ),
         const Divider(height: 1, color: CodeOpsColors.border),
-        _buildComposerPlaceholder(),
+        RelayMessageComposer(channelId: widget.channelId),
       ],
     );
   }
@@ -225,30 +226,4 @@ class _RelayMessageFeedState extends ConsumerState<RelayMessageFeed> {
     );
   }
 
-  /// Builds the disabled composer placeholder (enabled in RLF-004).
-  Widget _buildComposerPlaceholder() {
-    return Container(
-      padding: const EdgeInsets.all(12),
-      child: TextField(
-        decoration: InputDecoration(
-          hintText: 'Message #channel...',
-          hintStyle: const TextStyle(
-            fontSize: 13,
-            color: CodeOpsColors.textTertiary,
-          ),
-          border: OutlineInputBorder(
-            borderRadius: BorderRadius.circular(8),
-            borderSide: const BorderSide(color: CodeOpsColors.border),
-          ),
-          enabledBorder: OutlineInputBorder(
-            borderRadius: BorderRadius.circular(8),
-            borderSide: const BorderSide(color: CodeOpsColors.border),
-          ),
-          contentPadding:
-              const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
-        ),
-        enabled: false, // Placeholder — enabled in RLF-004
-      ),
-    );
-  }
 }

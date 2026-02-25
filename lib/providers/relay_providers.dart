@@ -66,6 +66,19 @@ final showThreadPanelProvider = StateProvider<bool>((ref) => false);
 /// UUID of the root message for the active thread panel.
 final threadRootMessageIdProvider = StateProvider<String?>((ref) => null);
 
+/// Editing state — when non-null, the composer is in edit mode.
+///
+/// Set to a [MessageResponse] when the user chooses "Edit" from the
+/// message context menu. The composer pre-populates its text field
+/// with the message content and switches to edit mode.
+final editingMessageProvider = StateProvider<MessageResponse?>((ref) => null);
+
+/// Local typing indicator state.
+///
+/// Set to `true` while the user is actively typing in the composer.
+/// Sending typing events to the server is future work.
+final isTypingProvider = StateProvider.autoDispose<bool>((ref) => false);
+
 // ─────────────────────────────────────────────────────────────────────────────
 // Channels — Data Providers
 // ─────────────────────────────────────────────────────────────────────────────

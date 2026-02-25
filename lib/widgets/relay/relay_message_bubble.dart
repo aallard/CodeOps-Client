@@ -7,9 +7,11 @@ library;
 
 import 'package:flutter/material.dart';
 import 'package:flutter_markdown/flutter_markdown.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../models/relay_enums.dart';
 import '../../models/relay_models.dart';
+import '../../providers/relay_providers.dart';
 import '../../theme/colors.dart';
 import '../../utils/date_utils.dart';
 
@@ -20,7 +22,7 @@ import '../../utils/date_utils.dart';
 /// - [MessageType.system] — centered italic system notice
 /// - [MessageType.platformEvent] — colored event card with icon
 /// - [MessageType.file] — attachment card with file icon and size
-class RelayMessageBubble extends StatelessWidget {
+class RelayMessageBubble extends ConsumerWidget {
   /// The message data to render.
   final MessageResponse message;
 
@@ -39,22 +41,25 @@ class RelayMessageBubble extends StatelessWidget {
   });
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     final type = message.messageType ?? MessageType.text;
 
     return switch (type) {
       MessageType.system => _buildSystemMessage(),
       MessageType.platformEvent => _buildPlatformEventMessage(),
       MessageType.file => _buildFileMessage(),
-      _ => _buildTextMessage(),
+      _ => _buildTextMessage(ref),
     };
   }
 
   /// Builds a standard text message with avatar, sender, timestamp, content.
-  Widget _buildTextMessage() {
+  ///
+  /// Own messages show a context menu on right-click / long-press with
+  /// an "Edit" option that sets [editingMessageProvider].
+  Widget _buildTextMessage(WidgetRef ref) {
     final isDeleted = message.isDeleted ?? false;
 
-    return Padding(
+    Widget content = Padding(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -100,6 +105,51 @@ class RelayMessageBubble extends StatelessWidget {
         ],
       ),
     );
+
+    // Wrap own messages with context menu for editing
+    if (isOwnMessage && !isDeleted) {
+      content = GestureDetector(
+        onSecondaryTapUp: (details) {
+          _showContextMenu(ref, details.globalPosition);
+        },
+        onLongPressStart: (details) {
+          _showContextMenu(ref, details.globalPosition);
+        },
+        child: content,
+      );
+    }
+
+    return content;
+  }
+
+  /// Shows the message context menu at the given position.
+  void _showContextMenu(WidgetRef ref, Offset position) {
+    final context = ref.context;
+    showMenu<String>(
+      context: context,
+      position: RelativeRect.fromLTRB(
+        position.dx,
+        position.dy,
+        position.dx + 1,
+        position.dy + 1,
+      ),
+      items: [
+        const PopupMenuItem<String>(
+          value: 'edit',
+          child: Row(
+            children: [
+              Icon(Icons.edit, size: 16, color: CodeOpsColors.textSecondary),
+              SizedBox(width: 8),
+              Text('Edit', style: TextStyle(fontSize: 13)),
+            ],
+          ),
+        ),
+      ],
+    ).then((value) {
+      if (value == 'edit') {
+        ref.read(editingMessageProvider.notifier).state = message;
+      }
+    });
   }
 
   /// Builds a centered system message (join, leave, topic change).
