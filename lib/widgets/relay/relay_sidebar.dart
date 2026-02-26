@@ -20,6 +20,7 @@ import 'channel_list_tile.dart';
 import 'create_channel_dialog.dart';
 import 'dm_list_tile.dart';
 import 'new_dm_dialog.dart';
+import 'relay_status_selector.dart';
 
 /// Channel and conversation sidebar for the Relay messaging module.
 ///
@@ -164,6 +165,18 @@ class _RelaySidebarState extends ConsumerState<RelaySidebar> {
               ),
             ),
           ),
+          SizedBox(
+            width: 28,
+            height: 28,
+            child: IconButton(
+              icon: const Icon(Icons.circle, size: 12),
+              color: CodeOpsColors.textTertiary,
+              padding: EdgeInsets.zero,
+              onPressed: () => _showStatusSelector(context),
+              tooltip: 'Set status',
+            ),
+          ),
+          const SizedBox(width: 4),
           SizedBox(
             width: 28,
             height: 28,
@@ -426,6 +439,14 @@ class _RelaySidebarState extends ConsumerState<RelaySidebar> {
     ).then((_) {
       ref.invalidate(teamChannelsProvider(teamId));
     });
+  }
+
+  /// Opens the status selector dialog.
+  void _showStatusSelector(BuildContext context) {
+    showDialog<void>(
+      context: context,
+      builder: (_) => const RelayStatusSelector(),
+    );
   }
 
   /// Opens the new DM dialog and navigates to the created conversation.

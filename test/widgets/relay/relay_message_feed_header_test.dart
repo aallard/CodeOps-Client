@@ -149,6 +149,13 @@ void main() {
       expect(find.text('Failed to load channel'), findsOneWidget);
     });
 
+    testWidgets('renders search icon button', (tester) async {
+      await tester.pumpWidget(_createHeader());
+      await tester.pumpAndSettle();
+
+      expect(find.byIcon(Icons.search), findsOneWidget);
+    });
+
     testWidgets('does not show topic when null', (tester) async {
       const noTopicChannel = ChannelResponse(
         id: 'ch-3',

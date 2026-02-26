@@ -284,6 +284,28 @@ final presenceCountProvider =
   return api.getPresenceCount(teamId);
 });
 
+/// Fetches the current user's own presence for a team.
+final myPresenceProvider =
+    FutureProvider.family<UserPresenceResponse, String>((ref, teamId) {
+  final api = ref.watch(relayApiProvider);
+  return api.getPresence(teamId);
+});
+
+/// Resolves the [PresenceStatus] for a specific user from cached team
+/// presence data.
+///
+/// Returns `null` if team presence has not loaded or the user is not
+/// found. Keyed by `(teamId, userId)`.
+final userPresenceProvider = Provider.family<PresenceStatus?,
+    ({String teamId, String userId})>((ref, params) {
+  final presenceAsync = ref.watch(teamPresenceProvider(params.teamId));
+  final presences = presenceAsync.valueOrNull;
+  if (presences == null) return null;
+  final match = presences.where((p) => p.userId == params.userId);
+  if (match.isEmpty) return null;
+  return match.first.status;
+});
+
 // ─────────────────────────────────────────────────────────────────────────────
 // Platform Events — Data Providers
 // ─────────────────────────────────────────────────────────────────────────────

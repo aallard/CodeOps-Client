@@ -1,21 +1,25 @@
 /// A single DM conversation entry in the Relay sidebar.
 ///
 /// Shows participant name(s), last message preview, relative timestamp,
-/// unread badge, and selection highlighting. Online status indicator is
-/// a placeholder for RLF-009.
+/// unread badge, selection highlighting, and live presence indicator.
 library;
 
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../models/relay_enums.dart';
 import '../../models/relay_models.dart';
+import '../../providers/relay_providers.dart';
+import '../../providers/team_providers.dart';
 import '../../theme/colors.dart';
 import '../../utils/date_utils.dart';
+import 'relay_presence_indicator.dart';
 
 /// A single DM conversation entry in the Relay sidebar.
 ///
-/// Shows participant display name(s), online status indicator dot,
+/// Shows participant display name(s), live presence indicator dot,
 /// last message preview, and unread badge.
-class DmListTile extends StatelessWidget {
+class DmListTile extends ConsumerWidget {
   /// The conversation summary data to display.
   final DirectConversationSummaryResponse conversation;
 
@@ -57,8 +61,18 @@ class DmListTile extends StatelessWidget {
   bool get _hasUnread => (conversation.unreadCount ?? 0) > 0;
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     final unread = conversation.unreadCount ?? 0;
+    final teamId = ref.watch(selectedTeamIdProvider);
+    // Use the first participant's ID for presence lookup.
+    final participantId = (conversation.participantIds != null &&
+            conversation.participantIds!.isNotEmpty)
+        ? conversation.participantIds!.first
+        : null;
+    final presenceStatus = (teamId != null && participantId != null)
+        ? ref.watch(userPresenceProvider(
+            (teamId: teamId, userId: participantId)))
+        : null;
 
     return Container(
       height: 44,
@@ -78,14 +92,11 @@ class DmListTile extends StatelessWidget {
             padding: const EdgeInsets.symmetric(horizontal: 12),
             child: Row(
               children: [
-                // Online status dot — placeholder for RLF-009
-                Container(
-                  width: 8,
-                  height: 8,
-                  margin: const EdgeInsets.only(right: 8),
-                  decoration: const BoxDecoration(
-                    color: CodeOpsColors.textTertiary,
-                    shape: BoxShape.circle,
+                // Live presence indicator
+                Padding(
+                  padding: const EdgeInsets.only(right: 8),
+                  child: RelayPresenceIndicator(
+                    status: presenceStatus ?? PresenceStatus.offline,
                   ),
                 ),
                 // Name + preview column

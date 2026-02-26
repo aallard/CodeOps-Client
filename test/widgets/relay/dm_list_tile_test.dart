@@ -1,38 +1,52 @@
 /// Tests for [DmListTile] — single DM conversation entry in the sidebar.
 ///
 /// Verifies participant name rendering, last message preview, relative
-/// timestamp, unread badge, selected styling, and tap callback.
+/// timestamp, unread badge, selected styling, tap callback, and live
+/// presence indicator.
 library;
 
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 import 'package:codeops/models/relay_enums.dart';
 import 'package:codeops/models/relay_models.dart';
+import 'package:codeops/providers/relay_providers.dart';
+import 'package:codeops/providers/team_providers.dart';
 import 'package:codeops/widgets/relay/dm_list_tile.dart';
+import 'package:codeops/widgets/relay/relay_presence_indicator.dart';
 
 Widget _createTile({
   DirectConversationSummaryResponse? conversation,
   bool isSelected = false,
   VoidCallback? onTap,
+  List<UserPresenceResponse> presences = const [],
 }) {
-  return MaterialApp(
-    home: Scaffold(
-      body: SizedBox(
-        width: 260,
-        child: DmListTile(
-          conversation: conversation ??
-              DirectConversationSummaryResponse(
-                id: 'dm-1',
-                conversationType: ConversationType.oneOnOne,
-                participantDisplayNames: const ['Adam Allard'],
-                lastMessagePreview: 'Hey there!',
-                lastMessageAt:
-                    DateTime.now().subtract(const Duration(minutes: 2)),
-                unreadCount: 3,
-              ),
-          isSelected: isSelected,
-          onTap: onTap ?? () {},
+  return ProviderScope(
+    overrides: [
+      selectedTeamIdProvider.overrideWith((ref) => 'team-1'),
+      teamPresenceProvider('team-1')
+          .overrideWith((ref) async => presences),
+    ],
+    child: MaterialApp(
+      home: Scaffold(
+        body: SizedBox(
+          width: 260,
+          child: DmListTile(
+            conversation: conversation ??
+                DirectConversationSummaryResponse(
+                  id: 'dm-1',
+                  conversationType: ConversationType.oneOnOne,
+                  participantIds: const ['user-1'],
+                  participantDisplayNames: const ['Adam Allard'],
+                  lastMessagePreview: 'Hey there!',
+                  lastMessageAt:
+                      DateTime.now().subtract(const Duration(minutes: 2)),
+                  unreadCount: 3,
+                ),
+            isSelected: isSelected,
+            onTap: onTap ?? () {},
+          ),
         ),
       ),
     ),
@@ -87,6 +101,31 @@ void main() {
       await tester.pumpAndSettle();
 
       expect(tapped, isTrue);
+    });
+
+    testWidgets('shows presence indicator from provider', (tester) async {
+      const presences = [
+        UserPresenceResponse(
+          userId: 'user-1',
+          userDisplayName: 'Adam Allard',
+          teamId: 'team-1',
+          status: PresenceStatus.online,
+        ),
+      ];
+      await tester.pumpWidget(_createTile(presences: presences));
+      await tester.pumpAndSettle();
+
+      expect(find.byType(RelayPresenceIndicator), findsOneWidget);
+    });
+
+    testWidgets('defaults to offline when no presence data', (tester) async {
+      await tester.pumpWidget(_createTile());
+      await tester.pumpAndSettle();
+
+      final indicator = tester.widget<RelayPresenceIndicator>(
+        find.byType(RelayPresenceIndicator),
+      );
+      expect(indicator.status, PresenceStatus.offline);
     });
   });
 }

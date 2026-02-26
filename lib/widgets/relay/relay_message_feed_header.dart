@@ -12,6 +12,7 @@ import '../../models/relay_enums.dart';
 import '../../providers/relay_providers.dart';
 import '../../theme/colors.dart';
 import 'channel_settings_dialog.dart';
+import 'relay_search_dialog.dart';
 
 /// Header bar displaying channel info and action buttons.
 ///
@@ -99,6 +100,11 @@ class RelayMessageFeedHeader extends ConsumerWidget {
               const SizedBox(width: 12),
             ],
             _buildHeaderAction(
+              Icons.search,
+              'Search',
+              () => _openSearch(context),
+            ),
+            _buildHeaderAction(
               Icons.push_pin_outlined,
               'Pins',
               null, // Placeholder — enabled in RLF-005
@@ -139,6 +145,14 @@ class RelayMessageFeedHeader extends ConsumerWidget {
       tooltip: tooltip,
       padding: const EdgeInsets.all(6),
       constraints: const BoxConstraints(minWidth: 32, minHeight: 32),
+    );
+  }
+
+  /// Opens the message search dialog.
+  void _openSearch(BuildContext context) {
+    showDialog<void>(
+      context: context,
+      builder: (_) => RelaySearchDialog(channelId: channelId),
     );
   }
 
