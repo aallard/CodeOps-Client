@@ -4,12 +4,17 @@
 /// content (with Markdown), reactions, thread reply indicator, and
 /// attachments. Handles TEXT, SYSTEM, PLATFORM_EVENT, and FILE types.
 /// Reaction chips are tappable with optimistic toggle, and a `[+]`
-/// button opens the curated emoji picker.
+/// button opens the curated emoji picker. File attachments display
+/// image thumbnails with click-to-preview, file type icons, formatted
+/// sizes, and click-to-download for non-image files.
 library;
+
+import 'dart:io';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_markdown/flutter_markdown.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:path_provider/path_provider.dart';
 
 import '../../models/relay_enums.dart';
 import '../../models/relay_models.dart';
@@ -17,6 +22,7 @@ import '../../providers/relay_providers.dart';
 import '../../theme/colors.dart';
 import '../../utils/date_utils.dart';
 import 'relay_emoji_picker.dart';
+import 'relay_file_icon.dart';
 
 /// Renders a single message in the Relay message feed.
 ///
@@ -57,7 +63,7 @@ class RelayMessageBubble extends ConsumerWidget {
     return switch (type) {
       MessageType.system => _buildSystemMessage(),
       MessageType.platformEvent => _buildPlatformEventMessage(),
-      MessageType.file => _buildFileMessage(),
+      MessageType.file => _buildFileMessage(context, ref),
       _ => _buildTextMessage(context, ref),
     };
   }
@@ -108,7 +114,7 @@ class RelayMessageBubble extends ConsumerWidget {
                   if ((message.attachments ?? []).isNotEmpty)
                     Padding(
                       padding: const EdgeInsets.only(top: 4),
-                      child: _buildAttachments(),
+                      child: _buildAttachments(context, ref),
                     ),
                   if (showThreadIndicator && (message.replyCount ?? 0) > 0)
                     Padding(
@@ -340,7 +346,7 @@ class RelayMessageBubble extends ConsumerWidget {
   }
 
   /// Builds a file attachment message.
-  Widget _buildFileMessage() {
+  Widget _buildFileMessage(BuildContext context, WidgetRef ref) {
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
       child: Row(
@@ -365,7 +371,7 @@ class RelayMessageBubble extends ConsumerWidget {
                       ),
                     ),
                   ),
-                _buildAttachments(),
+                _buildAttachments(context, ref),
               ],
             ),
           ),
@@ -548,50 +554,210 @@ class RelayMessageBubble extends ConsumerWidget {
   }
 
   /// Builds the file attachment cards.
-  Widget _buildAttachments() {
+  ///
+  /// Image attachments (content type starting with `image/`) render an
+  /// inline thumbnail with click-to-preview. Non-image attachments render
+  /// a file type icon with click-to-download.
+  Widget _buildAttachments(BuildContext context, WidgetRef ref) {
     final attachments = message.attachments ?? [];
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: attachments.map((a) {
-        final sizeKb = ((a.fileSizeBytes ?? 0) / 1024).toStringAsFixed(1);
+        final isImage =
+            a.contentType != null && a.contentType!.startsWith('image/');
 
-        return Container(
-          margin: const EdgeInsets.only(bottom: 4),
-          padding: const EdgeInsets.all(8),
-          decoration: BoxDecoration(
-            color: CodeOpsColors.surfaceVariant,
-            borderRadius: BorderRadius.circular(6),
-          ),
-          child: Row(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              const Icon(Icons.attach_file,
-                  size: 16, color: CodeOpsColors.textTertiary),
-              const SizedBox(width: 6),
-              Flexible(
-                child: Text(
-                  a.fileName ?? 'Untitled',
-                  overflow: TextOverflow.ellipsis,
-                  style: const TextStyle(
-                    fontSize: 12,
-                    color: CodeOpsColors.primary,
-                  ),
-                ),
-              ),
-              const SizedBox(width: 8),
-              Text(
-                '${sizeKb}KB',
-                style: const TextStyle(
-                  fontSize: 11,
-                  color: CodeOpsColors.textTertiary,
-                ),
-              ),
-            ],
-          ),
-        );
+        if (isImage) {
+          return _buildImageAttachment(context, a);
+        }
+        return _buildFileAttachment(context, ref, a);
       }).toList(),
     );
+  }
+
+  /// Builds an image attachment with inline thumbnail.
+  ///
+  /// Tapping the thumbnail opens a full-size preview dialog.
+  Widget _buildImageAttachment(
+      BuildContext context, FileAttachmentResponse attachment) {
+    final url = attachment.thumbnailUrl ?? attachment.downloadUrl;
+
+    return GestureDetector(
+      onTap: () => _showImagePreview(context, attachment),
+      child: Container(
+        margin: const EdgeInsets.only(bottom: 4),
+        constraints: const BoxConstraints(maxWidth: 280, maxHeight: 200),
+        decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(6),
+          border: Border.all(color: CodeOpsColors.border, width: 1),
+        ),
+        clipBehavior: Clip.antiAlias,
+        child: url != null
+            ? Image.network(
+                url,
+                fit: BoxFit.cover,
+                errorBuilder: (_, __, ___) => _buildFallbackImageCard(
+                  attachment.fileName ?? 'Image',
+                  attachment.fileSizeBytes,
+                ),
+              )
+            : _buildFallbackImageCard(
+                attachment.fileName ?? 'Image',
+                attachment.fileSizeBytes,
+              ),
+      ),
+    );
+  }
+
+  /// Fallback card when the image URL fails to load.
+  Widget _buildFallbackImageCard(String fileName, int? sizeBytes) {
+    return Container(
+      width: 200,
+      height: 80,
+      color: CodeOpsColors.surfaceVariant,
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          const Icon(Icons.image, size: 24, color: CodeOpsColors.textTertiary),
+          const SizedBox(height: 4),
+          Text(
+            fileName,
+            overflow: TextOverflow.ellipsis,
+            style:
+                const TextStyle(fontSize: 11, color: CodeOpsColors.textPrimary),
+          ),
+          if (sizeBytes != null)
+            Text(
+              _formatFileSize(sizeBytes),
+              style: const TextStyle(
+                  fontSize: 10, color: CodeOpsColors.textTertiary),
+            ),
+        ],
+      ),
+    );
+  }
+
+  /// Opens a dialog showing the full-size image.
+  void _showImagePreview(
+      BuildContext context, FileAttachmentResponse attachment) {
+    final url = attachment.downloadUrl ?? attachment.thumbnailUrl;
+    if (url == null) return;
+
+    showDialog<void>(
+      context: context,
+      builder: (_) => Dialog(
+        backgroundColor: Colors.transparent,
+        insetPadding: const EdgeInsets.all(24),
+        child: Stack(
+          alignment: Alignment.topRight,
+          children: [
+            ClipRRect(
+              borderRadius: BorderRadius.circular(8),
+              child: Image.network(url, fit: BoxFit.contain),
+            ),
+            IconButton(
+              icon: const Icon(Icons.close, color: Colors.white, size: 24),
+              onPressed: () => Navigator.of(context).pop(),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  /// Builds a non-image file attachment card.
+  ///
+  /// Tapping the card triggers a file download via the API.
+  Widget _buildFileAttachment(
+      BuildContext context, WidgetRef ref, FileAttachmentResponse attachment) {
+    return GestureDetector(
+      onTap: () => _downloadFile(context, ref, attachment),
+      child: Container(
+        margin: const EdgeInsets.only(bottom: 4),
+        padding: const EdgeInsets.all(8),
+        decoration: BoxDecoration(
+          color: CodeOpsColors.surfaceVariant,
+          borderRadius: BorderRadius.circular(6),
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            RelayFileIcon(
+              contentType: attachment.contentType,
+              fileName: attachment.fileName,
+              size: 16,
+            ),
+            const SizedBox(width: 6),
+            Flexible(
+              child: Text(
+                attachment.fileName ?? 'Untitled',
+                overflow: TextOverflow.ellipsis,
+                style: const TextStyle(
+                  fontSize: 12,
+                  color: CodeOpsColors.primary,
+                ),
+              ),
+            ),
+            const SizedBox(width: 8),
+            Text(
+              _formatFileSize(attachment.fileSizeBytes ?? 0),
+              style: const TextStyle(
+                fontSize: 11,
+                color: CodeOpsColors.textTertiary,
+              ),
+            ),
+            const SizedBox(width: 4),
+            const Icon(Icons.download,
+                size: 14, color: CodeOpsColors.textTertiary),
+          ],
+        ),
+      ),
+    );
+  }
+
+  /// Downloads a file attachment to the user's downloads directory.
+  Future<void> _downloadFile(BuildContext context, WidgetRef ref,
+      FileAttachmentResponse attachment) async {
+    if (attachment.id == null) return;
+
+    final api = ref.read(relayApiProvider);
+    try {
+      final bytes = await api.downloadFile(attachment.id!);
+      final dir = await getDownloadsDirectory() ??
+          await getApplicationDocumentsDirectory();
+      final filePath = '${dir.path}/${attachment.fileName ?? "download"}';
+      await File(filePath).writeAsBytes(bytes);
+
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Downloaded ${attachment.fileName}'),
+            backgroundColor: CodeOpsColors.success,
+          ),
+        );
+      }
+    } catch (_) {
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Download failed'),
+            backgroundColor: CodeOpsColors.error,
+          ),
+        );
+      }
+    }
+  }
+
+  /// Formats a byte count into a human-readable size string.
+  static String _formatFileSize(int bytes) {
+    if (bytes < 1024) return '$bytes B';
+    if (bytes < 1024 * 1024) {
+      return '${(bytes / 1024).toStringAsFixed(1)} KB';
+    }
+    if (bytes < 1024 * 1024 * 1024) {
+      return '${(bytes / (1024 * 1024)).toStringAsFixed(1)} MB';
+    }
+    return '${(bytes / (1024 * 1024 * 1024)).toStringAsFixed(1)} GB';
   }
 
   /// Builds the thread reply indicator.

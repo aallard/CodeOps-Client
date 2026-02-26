@@ -219,6 +219,7 @@ void main() {
       await tester.pumpAndSettle();
 
       expect(find.text('report.pdf'), findsOneWidget);
+      expect(find.byIcon(Icons.picture_as_pdf), findsOneWidget);
       expect(find.textContaining('KB'), findsOneWidget);
     });
 
@@ -311,7 +312,8 @@ void main() {
 
       expect(find.text('Karl'), findsOneWidget);
       expect(find.text('design.png'), findsOneWidget);
-      expect(find.byIcon(Icons.attach_file), findsOneWidget);
+      // design.png — no contentType, extension maps to Icons.image
+      expect(find.byIcon(Icons.image), findsOneWidget);
     });
   });
 }

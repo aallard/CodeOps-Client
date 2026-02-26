@@ -608,12 +608,17 @@ class RelayApiService {
   // ═══════════════════════════════════════════════════════════════════════════
 
   /// Uploads a file attachment to a message.
+  ///
+  /// Optionally accepts an [onSendProgress] callback that receives
+  /// the number of bytes sent and the total bytes to send, useful
+  /// for rendering upload progress indicators.
   Future<FileAttachmentResponse> uploadFile(
     String messageId,
     List<int> fileBytes,
     String fileName,
-    String contentType,
-  ) async {
+    String contentType, {
+    void Function(int sent, int total)? onSendProgress,
+  }) async {
     final formData = FormData.fromMap({
       'file': MultipartFile.fromBytes(
         fileBytes,
@@ -625,6 +630,7 @@ class RelayApiService {
       '$_base/files/upload',
       data: formData,
       queryParameters: {'messageId': messageId},
+      onSendProgress: onSendProgress,
     );
     return FileAttachmentResponse.fromJson(r.data!);
   }

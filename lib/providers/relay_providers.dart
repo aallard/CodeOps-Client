@@ -9,6 +9,8 @@
 /// [StateProvider] for UI state.
 library;
 
+import 'dart:typed_data';
+
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../models/health_snapshot.dart';
@@ -312,6 +314,93 @@ final messageAttachmentsProvider =
   final api = ref.watch(relayApiProvider);
   return api.getAttachmentsForMessage(messageId);
 });
+
+/// A file selected by the user but not yet uploaded.
+///
+/// Held in [pendingAttachmentsProvider] until the message is sent and
+/// the upload flow triggers.
+class PendingFile {
+  /// Original file name.
+  final String name;
+
+  /// Raw file bytes.
+  final Uint8List bytes;
+
+  /// MIME content type (e.g. `image/png`).
+  final String contentType;
+
+  /// File size in bytes.
+  int get size => bytes.length;
+
+  /// Creates a [PendingFile].
+  const PendingFile({
+    required this.name,
+    required this.bytes,
+    required this.contentType,
+  });
+}
+
+/// List of files the user has selected in the composer but not yet sent.
+///
+/// Cleared after upload completes or the user removes all files.
+final pendingAttachmentsProvider =
+    StateProvider<List<PendingFile>>((ref) => []);
+
+/// Per-file upload progress, keyed by file name.
+///
+/// Each value is a [FileUploadProgress] tracking bytes sent, total,
+/// and completion/failure state. Cleared after all uploads finish.
+class FileUploadProgress {
+  /// Original file name.
+  final String fileName;
+
+  /// Bytes uploaded so far.
+  final int bytesSent;
+
+  /// Total bytes to upload.
+  final int totalBytes;
+
+  /// Whether the upload completed successfully.
+  final bool isComplete;
+
+  /// Whether the upload failed.
+  final bool isFailed;
+
+  /// Fractional progress (0.0 – 1.0).
+  double get progress =>
+      totalBytes > 0 ? (bytesSent / totalBytes).clamp(0.0, 1.0) : 0.0;
+
+  /// Creates a [FileUploadProgress].
+  const FileUploadProgress({
+    required this.fileName,
+    this.bytesSent = 0,
+    this.totalBytes = 0,
+    this.isComplete = false,
+    this.isFailed = false,
+  });
+
+  /// Returns a copy with updated fields.
+  FileUploadProgress copyWith({
+    int? bytesSent,
+    int? totalBytes,
+    bool? isComplete,
+    bool? isFailed,
+  }) =>
+      FileUploadProgress(
+        fileName: fileName,
+        bytesSent: bytesSent ?? this.bytesSent,
+        totalBytes: totalBytes ?? this.totalBytes,
+        isComplete: isComplete ?? this.isComplete,
+        isFailed: isFailed ?? this.isFailed,
+      );
+}
+
+/// Active upload progress for all files being uploaded.
+///
+/// Keyed by file name. Entries are added at upload start, updated
+/// with progress callbacks, and removed when all uploads complete.
+final uploadProgressProvider =
+    StateProvider<Map<String, FileUploadProgress>>((ref) => {});
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Channel Role — Derived Provider
