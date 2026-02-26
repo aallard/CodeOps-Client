@@ -3,6 +3,8 @@
 /// Renders individual messages with sender avatar, name, timestamp,
 /// content (with Markdown), reactions, thread reply indicator, and
 /// attachments. Handles TEXT, SYSTEM, PLATFORM_EVENT, and FILE types.
+/// Reaction chips are tappable with optimistic toggle, and a `[+]`
+/// button opens the curated emoji picker.
 library;
 
 import 'package:flutter/material.dart';
@@ -14,6 +16,7 @@ import '../../models/relay_models.dart';
 import '../../providers/relay_providers.dart';
 import '../../theme/colors.dart';
 import '../../utils/date_utils.dart';
+import 'relay_emoji_picker.dart';
 
 /// Renders a single message in the Relay message feed.
 ///
@@ -55,16 +58,23 @@ class RelayMessageBubble extends ConsumerWidget {
       MessageType.system => _buildSystemMessage(),
       MessageType.platformEvent => _buildPlatformEventMessage(),
       MessageType.file => _buildFileMessage(),
-      _ => _buildTextMessage(ref),
+      _ => _buildTextMessage(context, ref),
     };
   }
 
   /// Builds a standard text message with avatar, sender, timestamp, content.
   ///
-  /// Own messages show a context menu on right-click / long-press with
-  /// an "Edit" option that sets [editingMessageProvider].
-  Widget _buildTextMessage(WidgetRef ref) {
+  /// All non-deleted messages show a context menu on right-click /
+  /// long-press with reaction and (for own messages) edit options.
+  Widget _buildTextMessage(BuildContext context, WidgetRef ref) {
     final isDeleted = message.isDeleted ?? false;
+    final messageId = message.id;
+
+    // Read optimistic overrides if available.
+    final optimistic = messageId != null
+        ? ref.watch(optimisticReactionsProvider(messageId))
+        : null;
+    final reactions = optimistic ?? message.reactions ?? [];
 
     Widget content = Padding(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
@@ -90,10 +100,10 @@ class RelayMessageBubble extends ConsumerWidget {
                   )
                 else ...[
                   _buildMarkdownContent(),
-                  if ((message.reactions ?? []).isNotEmpty)
+                  if (reactions.isNotEmpty)
                     Padding(
                       padding: const EdgeInsets.only(top: 4),
-                      child: _buildReactions(),
+                      child: _buildReactions(context, ref, reactions),
                     ),
                   if ((message.attachments ?? []).isNotEmpty)
                     Padding(
@@ -113,14 +123,14 @@ class RelayMessageBubble extends ConsumerWidget {
       ),
     );
 
-    // Wrap own messages with context menu for editing
-    if (isOwnMessage && !isDeleted) {
+    // Wrap all non-deleted messages with context menu.
+    if (!isDeleted) {
       content = GestureDetector(
         onSecondaryTapUp: (details) {
-          _showContextMenu(ref, details.globalPosition);
+          _showContextMenu(context, ref, details.globalPosition);
         },
         onLongPressStart: (details) {
-          _showContextMenu(ref, details.globalPosition);
+          _showContextMenu(context, ref, details.globalPosition);
         },
         child: content,
       );
@@ -130,8 +140,37 @@ class RelayMessageBubble extends ConsumerWidget {
   }
 
   /// Shows the message context menu at the given position.
-  void _showContextMenu(WidgetRef ref, Offset position) {
-    final context = ref.context;
+  ///
+  /// All messages get "Add reaction"; own messages also get "Edit".
+  void _showContextMenu(
+      BuildContext context, WidgetRef ref, Offset position) {
+    final items = <PopupMenuEntry<String>>[
+      const PopupMenuItem<String>(
+        value: 'react',
+        child: Row(
+          children: [
+            Icon(Icons.add_reaction_outlined,
+                size: 16, color: CodeOpsColors.textSecondary),
+            SizedBox(width: 8),
+            Text('Add reaction', style: TextStyle(fontSize: 13)),
+          ],
+        ),
+      ),
+    ];
+
+    if (isOwnMessage) {
+      items.add(const PopupMenuItem<String>(
+        value: 'edit',
+        child: Row(
+          children: [
+            Icon(Icons.edit, size: 16, color: CodeOpsColors.textSecondary),
+            SizedBox(width: 8),
+            Text('Edit', style: TextStyle(fontSize: 13)),
+          ],
+        ),
+      ));
+    }
+
     showMenu<String>(
       context: context,
       position: RelativeRect.fromLTRB(
@@ -140,22 +179,90 @@ class RelayMessageBubble extends ConsumerWidget {
         position.dx + 1,
         position.dy + 1,
       ),
-      items: [
-        const PopupMenuItem<String>(
-          value: 'edit',
-          child: Row(
-            children: [
-              Icon(Icons.edit, size: 16, color: CodeOpsColors.textSecondary),
-              SizedBox(width: 8),
-              Text('Edit', style: TextStyle(fontSize: 13)),
-            ],
-          ),
-        ),
-      ],
+      items: items,
     ).then((value) {
       if (value == 'edit') {
         ref.read(editingMessageProvider.notifier).state = message;
+      } else if (value == 'react') {
+        _showEmojiPicker(context, ref);
       }
+    });
+  }
+
+  /// Opens the emoji picker dialog and handles the selected emoji.
+  void _showEmojiPicker(BuildContext context, WidgetRef ref) {
+    showDialog<void>(
+      context: context,
+      builder: (_) => Dialog(
+        backgroundColor: Colors.transparent,
+        elevation: 0,
+        child: RelayEmojiPicker(
+          onEmojiSelected: (emoji) => _toggleReaction(ref, emoji),
+        ),
+      ),
+    );
+  }
+
+  /// Toggles a reaction with optimistic update.
+  ///
+  /// Immediately updates the local reaction state, fires the API
+  /// call, then clears the optimistic override. On failure the
+  /// override is cleared so the original state is restored.
+  void _toggleReaction(WidgetRef ref, String emoji) {
+    final messageId = message.id;
+    if (messageId == null) return;
+
+    // Compute optimistic reaction list.
+    final current = ref.read(optimisticReactionsProvider(messageId)) ??
+        message.reactions ??
+        [];
+
+    final existing = current.indexWhere((r) => r.emoji == emoji);
+    List<ReactionSummaryResponse> updated;
+
+    if (existing >= 0) {
+      final r = current[existing];
+      final wasActive = r.currentUserReacted ?? false;
+      final newCount = (r.count ?? 0) + (wasActive ? -1 : 1);
+
+      if (newCount <= 0) {
+        // Remove the reaction entirely.
+        updated = [...current]..removeAt(existing);
+      } else {
+        updated = [...current];
+        updated[existing] = ReactionSummaryResponse(
+          emoji: r.emoji,
+          count: newCount,
+          currentUserReacted: !wasActive,
+          userIds: r.userIds,
+        );
+      }
+    } else {
+      // New reaction.
+      updated = [
+        ...current,
+        ReactionSummaryResponse(
+          emoji: emoji,
+          count: 1,
+          currentUserReacted: true,
+        ),
+      ];
+    }
+
+    // Set optimistic state.
+    ref.read(optimisticReactionsProvider(messageId).notifier).state = updated;
+
+    // Record in recents.
+    ref.read(recentEmojisProvider.notifier).add(emoji);
+
+    // Fire API call.
+    final api = ref.read(relayApiProvider);
+    api.toggleReaction(messageId, AddReactionRequest(emoji: emoji)).then((_) {
+      // Clear optimistic override on success — next refetch picks up truth.
+      ref.read(optimisticReactionsProvider(messageId).notifier).state = null;
+    }).catchError((_) {
+      // Revert on failure.
+      ref.read(optimisticReactionsProvider(messageId).notifier).state = null;
     });
   }
 
@@ -361,34 +468,83 @@ class RelayMessageBubble extends ConsumerWidget {
     );
   }
 
-  /// Builds the reaction chips row.
-  Widget _buildReactions() {
-    final reactions = message.reactions ?? [];
-
+  /// Builds the reaction chips row with tap-to-toggle and a `[+]` button.
+  ///
+  /// Each chip shows a tooltip on hover describing who reacted.
+  /// Tapping a chip optimistically toggles the reaction via
+  /// [_toggleReaction]. The trailing `[+]` button opens the
+  /// emoji picker.
+  Widget _buildReactions(
+    BuildContext context,
+    WidgetRef ref,
+    List<ReactionSummaryResponse> reactions,
+  ) {
     return Wrap(
       spacing: 4,
       runSpacing: 4,
-      children: reactions.map((r) {
-        final isActive = r.currentUserReacted ?? false;
+      children: [
+        ...reactions.map((r) {
+          final isActive = r.currentUserReacted ?? false;
 
-        return Container(
-          padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-          decoration: BoxDecoration(
-            color: isActive
-                ? CodeOpsColors.primary.withValues(alpha: 0.2)
-                : CodeOpsColors.surfaceVariant,
-            borderRadius: BorderRadius.circular(10),
-            border: isActive
-                ? Border.all(color: CodeOpsColors.primary, width: 1)
-                : null,
+          return Tooltip(
+            message: _reactionTooltip(r),
+            waitDuration: const Duration(milliseconds: 400),
+            child: GestureDetector(
+              onTap: () => _toggleReaction(ref, r.emoji ?? ''),
+              child: Container(
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                decoration: BoxDecoration(
+                  color: isActive
+                      ? CodeOpsColors.primary.withValues(alpha: 0.2)
+                      : CodeOpsColors.surfaceVariant,
+                  borderRadius: BorderRadius.circular(10),
+                  border: isActive
+                      ? Border.all(color: CodeOpsColors.primary, width: 1)
+                      : null,
+                ),
+                child: Text(
+                  '${r.emoji ?? ""} ${r.count ?? 0}',
+                  style: const TextStyle(fontSize: 12),
+                ),
+              ),
+            ),
+          );
+        }),
+        // [+] add reaction button
+        GestureDetector(
+          onTap: () => _showEmojiPicker(context, ref),
+          child: Container(
+            padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+            decoration: BoxDecoration(
+              color: CodeOpsColors.surfaceVariant,
+              borderRadius: BorderRadius.circular(10),
+            ),
+            child: const Icon(
+              Icons.add,
+              size: 14,
+              color: CodeOpsColors.textTertiary,
+            ),
           ),
-          child: Text(
-            '${r.emoji ?? ""} ${r.count ?? 0}',
-            style: const TextStyle(fontSize: 12),
-          ),
-        );
-      }).toList(),
+        ),
+      ],
     );
+  }
+
+  /// Builds a tooltip string for a reaction summary.
+  String _reactionTooltip(ReactionSummaryResponse r) {
+    final count = r.count ?? 0;
+    final reacted = r.currentUserReacted ?? false;
+    final emoji = r.emoji ?? '';
+
+    if (count == 0) return emoji;
+
+    if (reacted) {
+      if (count == 1) return 'You reacted with $emoji';
+      return 'You and ${count - 1} ${count - 1 == 1 ? 'other' : 'others'} reacted with $emoji';
+    }
+
+    return '$count ${count == 1 ? 'person' : 'people'} reacted with $emoji';
   }
 
   /// Builds the file attachment cards.

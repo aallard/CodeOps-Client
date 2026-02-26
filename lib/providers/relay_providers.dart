@@ -220,6 +220,43 @@ final messageReactionsProvider =
   return api.getReactionsForMessageWithUser(messageId);
 });
 
+/// Optimistic reaction overrides, keyed by message ID.
+///
+/// When non-null for a message, the bubble renders these reactions
+/// instead of the ones from [MessageResponse.reactions]. Cleared
+/// after the API call completes (success or failure).
+final optimisticReactionsProvider =
+    StateProvider.family<List<ReactionSummaryResponse>?, String>(
+        (ref, messageId) => null);
+
+/// Manages the list of recently used emojis (most-recent first).
+///
+/// Capped at [maxRecent] entries. Stored in memory only — resets
+/// on app restart.
+class RecentEmojisNotifier extends StateNotifier<List<String>> {
+  /// Maximum number of recent emojis to retain.
+  static const maxRecent = 8;
+
+  /// Creates a [RecentEmojisNotifier] with an empty list.
+  RecentEmojisNotifier() : super([]);
+
+  /// Records [emoji] as the most recently used.
+  ///
+  /// Moves it to the front if already present, otherwise inserts
+  /// at position 0 and trims the list to [maxRecent].
+  void add(String emoji) {
+    final updated = [emoji, ...state.where((e) => e != emoji)];
+    state = updated.length > maxRecent
+        ? updated.sublist(0, maxRecent)
+        : updated;
+  }
+}
+
+/// Provides the list of recently used emojis.
+final recentEmojisProvider =
+    StateNotifierProvider<RecentEmojisNotifier, List<String>>(
+        (ref) => RecentEmojisNotifier());
+
 // ─────────────────────────────────────────────────────────────────────────────
 // Presence — Data Providers
 // ─────────────────────────────────────────────────────────────────────────────
