@@ -267,6 +267,63 @@ class _Sidebar extends ConsumerWidget {
                   currentPath: currentPath,
                   collapsed: collapsed,
                 ),
+                _SectionHeader('FLEET', collapsed),
+                _NavItem(
+                  icon: Icons.dns_outlined,
+                  label: 'Health',
+                  path: '/fleet',
+                  currentPath: currentPath,
+                  collapsed: collapsed,
+                ),
+                _NavItem(
+                  icon: Icons.view_in_ar_outlined,
+                  label: 'Containers',
+                  path: '/fleet/containers',
+                  currentPath: currentPath,
+                  collapsed: collapsed,
+                ),
+                _NavItem(
+                  icon: Icons.miscellaneous_services_outlined,
+                  label: 'Services',
+                  path: '/fleet/service-profiles',
+                  currentPath: currentPath,
+                  collapsed: collapsed,
+                ),
+                _NavItem(
+                  icon: Icons.widgets_outlined,
+                  label: 'Solutions',
+                  path: '/fleet/solution-profiles',
+                  currentPath: currentPath,
+                  collapsed: collapsed,
+                ),
+                _NavItem(
+                  icon: Icons.computer_outlined,
+                  label: 'Workstations',
+                  path: '/fleet/workstation-profiles',
+                  currentPath: currentPath,
+                  collapsed: collapsed,
+                ),
+                _NavItem(
+                  icon: Icons.image_outlined,
+                  label: 'Images',
+                  path: '/fleet/images',
+                  currentPath: currentPath,
+                  collapsed: collapsed,
+                ),
+                _NavItem(
+                  icon: Icons.storage_outlined,
+                  label: 'Volumes',
+                  path: '/fleet/volumes',
+                  currentPath: currentPath,
+                  collapsed: collapsed,
+                ),
+                _NavItem(
+                  icon: Icons.hub_outlined,
+                  label: 'Networks',
+                  path: '/fleet/networks',
+                  currentPath: currentPath,
+                  collapsed: collapsed,
+                ),
                 _SectionHeader('COMMUNICATE', collapsed),
                 _NavItem(
                   icon: Icons.forum_outlined,
@@ -735,11 +792,25 @@ class _TopBar extends StatelessWidget {
       '/vault/audit': 'Audit Log',
       '/registry': 'Service Registry',
       '/registry/services/new': 'Register Service',
+      '/fleet': 'Fleet Health',
+      '/fleet/containers': 'Fleet Containers',
+      '/fleet/service-profiles': 'Service Profiles',
+      '/fleet/solution-profiles': 'Solution Profiles',
+      '/fleet/workstation-profiles': 'Workstation Profiles',
+      '/fleet/images': 'Docker Images',
+      '/fleet/volumes': 'Docker Volumes',
+      '/fleet/networks': 'Docker Networks',
       '/relay': 'Relay',
     };
     // Check exact match first, then prefix matches for parameterized routes
     if (routes.containsKey(path)) return routes[path]!;
     if (path.startsWith('/relay/')) return 'Relay';
+    if (path.startsWith('/fleet/containers/')) return 'Container Detail';
+    if (path.startsWith('/fleet/service-profiles/')) return 'Service Profile';
+    if (path.startsWith('/fleet/solution-profiles/')) return 'Solution Profile';
+    if (path.startsWith('/fleet/workstation-profiles/')) {
+      return 'Workstation Profile';
+    }
     if (path.startsWith('/registry/services/')) return 'Service Detail';
     if (path.startsWith('/vault/secrets/')) return 'Secret Detail';
     if (path.startsWith('/projects/')) return 'Project Detail';

@@ -1,4 +1,4 @@
-/// GoRouter configuration with all 50 application routes.
+/// GoRouter configuration with all 64 application routes.
 ///
 /// Uses an [AuthNotifier] listenable connected to [AuthService] for
 /// reactive auth state. Unauthenticated users are redirected to `/login`.
@@ -85,7 +85,7 @@ class AuthNotifier extends ChangeNotifier {
 /// [AuthService] updates this when auth state changes.
 final AuthNotifier authNotifier = AuthNotifier();
 
-/// The application router with all 39 routes.
+/// The application router with all 64 routes.
 final GoRouter router = GoRouter(
   initialLocation: '/login',
   refreshListenable: authNotifier,
@@ -550,7 +550,111 @@ final GoRouter router = GoRouter(
             );
           },
         ),
-        // 49. Relay — Messaging shell
+        // 49. Fleet — Health Dashboard
+        GoRoute(
+          path: '/fleet',
+          name: 'fleet',
+          pageBuilder: (context, state) => const NoTransitionPage(
+            child: PlaceholderPage(title: 'Fleet Health'),
+          ),
+        ),
+        // 50. Fleet — Containers
+        GoRoute(
+          path: '/fleet/containers',
+          name: 'fleet-containers',
+          pageBuilder: (context, state) => const NoTransitionPage(
+            child: PlaceholderPage(title: 'Fleet Containers'),
+          ),
+        ),
+        // 51. Fleet — Container Detail
+        GoRoute(
+          path: '/fleet/containers/:id',
+          name: 'fleet-container-detail',
+          pageBuilder: (context, state) => NoTransitionPage(
+            child: PlaceholderPage(
+              title: 'Container ${state.pathParameters['id']!}',
+            ),
+          ),
+        ),
+        // 52. Fleet — Service Profiles
+        GoRoute(
+          path: '/fleet/service-profiles',
+          name: 'fleet-service-profiles',
+          pageBuilder: (context, state) => const NoTransitionPage(
+            child: PlaceholderPage(title: 'Service Profiles'),
+          ),
+        ),
+        // 53. Fleet — Service Profile Detail
+        GoRoute(
+          path: '/fleet/service-profiles/:id',
+          name: 'fleet-service-profile-detail',
+          pageBuilder: (context, state) => NoTransitionPage(
+            child: PlaceholderPage(
+              title: 'Service Profile ${state.pathParameters['id']!}',
+            ),
+          ),
+        ),
+        // 54. Fleet — Solution Profiles
+        GoRoute(
+          path: '/fleet/solution-profiles',
+          name: 'fleet-solution-profiles',
+          pageBuilder: (context, state) => const NoTransitionPage(
+            child: PlaceholderPage(title: 'Solution Profiles'),
+          ),
+        ),
+        // 55. Fleet — Solution Profile Detail
+        GoRoute(
+          path: '/fleet/solution-profiles/:id',
+          name: 'fleet-solution-profile-detail',
+          pageBuilder: (context, state) => NoTransitionPage(
+            child: PlaceholderPage(
+              title: 'Solution Profile ${state.pathParameters['id']!}',
+            ),
+          ),
+        ),
+        // 56. Fleet — Workstation Profiles
+        GoRoute(
+          path: '/fleet/workstation-profiles',
+          name: 'fleet-workstation-profiles',
+          pageBuilder: (context, state) => const NoTransitionPage(
+            child: PlaceholderPage(title: 'Workstation Profiles'),
+          ),
+        ),
+        // 57. Fleet — Workstation Profile Detail
+        GoRoute(
+          path: '/fleet/workstation-profiles/:id',
+          name: 'fleet-workstation-profile-detail',
+          pageBuilder: (context, state) => NoTransitionPage(
+            child: PlaceholderPage(
+              title: 'Workstation Profile ${state.pathParameters['id']!}',
+            ),
+          ),
+        ),
+        // 58. Fleet — Docker Images
+        GoRoute(
+          path: '/fleet/images',
+          name: 'fleet-images',
+          pageBuilder: (context, state) => const NoTransitionPage(
+            child: PlaceholderPage(title: 'Docker Images'),
+          ),
+        ),
+        // 59. Fleet — Docker Volumes
+        GoRoute(
+          path: '/fleet/volumes',
+          name: 'fleet-volumes',
+          pageBuilder: (context, state) => const NoTransitionPage(
+            child: PlaceholderPage(title: 'Docker Volumes'),
+          ),
+        ),
+        // 60. Fleet — Docker Networks
+        GoRoute(
+          path: '/fleet/networks',
+          name: 'fleet-networks',
+          pageBuilder: (context, state) => const NoTransitionPage(
+            child: PlaceholderPage(title: 'Docker Networks'),
+          ),
+        ),
+        // 61. Relay — Messaging shell
         GoRoute(
           path: '/relay',
           name: 'relay',

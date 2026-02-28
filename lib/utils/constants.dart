@@ -422,4 +422,20 @@ class AppConstants {
 
   /// Maximum reconnect delay in seconds for Relay WebSocket backoff.
   static const int relayReconnectMaxDelaySeconds = 30;
+
+  // -------------------------------------------------------------------------
+  // Fleet constants (FLTC-001)
+  // -------------------------------------------------------------------------
+
+  /// API path prefix for Fleet endpoints.
+  static const String fleetApiPrefix = '/fleet';
+
+  /// Polling interval in seconds for container stats refresh.
+  static const int fleetContainerPollIntervalSeconds = 5;
+
+  /// Default number of log lines to tail for container logs.
+  static const int fleetLogsTailDefault = 100;
+
+  /// Default number of health check history records to fetch.
+  static const int fleetHealthHistoryLimit = 20;
 }
