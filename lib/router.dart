@@ -56,6 +56,7 @@ import 'pages/project_detail_page.dart';
 import 'pages/task_list_page.dart';
 import 'pages/task_manager_page.dart';
 import 'pages/projects_page.dart';
+import 'pages/fleet/fleet_dashboard_page.dart';
 import 'pages/relay/relay_page.dart';
 import 'pages/scribe_page.dart';
 import 'pages/settings_page.dart';
@@ -555,7 +556,7 @@ final GoRouter router = GoRouter(
           path: '/fleet',
           name: 'fleet',
           pageBuilder: (context, state) => const NoTransitionPage(
-            child: PlaceholderPage(title: 'Fleet Health'),
+            child: FleetDashboardPage(),
           ),
         ),
         // 50. Fleet — Containers
