@@ -63,6 +63,8 @@ import 'pages/fleet/service_profile_detail_page.dart';
 import 'pages/fleet/service_profile_list_page.dart';
 import 'pages/fleet/solution_profile_detail_page.dart';
 import 'pages/fleet/solution_profile_list_page.dart';
+import 'pages/fleet/workstation_profile_detail_page.dart';
+import 'pages/fleet/workstation_profile_list_page.dart';
 import 'pages/relay/relay_page.dart';
 import 'pages/scribe_page.dart';
 import 'pages/settings_page.dart';
@@ -624,7 +626,7 @@ final GoRouter router = GoRouter(
           path: '/fleet/workstation-profiles',
           name: 'fleet-workstation-profiles',
           pageBuilder: (context, state) => const NoTransitionPage(
-            child: PlaceholderPage(title: 'Workstation Profiles'),
+            child: WorkstationProfileListPage(),
           ),
         ),
         // 57. Fleet — Workstation Profile Detail
@@ -632,8 +634,8 @@ final GoRouter router = GoRouter(
           path: '/fleet/workstation-profiles/:id',
           name: 'fleet-workstation-profile-detail',
           pageBuilder: (context, state) => NoTransitionPage(
-            child: PlaceholderPage(
-              title: 'Workstation Profile ${state.pathParameters['id']!}',
+            child: WorkstationProfileDetailPage(
+              profileId: state.pathParameters['id']!,
             ),
           ),
         ),
