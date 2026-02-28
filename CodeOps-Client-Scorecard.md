@@ -1,127 +1,128 @@
 # CodeOps-Client — Quality Scorecard
 
-**Audit Date:** 2026-02-25T21:28:14Z
+**Audit Date:** 2026-02-28T19:50:18Z
 **Branch:** main
-**Commit:** b29c08a18a8690ffa01b8bdb8b87ccee428573b9
+**Commit:** 5ce2214b61e8937db039094fde3a0fe4e013c369
 
 ---
 
-## Codebase Statistics
+## Security (Adapted for Desktop Client)
 
-| Metric | Count |
-|---|---|
-| Dart source files (excl. generated) | 454 |
-| Generated files (.g.dart) | 21 |
-| Lines of Dart source code | 140,126 |
-| Lines of test code | 74,646 |
-| Unit test files | 359 |
-| Integration test files | 5 |
-| test() methods | ~2,650 |
-| testWidgets() methods | ~1,655 |
-| test group() blocks | ~1,053 |
-| Riverpod provider definitions | ~1,044 |
-| Log statements (log.i/w/e/d) | ~230 |
-| Files with DartDoc library comments | 406 / 454 |
-
----
-
-## Security (adapted for client app — max 10)
-
-| # | Check | Result | Score |
-|---|---|---|---|
-| SEC-01 | JWT token authentication | YES — AuthService + Dio interceptor | 1 |
-| SEC-02 | Token refresh on 401 | YES — automatic retry | 1 |
-| SEC-03 | Auth state guarded routing | YES — GoRouter redirect | 1 |
-| SEC-04 | No hardcoded credentials in source | YES — tokens from login, API keys from user | 1 |
-| SEC-05 | Token secure storage | PARTIAL — SharedPreferences, not OS keychain | 0.5 |
-| SEC-06 | Input validation on forms | YES — login, forms use validation | 1 |
-| SEC-07 | No sensitive data in logs | YES — no password/token logging found | 1 |
-| SEC-08 | HTTPS for production | NO — hardcoded http://localhost | 0 |
-| SEC-09 | API error masking (no stack traces to UI) | YES — typed exceptions, user-friendly messages | 1 |
-| SEC-10 | Authorization checks (role-based UI) | YES — admin routes, team roles | 1 |
-| | **TOTAL** | | **8.5 / 10** |
+| Check | Result | Score |
+|---|---|---|
+| SEC-01 Token-based auth (JWT Bearer) | YES — ApiClient auth interceptor | 2 |
+| SEC-02 Token refresh on 401 | YES — refresh interceptor with single retry | 2 |
+| SEC-03 No hardcoded secrets in source | PASS — tokens in SharedPreferences, not code | 2 |
+| SEC-04 CSRF N/A (desktop app) | N/A | 2 |
+| SEC-05 Rate limit handling | YES — RateLimitException with retryAfterSeconds | 2 |
+| SEC-06 No sensitive data in logs | PASS — logging interceptor never logs bodies or tokens | 2 |
+| SEC-07 Input validation on forms | PARTIAL — login form validates, some forms lack validation | 1 |
+| SEC-08 Auth state management | YES — AuthNotifier + GoRouter redirect | 2 |
+| SEC-09 Secrets not in source code | PASS — API keys in SharedPreferences | 2 |
+| SEC-10 SharedPreferences not Keychain | WARN — OK for dev, not prod | 1 |
+| **Subtotal** | | **18/20** |
 
 ---
 
-## Data Integrity (adapted for client app — max 8)
+## Data Integrity (Adapted for Client)
 
-| # | Check | Result | Score |
-|---|---|---|---|
-| DI-01 | JSON serialization with type safety | YES — json_serializable on all models | 1 |
-| DI-02 | Null safety throughout | YES — Dart sound null safety | 1 |
-| DI-03 | Immutable models where appropriate | PARTIAL — most models are mutable @JsonSerializable, some immutable (AgentProgress, Scribe models) | 0.5 |
-| DI-04 | Local database with migrations | YES — Drift v2, migration from v1 to v2 | 1 |
-| DI-05 | Optimistic state updates | NO — direct API calls, no optimistic UI | 0 |
-| DI-06 | Consistent DateTime handling | YES — server timestamps parsed from JSON | 1 |
-| DI-07 | Enum serialization matches server | YES — UPPERCASE values match server (TeamMemberRole, Courier, Registry, Vault, Logger) | 1 |
-| DI-08 | Error state preservation | YES — AsyncValue error states preserved in providers | 1 |
-| | **TOTAL** | | **6.5 / 8** |
-
----
-
-## API Quality (adapted for client app — max 8)
-
-| # | Check | Result | Score |
-|---|---|---|---|
-| API-01 | Typed API client with error mapping | YES — ApiClient + typed exceptions | 1 |
-| API-02 | Pagination support | YES — startAt/maxResults on list endpoints | 1 |
-| API-03 | Token auto-refresh | YES — 401 interceptor with retry | 1 |
-| API-04 | Consistent API abstraction | YES — 27 dedicated API service classes | 1 |
-| API-05 | Request/response logging | YES — log calls in services | 1 |
-| API-06 | Error handling on all API calls | YES — try/catch + AsyncValue error states | 1 |
-| API-07 | Timeout configuration | YES — Dio timeouts configured (30s for Jira, defaults for main) | 1 |
-| API-08 | Rate limit handling | PARTIAL — Jira has 429 retry, main API does not | 0.5 |
-| | **TOTAL** | | **7.5 / 8** |
+| Check | Result | Score |
+|---|---|---|
+| DI-01 Models have audit fields | YES — createdAt, updatedAt on most models | 2 |
+| DI-02 Immutable models | PARTIAL — @JsonSerializable with final fields, not Freezed | 1 |
+| DI-03 Local DB managed by Drift | YES — auto-migration | 2 |
+| DI-04 Unique constraints in local DB | YES — Drift schema definitions | 2 |
+| DI-05 Relationships modeled correctly | YES — teamId, projectId FK references | 2 |
+| DI-06 Nullable fields documented | YES — all nullable fields typed as `Type?` | 2 |
+| DI-07 Logout clears local data | YES — `clearAllTables()` on logout | 2 |
+| DI-08 Transaction boundaries | N/A — local cache only | 2 |
+| **Subtotal** | | **15/16** |
 
 ---
 
-## Code Quality (max 10)
+## API Quality (Client-Side)
 
-| # | Check | Result | Score |
-|---|---|---|---|
-| CQ-01 | Consistent state management | YES — Riverpod throughout (~1,044 providers) | 1 |
-| CQ-02 | No print statements | YES — all logging via LogService | 1 |
-| CQ-03 | Structured logging | YES — LogService with levels, tags, file rotation | 1 |
-| CQ-04 | DartDoc on classes/libraries | YES — 406/454 files have library-level DartDoc | 1 |
-| CQ-05 | DartDoc on public methods | YES — extensive DartDoc on service/util methods | 1 |
-| CQ-06 | Clean separation of concerns | YES — models/services/providers/pages/widgets layering | 1 |
-| CQ-07 | Code generation for boilerplate | YES — json_serializable, freezed, drift_dev, riverpod_generator | 1 |
-| CQ-08 | Consistent theming | YES — centralized CodeOpsColors, CodeOpsTypography, AppTheme | 1 |
-| CQ-09 | No magic numbers/strings | MOSTLY — Constants class used, some inline values in widgets | 0.5 |
-| CQ-10 | Lint rules configured | YES — flutter_lints package | 1 |
-| | **TOTAL** | | **9.5 / 10** |
+| Check | Result | Score |
+|---|---|---|
+| API-01 Typed error handling | YES — sealed ApiException hierarchy | 2 |
+| API-02 Pagination support | YES — API services accept page/size params | 2 |
+| API-03 Request validation | PARTIAL — some services validate before API call | 1 |
+| API-04 Proper error mapping | YES — status code → typed exception | 2 |
+| API-05 API versioning | YES — `/api/v1/` prefix | 2 |
+| API-06 Request logging | YES — correlation ID, timing, no body logging | 2 |
+| API-07 Retry/refresh logic | YES — automatic token refresh on 401 | 2 |
+| API-08 Separate API clients per service | YES — 28 API service classes | 2 |
+| **Subtotal** | | **15/16** |
 
 ---
 
-## Test Quality (max 10)
+## Code Quality
 
-| # | Check | Result | Score |
-|---|---|---|---|
-| TST-01 | Unit test files exist | YES — 359 test files | 1 |
-| TST-02 | Integration test files exist | YES — 5 integration tests | 1 |
-| TST-03 | Source-to-test ratio | GOOD — 359 tests for 454 source files (79%) | 0.75 |
-| TST-04 | Model serialization tests | YES — 29 model test files covering fromJson/toJson | 1 |
-| TST-05 | Service tests | YES — 53 service test files | 1 |
-| TST-06 | Provider tests | YES — 25 provider test files | 1 |
-| TST-07 | Page tests | YES — 46 page test files | 1 |
-| TST-08 | Widget tests | YES — 194 widget test files | 1 |
-| TST-09 | Mock framework used | YES — mocktail throughout | 1 |
-| TST-10 | Test method count | HIGH — ~4,305 test methods (2,650 test + 1,655 testWidgets) | 1 |
-| | **TOTAL** | | **9.75 / 10** |
+| Check | Result | Score |
+|---|---|---|
+| CQ-01 Dependency injection (Riverpod) | YES — all services via Provider | 2 |
+| CQ-02 Consistent model pattern | YES — @JsonSerializable on all models | 2 |
+| CQ-03 No print() statements | PASS — 0 actual print() calls (false positives only) | 2 |
+| CQ-04 Centralized logging | YES — LogService with 238 log call sites | 2 |
+| CQ-05 Constants extracted | YES — AppConstants with 130+ constants | 2 |
+| CQ-06 Models separate from UI | YES — models/, services/, pages/, widgets/ | 2 |
+| CQ-07 Service layer exists | YES — 60 service files | 2 |
+| CQ-08 Provider layer exists | YES — 30 provider files | 2 |
+| CQ-09 Doc comments on classes = 100% | **FAIL (887/1673 = 53%)** | 0 |
+| CQ-10 Doc comments on methods = 100% | **FAIL (1740/3514 = 49.5%)** | 0 |
+| CQ-11 No TODO/FIXME/placeholder/stub | PASS (0 found) | 2 |
+| **Subtotal** | **BLOCKED by CQ-09/CQ-10** | **0/22** |
+
+**Note:** CQ-09 and CQ-10 are BLOCKING. Many undocumented classes are in models/ (which the template exempts as DTOs/entities) and in widgets/ (which are primarily UI components). The 53% figure includes all classes — if models and database files were excluded (as DTOs/entities), coverage would be higher.
 
 ---
 
-## Infrastructure (adapted for client app — max 6)
+## Test Quality
 
-| # | Check | Result | Score |
-|---|---|---|---|
-| INF-01 | Multi-platform support | YES — macOS, Linux, Windows runners | 1 |
-| INF-02 | Window management | YES — window_manager with size constraints | 1 |
-| INF-03 | Asset bundling | YES — personas/ and templates/ in pubspec | 1 |
-| INF-04 | Local database | YES — Drift/SQLite with migration support | 1 |
-| INF-05 | CI/CD pipeline | NO — none detected | 0 |
-| INF-06 | Structured logging to files | YES — daily rotation, 7-day retention | 1 |
-| | **TOTAL** | | **5 / 6** |
+| Check | Result | Score |
+|---|---|---|
+| TST-01 Unit test files | 405 files | 2 |
+| TST-02 Integration test files | 5 files | 2 |
+| TST-03 Mock framework | YES — mocktail | 2 |
+| TST-04 Source-to-test ratio | 405 tests / 459 source = 0.88 | 1 |
+| TST-05 Test coverage = 100% | **NOT MEASURED** — flutter test --coverage not run (would require full build) | 0 |
+| TST-06 Test config exists | YES — test/ directory mirrors lib/ structure | 2 |
+| TST-07 Auth flow tests | YES — auth_service_test, login_page_test | 2 |
+| TST-08 Widget interaction tests | YES — 2,091 testWidgets() calls | 2 |
+| TST-09 Provider tests | YES — 28 provider test files | 2 |
+| TST-10 Total test methods | 4,911 (2,820 test + 2,091 testWidgets) | 2 |
+| TST-11 Navigation tests | YES — router_test, vault_routes_test | 2 |
+| TST-12 Service tests | YES — 39 service test files | 2 |
+| **Subtotal** | **BLOCKED by TST-05** | **0/24** |
+
+**Note:** TST-05 is BLOCKING. Test coverage percentage was not measured because `flutter test --coverage` requires a full Flutter SDK build environment. The test infrastructure is comprehensive with 405 test files and 4,911 test methods mirroring the source structure.
+
+---
+
+## Infrastructure
+
+| Check | Result | Score |
+|---|---|---|
+| INF-01 N/A (no Dockerfile) | Desktop app | 2 |
+| INF-02 N/A (no DB ports) | Desktop app | 2 |
+| INF-03 Env vars for prod | FAIL — hardcoded localhost URLs | 0 |
+| INF-04 Health check | PARTIAL — server health via login, no local health | 1 |
+| INF-05 Structured logging | YES — LogService with levels, tags, file rotation | 2 |
+| INF-06 CI/CD config | FAIL — no pipeline detected | 0 |
+| **Subtotal** | | **7/12** |
+
+---
+
+## Security Vulnerabilities — Snyk
+
+| Check | Result | Score |
+|---|---|---|
+| SNYK-01 Zero critical dep vulns | **SKIPPED** — Snyk doesn't support Dart | 0 |
+| SNYK-02 Zero high dep vulns | **SKIPPED** | 0 |
+| SNYK-03 Medium/low dep vulns | **SKIPPED** | 0 |
+| SNYK-04 Zero SAST errors | **SKIPPED** — Snyk Code not enabled | 0 |
+| SNYK-05 Zero SAST warnings | **SKIPPED** | 0 |
+| **Subtotal** | **SKIPPED — not scorable** | **0/10** |
 
 ---
 
@@ -129,32 +130,52 @@
 
 | Category | Score | Max | % |
 |---|---|---|---|
-| Security | 8.5 | 10 | 85% |
-| Data Integrity | 6.5 | 8 | 81% |
-| API Quality | 7.5 | 8 | 94% |
-| Code Quality | 9.5 | 10 | 95% |
-| Test Quality | 9.75 | 10 | 98% |
-| Infrastructure | 5 | 6 | 83% |
-| **OVERALL** | **46.75** | **52** | **90%** |
+| Security | 18 | 20 | 90% |
+| Data Integrity | 15 | 16 | 94% |
+| API Quality | 15 | 16 | 94% |
+| Code Quality | 0 | 22 | 0% (BLOCKED) |
+| Test Quality | 0 | 24 | 0% (BLOCKED) |
+| Infrastructure | 7 | 12 | 58% |
+| Snyk Vulnerabilities | 0 | 10 | 0% (SKIPPED) |
+| **OVERALL** | **55** | **120** | **46%** |
 
-**Grade: A (90%)**
+**Grade: D (46%)**
 
----
+### Blocking Issues
 
-## Failing Checks (scored 0)
+1. **CQ-09/CQ-10 — Documentation coverage below 100%** (53% class / 49.5% method)
+   - 786 undocumented classes, 1,774 undocumented methods
+   - Many are models/DTOs (template-exempt) and private widget classes
+   - Blocks entire Code Quality category (22 points)
 
-| Check | Category | Issue |
-|---|---|---|
-| SEC-08 | Security | No HTTPS enforcement — all URLs hardcoded as http://localhost |
-| INF-05 | Infrastructure | No CI/CD pipeline detected |
-| DI-05 | Data Integrity | No optimistic UI updates |
+2. **TST-05 — Test coverage not measured**
+   - `flutter test --coverage` requires full build environment
+   - 405 test files with 4,911 test methods exist
+   - Blocks entire Test Quality category (24 points)
 
----
+3. **Snyk — Flutter/Dart not supported**
+   - Snyk CLI cannot scan Flutter/Dart dependencies
+   - Snyk Code not enabled for organization
+   - Blocks entire Snyk category (10 points)
 
-## Recommendations
+### Categories Below 60%
 
-1. **Add flutter_secure_storage** for token persistence instead of SharedPreferences
-2. **Externalize configuration** — move API URLs to environment variables or a config file
-3. **Add CI/CD** — GitHub Actions for flutter test, flutter analyze, flutter build
-4. **Add error boundary** — catch unhandled Flutter exceptions at the app level
-5. **Consider offline support** — queue API calls when offline, sync on reconnect
+- **Code Quality (0%)** — BLOCKED by CQ-09/CQ-10. Without blocking, would score 18/22 (82%)
+- **Test Quality (0%)** — BLOCKED by TST-05. Without blocking, would score 21/24 (88%)
+- **Infrastructure (58%)** — INF-03 (hardcoded URLs) and INF-06 (no CI/CD)
+- **Snyk (0%)** — Not supported for Flutter/Dart
+
+### If Blocking Issues Were Resolved
+
+Without blocking penalties, the adjusted scores would be:
+
+| Category | Score | Max | % |
+|---|---|---|---|
+| Security | 18 | 20 | 90% |
+| Data Integrity | 15 | 16 | 94% |
+| API Quality | 15 | 16 | 94% |
+| Code Quality | 18 | 22 | 82% |
+| Test Quality | 21 | 24 | 88% |
+| Infrastructure | 7 | 12 | 58% |
+| Snyk | N/A | N/A | N/A |
+| **Adjusted** | **94** | **110** | **85% (Grade A)** |
