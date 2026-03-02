@@ -15,6 +15,7 @@ import '../../widgets/datalens/connection_manager_dialog.dart';
 import '../../widgets/datalens/import/csv_import_wizard.dart';
 import '../../widgets/datalens/import/sql_script_import_dialog.dart';
 import '../../widgets/datalens/import/table_transfer_dialog.dart';
+import '../../widgets/datalens/search/datalens_search_dialog.dart';
 import 'db_admin_page.dart';
 
 /// Toolbar for the DataLens page.
@@ -282,6 +283,29 @@ class _DatalensToolbarState extends ConsumerState<DatalensToolbar> {
                           child: DbAdminPage(
                             connectionId: selectedConnectionId,
                           ),
+                        ),
+                      ),
+                    );
+                  }
+                : null,
+          ),
+
+          const SizedBox(width: 4),
+          Container(width: 1, height: 20, color: CodeOpsColors.border),
+          const SizedBox(width: 4),
+
+          // Search
+          _ToolbarButton(
+            icon: Icons.search,
+            tooltip: 'Search Database (Ctrl+Shift+F)',
+            onPressed: isConnected
+                ? () {
+                    showDialog(
+                      context: context,
+                      builder: (_) => ProviderScope(
+                        parent: ProviderScope.containerOf(context),
+                        child: DatalensSearchDialog(
+                          connectionId: selectedConnectionId,
                         ),
                       ),
                     );

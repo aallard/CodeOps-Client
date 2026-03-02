@@ -24,7 +24,9 @@ import '../services/datalens/import/sql_script_import_service.dart';
 import '../services/datalens/import/table_transfer_service.dart';
 import '../services/datalens/sql_autocomplete_service.dart';
 import '../services/datalens/db_admin_service.dart';
+import '../services/datalens/datalens_search_service.dart';
 import '../models/datalens_admin_models.dart';
+import '../models/datalens_search_models.dart';
 import 'auth_providers.dart';
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -375,3 +377,24 @@ final datalensServerInfoProvider = FutureProvider<ServerInfo?>((ref) {
   final service = ref.watch(dbAdminServiceProvider);
   return service.getServerInfo(connectionId);
 });
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Search Providers
+// ─────────────────────────────────────────────────────────────────────────────
+
+/// Search service — metadata, data, and DDL search.
+final datalensSearchServiceProvider = Provider<DatalensSearchService>((ref) {
+  final connectionService = ref.watch(datalensConnectionServiceProvider);
+  return DatalensSearchService(connectionService);
+});
+
+/// Active search mode in the search dialog.
+final searchModeProvider =
+    StateProvider<SearchMode>((ref) => SearchMode.metadata);
+
+/// Search options state (filters, toggles).
+final searchOptionsProvider =
+    StateProvider<SearchOptions>((ref) => const SearchOptions());
+
+/// Navigator tree filter text (fuzzy match).
+final navigatorFilterProvider = StateProvider<String>((ref) => '');

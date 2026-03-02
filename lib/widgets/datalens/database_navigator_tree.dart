@@ -13,6 +13,7 @@ import '../../models/datalens_enums.dart';
 import '../../models/datalens_models.dart';
 import '../../providers/datalens_providers.dart';
 import '../../theme/colors.dart';
+import '../../utils/fuzzy_matcher.dart';
 import 'navigator_search_bar.dart';
 import 'navigator_tree_node.dart';
 
@@ -394,20 +395,19 @@ class _DatabaseNavigatorTreeState extends ConsumerState<DatabaseNavigatorTree> {
   // Helpers
   // ─────────────────────────────────────────────────────────────────────────
 
-  /// Filters schemas by search query (matches schema name or is currently
-  /// expanded with matching objects).
+  /// Filters schemas by search query using fuzzy subsequence matching.
   List<SchemaInfo> _filterSchemas(List<SchemaInfo> schemas) {
     if (_searchQuery.isEmpty) return schemas;
-    final query = _searchQuery.toLowerCase();
-    return schemas
-        .where((s) => (s.name ?? '').toLowerCase().contains(query))
-        .toList();
+    return schemas.where((s) {
+      final m = FuzzyMatcher.match(_searchQuery, s.name ?? '');
+      return m.score > 0;
+    }).toList();
   }
 
-  /// Returns whether a name matches the current search query.
+  /// Returns whether a name fuzzy-matches the current search query.
   bool _matchesSearch(String? name) {
     if (_searchQuery.isEmpty) return true;
-    return (name ?? '').toLowerCase().contains(_searchQuery.toLowerCase());
+    return FuzzyMatcher.match(_searchQuery, name ?? '').score > 0;
   }
 
   /// Returns the appropriate icon for a given [ObjectType].
