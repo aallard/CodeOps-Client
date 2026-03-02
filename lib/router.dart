@@ -1,4 +1,4 @@
-/// GoRouter configuration with all 64 application routes.
+/// GoRouter configuration with all 84 application routes.
 ///
 /// Uses an [AuthNotifier] listenable connected to [AuthService] for
 /// reactive auth state. Unauthenticated users are redirected to `/login`.
@@ -82,6 +82,13 @@ import 'pages/logger/retention_admin_page.dart';
 import 'pages/logger/trace_detail_page.dart';
 import 'pages/logger/trace_viewer_page.dart';
 import 'pages/logger/trap_editor_page.dart';
+import 'pages/courier/code_generation_page.dart';
+import 'pages/courier/collection_runner_page.dart';
+import 'pages/courier/courier_page.dart';
+import 'pages/courier/environment_manager_page.dart';
+import 'pages/courier/import_page.dart';
+import 'pages/courier/request_history_page.dart';
+import 'pages/courier/run_results_page.dart';
 import 'pages/relay/relay_page.dart';
 import 'pages/scribe_page.dart';
 import 'pages/settings_page.dart';
@@ -111,7 +118,7 @@ class AuthNotifier extends ChangeNotifier {
 /// [AuthService] updates this when auth state changes.
 final AuthNotifier authNotifier = AuthNotifier();
 
-/// The application router with all 64 routes.
+/// The application router with all 84 routes.
 final GoRouter router = GoRouter(
   initialLocation: '/login',
   refreshListenable: authNotifier,
@@ -796,6 +803,84 @@ final GoRouter router = GoRouter(
           name: 'logger-retention',
           pageBuilder: (context, state) => const NoTransitionPage(
             child: RetentionAdminPage(),
+          ),
+        ),
+        // 76. Courier — Main three-pane shell
+        GoRoute(
+          path: '/courier',
+          name: 'courier',
+          pageBuilder: (context, state) => const NoTransitionPage(
+            child: CourierPage(),
+          ),
+        ),
+        // 77. Courier — Open request by ID
+        GoRoute(
+          path: '/courier/request/:requestId',
+          name: 'courier-request',
+          pageBuilder: (context, state) => NoTransitionPage(
+            child: CourierPage(
+              requestId: state.pathParameters['requestId'],
+            ),
+          ),
+        ),
+        // 78. Courier — Collection selected
+        GoRoute(
+          path: '/courier/collection/:collectionId',
+          name: 'courier-collection',
+          pageBuilder: (context, state) => NoTransitionPage(
+            child: CourierPage(
+              collectionId: state.pathParameters['collectionId'],
+            ),
+          ),
+        ),
+        // 79. Courier — Environment Manager
+        GoRoute(
+          path: '/courier/environments',
+          name: 'courier-environments',
+          pageBuilder: (context, state) => const NoTransitionPage(
+            child: EnvironmentManagerPage(),
+          ),
+        ),
+        // 80. Courier — Collection Runner
+        GoRoute(
+          path: '/courier/runner',
+          name: 'courier-runner',
+          pageBuilder: (context, state) => const NoTransitionPage(
+            child: CollectionRunnerPage(),
+          ),
+        ),
+        // 81. Courier — Run Results
+        GoRoute(
+          path: '/courier/runner/:runId/results',
+          name: 'courier-run-results',
+          pageBuilder: (context, state) => NoTransitionPage(
+            child: RunResultsPage(
+              runId: state.pathParameters['runId']!,
+            ),
+          ),
+        ),
+        // 82. Courier — Request History
+        GoRoute(
+          path: '/courier/history',
+          name: 'courier-history',
+          pageBuilder: (context, state) => const NoTransitionPage(
+            child: RequestHistoryPage(),
+          ),
+        ),
+        // 83. Courier — Code Generation
+        GoRoute(
+          path: '/courier/codegen',
+          name: 'courier-codegen',
+          pageBuilder: (context, state) => const NoTransitionPage(
+            child: CodeGenerationPage(),
+          ),
+        ),
+        // 84. Courier — Import
+        GoRoute(
+          path: '/courier/import',
+          name: 'courier-import',
+          pageBuilder: (context, state) => const NoTransitionPage(
+            child: ImportPage(),
           ),
         ),
         // 75. Relay — Messaging shell

@@ -324,6 +324,14 @@ class _Sidebar extends ConsumerWidget {
                   currentPath: currentPath,
                   collapsed: collapsed,
                 ),
+                _SectionHeader('COURIER', collapsed),
+                _NavItem(
+                  icon: Icons.send_outlined,
+                  label: 'Courier',
+                  path: '/courier',
+                  currentPath: currentPath,
+                  collapsed: collapsed,
+                ),
                 _SectionHeader('DATALENS', collapsed),
                 _NavItem(
                   icon: Icons.grid_view_outlined,
@@ -817,6 +825,12 @@ class _TopBar extends StatelessWidget {
       '/fleet/volumes': 'Docker Volumes',
       '/fleet/networks': 'Docker Networks',
       '/relay': 'Relay',
+      '/courier': 'Courier',
+      '/courier/environments': 'Environments',
+      '/courier/runner': 'Collection Runner',
+      '/courier/history': 'Request History',
+      '/courier/codegen': 'Code Generation',
+      '/courier/import': 'Import',
       '/datalens': 'DataLens',
       '/logger': 'Logger',
       '/logger/viewer': 'Log Viewer',
@@ -835,6 +849,11 @@ class _TopBar extends StatelessWidget {
     if (path.startsWith('/logger/dashboards/')) return 'Dashboard Detail';
     if (path.startsWith('/logger/traps/')) return 'Trap Editor';
     if (path.startsWith('/relay/')) return 'Relay';
+    if (path.startsWith('/courier/request/')) return 'Courier';
+    if (path.startsWith('/courier/collection/')) return 'Courier';
+    if (path.startsWith('/courier/runner/') && path.endsWith('/results')) {
+      return 'Run Results';
+    }
     if (path.startsWith('/fleet/containers/')) return 'Container Detail';
     if (path.startsWith('/fleet/service-profiles/')) return 'Service Profile';
     if (path.startsWith('/fleet/solution-profiles/')) return 'Solution Profile';

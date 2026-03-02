@@ -1,0 +1,125 @@
+/// Riverpod providers for Courier UI-only state.
+///
+/// Manages pane sizing, open request tabs, active selections, and panel
+/// visibility. Kept separate from [courier_providers.dart] which owns
+/// API/async state.
+library;
+
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+
+import '../models/courier_enums.dart';
+
+// ─────────────────────────────────────────────────────────────────────────────
+// RequestTab model
+// ─────────────────────────────────────────────────────────────────────────────
+
+/// Represents a single open request tab in the Courier tab bar.
+///
+/// Mirrors a browser-style tab: each tab tracks the request it belongs to,
+/// its display name, HTTP method, URL, and whether it has unsaved changes.
+class RequestTab {
+  /// Unique tab identifier (UUID-like, client-generated).
+  final String id;
+
+  /// The persisted request ID on the server, or null if this is a new,
+  /// unsaved request.
+  final String? requestId;
+
+  /// Display name shown in the tab label (e.g. "GET /users" or "New Request").
+  final String name;
+
+  /// The HTTP method for this request.
+  final CourierHttpMethod method;
+
+  /// The URL currently entered for this request.
+  final String url;
+
+  /// Whether the tab has unsaved changes relative to the persisted state.
+  final bool isDirty;
+
+  /// Whether this is a newly created, never-saved request.
+  final bool isNew;
+
+  /// Creates a [RequestTab].
+  const RequestTab({
+    required this.id,
+    this.requestId,
+    required this.name,
+    required this.method,
+    required this.url,
+    this.isDirty = false,
+    this.isNew = false,
+  });
+
+  /// Returns a copy of this tab with optionally updated fields.
+  RequestTab copyWith({
+    String? id,
+    String? requestId,
+    String? name,
+    CourierHttpMethod? method,
+    String? url,
+    bool? isDirty,
+    bool? isNew,
+  }) {
+    return RequestTab(
+      id: id ?? this.id,
+      requestId: requestId ?? this.requestId,
+      name: name ?? this.name,
+      method: method ?? this.method,
+      url: url ?? this.url,
+      isDirty: isDirty ?? this.isDirty,
+      isNew: isNew ?? this.isNew,
+    );
+  }
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Tab State
+// ─────────────────────────────────────────────────────────────────────────────
+
+/// Ordered list of open request tabs in the Courier tab bar.
+final openRequestTabsProvider = StateProvider<List<RequestTab>>((ref) => []);
+
+/// ID of the currently active (focused) request tab, or null if no tab is open.
+final activeRequestTabProvider = StateProvider<String?>((ref) => null);
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Pane Layout State
+// ─────────────────────────────────────────────────────────────────────────────
+
+/// Width in pixels of the collection sidebar (left pane).
+///
+/// Clamped to [200, 400]. Default: 280.
+final sidebarWidthProvider = StateProvider<double>((ref) => 280);
+
+/// Width in pixels of the response viewer (right pane).
+///
+/// Clamped to [300, ∞]. Default: 400.
+final responsePaneWidthProvider = StateProvider<double>((ref) => 400);
+
+/// Whether the response pane is collapsed (zero-width, hidden).
+final responsePaneCollapsedProvider = StateProvider<bool>((ref) => false);
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Sidebar State
+// ─────────────────────────────────────────────────────────────────────────────
+
+/// ID of the collection currently selected / expanded in the sidebar.
+final selectedCollectionIdProvider = StateProvider<String?>((ref) => null);
+
+/// Search query for filtering the collection tree in the sidebar.
+final sidebarSearchQueryProvider = StateProvider<String>((ref) => '');
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Environment State
+// ─────────────────────────────────────────────────────────────────────────────
+
+/// ID of the currently active environment, or null for "No Environment".
+final activeEnvironmentIdProvider = StateProvider<String?>((ref) => null);
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Panel Visibility
+// ─────────────────────────────────────────────────────────────────────────────
+
+/// Whether the bottom console panel is visible.
+final consoleVisibleProvider = StateProvider<bool>((ref) => false);
