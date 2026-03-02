@@ -19,6 +19,9 @@ import '../services/datalens/schema_introspection_service.dart';
 import '../services/datalens/data_editor_service.dart';
 import '../services/datalens/er_diagram_service.dart';
 import '../services/datalens/er_export_service.dart';
+import '../services/datalens/import/csv_import_service.dart';
+import '../services/datalens/import/sql_script_import_service.dart';
+import '../services/datalens/import/table_transfer_service.dart';
 import '../services/datalens/sql_autocomplete_service.dart';
 import 'auth_providers.dart';
 
@@ -76,6 +79,26 @@ final datalensErDiagramServiceProvider = Provider<ErDiagramService>((ref) {
 /// ER export service — exports diagrams as PNG or SVG.
 final datalensErExportServiceProvider = Provider<ErExportService>((ref) {
   return const ErExportService();
+});
+
+/// CSV import service — parses CSV files and batch-inserts into tables.
+final csvImportServiceProvider = Provider<CsvImportService>((ref) {
+  final connectionService = ref.watch(datalensConnectionServiceProvider);
+  return CsvImportService(connectionService);
+});
+
+/// SQL script import service — parses and executes multi-statement SQL files.
+final sqlScriptImportServiceProvider =
+    Provider<SqlScriptImportService>((ref) {
+  final connectionService = ref.watch(datalensConnectionServiceProvider);
+  return SqlScriptImportService(connectionService);
+});
+
+/// Table-to-table transfer service — moves data between tables/connections.
+final tableTransferServiceProvider = Provider<TableTransferService>((ref) {
+  final connectionService = ref.watch(datalensConnectionServiceProvider);
+  final schemaService = ref.watch(datalensSchemaServiceProvider);
+  return TableTransferService(connectionService, schemaService);
 });
 
 // ─────────────────────────────────────────────────────────────────────────────

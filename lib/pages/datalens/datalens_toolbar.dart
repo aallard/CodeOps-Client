@@ -12,6 +12,9 @@ import '../../models/datalens_models.dart';
 import '../../providers/datalens_providers.dart';
 import '../../theme/colors.dart';
 import '../../widgets/datalens/connection_manager_dialog.dart';
+import '../../widgets/datalens/import/csv_import_wizard.dart';
+import '../../widgets/datalens/import/sql_script_import_dialog.dart';
+import '../../widgets/datalens/import/table_transfer_dialog.dart';
 
 /// Toolbar for the DataLens page.
 class DatalensToolbar extends ConsumerStatefulWidget {
@@ -72,6 +75,54 @@ class _DatalensToolbarState extends ConsumerState<DatalensToolbar> {
     ref.invalidate(datalensSchemasProvider);
     ref.invalidate(datalensTablesProvider);
     ref.invalidate(datalensColumnsProvider);
+  }
+
+  /// Opens the CSV import wizard.
+  void _openCsvImport() {
+    final connectionId = ref.read(selectedConnectionIdProvider);
+    final schema = ref.read(selectedSchemaProvider);
+    final table = ref.read(selectedTableProvider);
+    showDialog(
+      context: context,
+      builder: (_) => ProviderScope(
+        parent: ProviderScope.containerOf(context),
+        child: CsvImportWizard(
+          connectionId: connectionId,
+          schema: schema,
+          table: table,
+        ),
+      ),
+    );
+  }
+
+  /// Opens the SQL script import dialog.
+  void _openSqlScriptImport() {
+    final connectionId = ref.read(selectedConnectionIdProvider);
+    showDialog(
+      context: context,
+      builder: (_) => ProviderScope(
+        parent: ProviderScope.containerOf(context),
+        child: SqlScriptImportDialog(connectionId: connectionId),
+      ),
+    );
+  }
+
+  /// Opens the table transfer dialog.
+  void _openTableTransfer() {
+    final connectionId = ref.read(selectedConnectionIdProvider);
+    final schema = ref.read(selectedSchemaProvider);
+    final table = ref.read(selectedTableProvider);
+    showDialog(
+      context: context,
+      builder: (_) => ProviderScope(
+        parent: ProviderScope.containerOf(context),
+        child: TableTransferDialog(
+          sourceConnectionId: connectionId,
+          sourceSchema: schema,
+          sourceTable: table,
+        ),
+      ),
+    );
   }
 
   /// Opens the connection manager dialog.
@@ -171,6 +222,46 @@ class _DatalensToolbarState extends ConsumerState<DatalensToolbar> {
                         true;
                   }
                 : null,
+          ),
+
+          const SizedBox(width: 4),
+          Container(width: 1, height: 20, color: CodeOpsColors.border),
+          const SizedBox(width: 4),
+
+          // Import dropdown
+          PopupMenuButton<String>(
+            icon: const Icon(Icons.download, size: 16,
+                color: CodeOpsColors.textSecondary),
+            tooltip: 'Import',
+            enabled: isConnected,
+            color: CodeOpsColors.surfaceVariant,
+            onSelected: (value) {
+              switch (value) {
+                case 'csv':
+                  _openCsvImport();
+                case 'sql':
+                  _openSqlScriptImport();
+                case 'transfer':
+                  _openTableTransfer();
+              }
+            },
+            itemBuilder: (_) => const [
+              PopupMenuItem(
+                value: 'csv',
+                child: Text('Import CSV',
+                    style: TextStyle(fontSize: 12, color: CodeOpsColors.textPrimary)),
+              ),
+              PopupMenuItem(
+                value: 'sql',
+                child: Text('Import SQL Script',
+                    style: TextStyle(fontSize: 12, color: CodeOpsColors.textPrimary)),
+              ),
+              PopupMenuItem(
+                value: 'transfer',
+                child: Text('Table Transfer',
+                    style: TextStyle(fontSize: 12, color: CodeOpsColors.textPrimary)),
+              ),
+            ],
           ),
 
           const Spacer(),
