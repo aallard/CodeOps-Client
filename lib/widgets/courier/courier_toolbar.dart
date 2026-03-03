@@ -319,6 +319,10 @@ class _EnvironmentSelector extends ConsumerWidget {
         side: const BorderSide(color: CodeOpsColors.border),
       ),
       onSelected: (id) {
+        if (id == '__manage__') {
+          context.go('/courier/environments');
+          return;
+        }
         watchRef.read(activeEnvironmentIdProvider.notifier).state = id;
       },
       itemBuilder: (_) => [
@@ -342,6 +346,25 @@ class _EnvironmentSelector extends ConsumerWidget {
                 color: CodeOpsColors.textPrimary,
               ),
             ),
+          ),
+        ),
+        const PopupMenuDivider(),
+        const PopupMenuItem<String?>(
+          key: Key('manage_environments_link'),
+          value: '__manage__',
+          child: Row(
+            children: [
+              Icon(Icons.settings_outlined,
+                  size: 14, color: CodeOpsColors.textSecondary),
+              SizedBox(width: 8),
+              Text(
+                'Manage Environments',
+                style: TextStyle(
+                  fontSize: 13,
+                  color: CodeOpsColors.textSecondary,
+                ),
+              ),
+            ],
           ),
         ),
       ],
