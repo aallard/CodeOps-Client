@@ -90,6 +90,9 @@ import 'pages/courier/import_page.dart';
 import 'pages/courier/request_history_page.dart';
 import 'pages/courier/run_results_page.dart';
 import 'pages/mcp/activity_feed_page.dart';
+import 'pages/mcp/document_detail_page.dart';
+import 'pages/mcp/document_management_page.dart';
+import 'pages/mcp/document_versions_page.dart';
 import 'pages/mcp/mcp_dashboard_page.dart';
 import 'pages/mcp/session_detail_page.dart';
 import 'pages/mcp/session_list_page.dart';
@@ -977,28 +980,30 @@ final GoRouter router = GoRouter(
           path: '/mcp/documents',
           name: 'mcp-documents',
           pageBuilder: (context, state) => const NoTransitionPage(
-            child: PlaceholderPage(title: 'Document Management'),
+            child: DocumentManagementPage(),
           ),
         ),
         // 90. MCP — Document Detail
         GoRoute(
           path: '/mcp/documents/:documentId',
           name: 'mcp-document-detail',
-          pageBuilder: (context, state) => NoTransitionPage(
-            child: PlaceholderPage(
-              title: 'Document ${state.pathParameters['documentId']}',
-            ),
-          ),
+          pageBuilder: (context, state) {
+            final documentId = state.pathParameters['documentId']!;
+            return NoTransitionPage(
+              child: DocumentDetailPage(documentId: documentId),
+            );
+          },
         ),
         // 91. MCP — Document Versions
         GoRoute(
           path: '/mcp/documents/:documentId/versions',
           name: 'mcp-document-versions',
-          pageBuilder: (context, state) => NoTransitionPage(
-            child: PlaceholderPage(
-              title: 'Document Versions',
-            ),
-          ),
+          pageBuilder: (context, state) {
+            final documentId = state.pathParameters['documentId']!;
+            return NoTransitionPage(
+              child: DocumentVersionsPage(documentId: documentId),
+            );
+          },
         ),
         // 92. MCP — Context Viewer
         GoRoute(
