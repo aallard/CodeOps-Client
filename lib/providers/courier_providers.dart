@@ -275,6 +275,24 @@ final courierHistoryMethodFilterProvider =
 /// Search query for history.
 final courierHistorySearchProvider = StateProvider<String>((ref) => '');
 
+/// Searches history by URL query string.
+final courierHistorySearchResultsProvider =
+    FutureProvider<List<RequestHistoryResponse>>((ref) {
+  final teamId = ref.watch(selectedTeamIdProvider);
+  if (teamId == null) return [];
+  final query = ref.watch(courierHistorySearchProvider);
+  if (query.trim().isEmpty) return [];
+  final api = ref.watch(courierApiProvider);
+  return api.searchHistory(teamId, query: query);
+});
+
+/// The currently selected history entry ID (drives the detail panel).
+final selectedHistoryEntryProvider = StateProvider<String?>((ref) => null);
+
+/// Status code filter for history (null = all).
+final courierHistoryStatusFilterProvider =
+    StateProvider<int?>((ref) => null);
+
 // ─────────────────────────────────────────────────────────────────────────────
 // Sharing — Data Providers
 // ─────────────────────────────────────────────────────────────────────────────

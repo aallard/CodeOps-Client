@@ -228,6 +228,11 @@ class _UrlBarState extends ConsumerState<_UrlBar> {
     } else {
       execNotifier.setDone();
     }
+
+    // Refresh history list so the sidebar stays current.
+    // History entries are created server-side when the proxy is used;
+    // this invalidation ensures the UI picks up new entries promptly.
+    ref.invalidate(courierHistoryProvider);
   }
 
   void _cancel() {
