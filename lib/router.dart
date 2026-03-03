@@ -101,6 +101,7 @@ import 'pages/mcp/mcp_dashboard_page.dart';
 import 'pages/mcp/session_detail_page.dart';
 import 'pages/mcp/session_list_page.dart';
 import 'pages/mcp/token_management_page.dart';
+import 'pages/mcp/tool_call_audit_log_page.dart';
 import 'pages/relay/relay_page.dart';
 import 'pages/scribe_page.dart';
 import 'pages/settings_page.dart';
@@ -1059,7 +1060,7 @@ final GoRouter router = GoRouter(
           path: '/mcp/audit-log',
           name: 'mcp-audit-log',
           pageBuilder: (context, state) => const NoTransitionPage(
-            child: PlaceholderPage(title: 'Tool Call Audit Log'),
+            child: ToolCallAuditLogPage(),
           ),
         ),
         // 98. MCP — Connection Status
