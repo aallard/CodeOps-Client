@@ -19,8 +19,10 @@ import '../../models/courier_models.dart';
 import '../../providers/courier_providers.dart';
 import '../../providers/courier_ui_providers.dart';
 import '../../providers/team_providers.dart';
+import '../../services/courier/curl_parser_service.dart';
 import '../../services/courier/http_execution_service.dart';
 import '../../theme/colors.dart';
+import 'key_value_editor.dart';
 import 'auth_tab.dart';
 import 'body_tab.dart';
 import 'headers_tab.dart';
@@ -334,6 +336,81 @@ class _UrlBarState extends ConsumerState<_UrlBar> {
         Timer(const Duration(milliseconds: 500), () => _autoSave(widget.activeTab.requestId!));
   }
 
+  // ── cURL paste detection ───────────────────────────────────────────────
+
+  void _detectAndImportCurl(String text) {
+    const parser = CurlParserService();
+    if (!parser.isCurlCommand(text)) return;
+
+    try {
+      final parsed = parser.parse(text);
+
+      // Set method.
+      final method = CourierHttpMethod.values.firstWhere(
+        (m) => m.toJson() == parsed.method.toUpperCase(),
+        orElse: () => CourierHttpMethod.get,
+      );
+      ref.read(activeRequestStateProvider.notifier).setMethod(method);
+      _syncMethodToTab(method);
+
+      // Set URL.
+      ref.read(activeRequestStateProvider.notifier).setUrl(parsed.url);
+      _urlController.text = parsed.url;
+      _syncUrlToTab(parsed.url);
+
+      // Set headers.
+      if (parsed.headers.isNotEmpty) {
+        final pairs = parsed.headers.entries
+            .map((e) => KeyValuePair(
+                  id: UniqueKey().toString(),
+                  key: e.key,
+                  value: e.value,
+                  enabled: true,
+                ))
+            .toList();
+        ref.read(requestHeadersProvider.notifier).state = pairs;
+      }
+
+      // Set body.
+      if (parsed.body != null && parsed.body!.isNotEmpty) {
+        ref.read(bodyRawContentProvider.notifier).state = parsed.body!;
+        if (parsed.bodyType == 'json') {
+          ref.read(bodyTypeProvider.notifier).state = BodyType.rawJson;
+        } else if (parsed.bodyType == 'xml') {
+          ref.read(bodyTypeProvider.notifier).state = BodyType.rawXml;
+        } else if (parsed.bodyType == 'urlencoded') {
+          ref.read(bodyTypeProvider.notifier).state =
+              BodyType.xWwwFormUrlEncoded;
+        } else {
+          ref.read(bodyTypeProvider.notifier).state = BodyType.rawText;
+        }
+      }
+
+      // Set basic auth.
+      if (parsed.username != null) {
+        ref.read(authTypeProvider.notifier).state = AuthType.basicAuth;
+        ref.read(authBasicUsernameProvider.notifier).state =
+            parsed.username!;
+        ref.read(authBasicPasswordProvider.notifier).state =
+            parsed.password ?? '';
+      }
+
+      // Show toast.
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            key: Key('curl_imported_toast'),
+            content: Text('cURL imported \u2014 request populated'),
+            duration: Duration(seconds: 2),
+            backgroundColor: CodeOpsColors.surface,
+          ),
+        );
+      }
+    } catch (_) {
+      // Not a valid cURL — ignore silently.
+    }
+  }
+
   // ── Build ─────────────────────────────────────────────────────────────────
 
   @override
@@ -398,6 +475,11 @@ class _UrlBarState extends ConsumerState<_UrlBar> {
                   ),
                 ),
                 onChanged: (v) {
+                  // Detect pasted cURL commands.
+                  if (v.trimLeft().startsWith('curl ')) {
+                    _detectAndImportCurl(v);
+                    return;
+                  }
                   ref.read(activeRequestStateProvider.notifier).setUrl(v);
                   _syncUrlToTab(v);
                   _scheduleAutoSave();
