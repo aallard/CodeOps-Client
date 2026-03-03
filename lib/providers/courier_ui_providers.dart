@@ -8,6 +8,7 @@ library;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../models/courier_enums.dart';
+import '../widgets/courier/key_value_editor.dart';
 
 // ─────────────────────────────────────────────────────────────────────────────
 // RequestTab model
@@ -329,4 +330,28 @@ final activeRequestStateProvider =
 final executionStateProvider =
     StateNotifierProvider<ExecutionNotifier, ExecutionState>(
         (ref) => ExecutionNotifier());
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Params & Headers Edit State (CCF-004)
+// ─────────────────────────────────────────────────────────────────────────────
+
+/// Editable query parameters for the active request tab.
+///
+/// Populated from [RequestResponse.params] when a request is loaded and
+/// synced to the server via `PUT .../params` on save.
+final requestParamsProvider =
+    StateProvider<List<KeyValuePair>>((ref) => []);
+
+/// Editable headers for the active request tab.
+///
+/// Populated from [RequestResponse.headers] when a request is loaded and
+/// synced to the server via `PUT .../headers` on save.
+final requestHeadersProvider =
+    StateProvider<List<KeyValuePair>>((ref) => []);
+
+/// Path variable overrides for `:name` / `{name}` patterns in the URL.
+///
+/// Keys are path variable names; values are user-entered replacements.
+final pathVariablesProvider =
+    StateProvider<Map<String, String>>((ref) => {});
 

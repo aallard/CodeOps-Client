@@ -22,6 +22,8 @@ import '../../providers/courier_ui_providers.dart';
 import '../../providers/team_providers.dart';
 import '../../services/courier/http_execution_service.dart';
 import '../../theme/colors.dart';
+import 'headers_tab.dart';
+import 'params_tab.dart';
 import 'request_settings_panel.dart';
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -97,8 +99,8 @@ class _RequestBuilderState extends ConsumerState<RequestBuilder>
           child: TabBarView(
             controller: _subTabController,
             children: const [
-              _ParamsPanel(),
-              _HeadersPanel(),
+              ParamsTab(),
+              HeadersTab(),
               _BodyPanel(),
               _AuthPanel(),
               _ScriptsPanel(),
@@ -608,9 +610,15 @@ class _SubTabBar extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    // Badge counts are stubs — CCF-004+ derives them from request sub-resources.
-    const paramCount = 0;
-    const headerCount = 0;
+    // Badge counts derived from request sub-resources (CCF-004).
+    final paramCount = ref
+        .watch(requestParamsProvider)
+        .where((p) => p.enabled && p.key.isNotEmpty)
+        .length;
+    final headerCount = ref
+        .watch(requestHeadersProvider)
+        .where((p) => p.enabled && p.key.isNotEmpty)
+        .length;
     const hasScripts = false;
     const hasTests = false;
 
@@ -693,22 +701,6 @@ class _SubTabBar extends ConsumerWidget {
 // ─────────────────────────────────────────────────────────────────────────────
 // Sub-tab content stubs (CCF-004+ implements each editor)
 // ─────────────────────────────────────────────────────────────────────────────
-
-class _ParamsPanel extends StatelessWidget {
-  const _ParamsPanel();
-
-  @override
-  Widget build(BuildContext context) =>
-      _StubPanel(key: const Key('params_panel'), label: 'Query Parameters');
-}
-
-class _HeadersPanel extends StatelessWidget {
-  const _HeadersPanel();
-
-  @override
-  Widget build(BuildContext context) =>
-      _StubPanel(key: const Key('headers_panel'), label: 'Headers');
-}
 
 class _BodyPanel extends StatelessWidget {
   const _BodyPanel();
