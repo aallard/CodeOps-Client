@@ -44,6 +44,7 @@ part 'database.g.dart';
   DatalensConnections,
   DatalensQueryHistory,
   DatalensSavedQueries,
+  UserPreferencesTable,
 ])
 class CodeOpsDatabase extends _$CodeOpsDatabase {
   /// Creates a [CodeOpsDatabase] with the given [QueryExecutor].
@@ -55,7 +56,7 @@ class CodeOpsDatabase extends _$CodeOpsDatabase {
   }
 
   @override
-  int get schemaVersion => 9;
+  int get schemaVersion => 10;
 
   @override
   MigrationStrategy get migration => MigrationStrategy(
@@ -95,6 +96,9 @@ class CodeOpsDatabase extends _$CodeOpsDatabase {
               datalensConnections,
               datalensConnections.filePath,
             );
+          }
+          if (from < 10) {
+            await m.createTable(userPreferencesTable);
           }
         },
       );

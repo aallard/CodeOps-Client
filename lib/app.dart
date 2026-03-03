@@ -9,6 +9,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'providers/agent_config_providers.dart';
 import 'providers/auth_providers.dart';
 import 'providers/github_providers.dart';
+import 'providers/preferences_providers.dart';
 import 'providers/team_providers.dart';
 import 'router.dart';
 import 'services/auth/auth_service.dart';
@@ -35,9 +36,14 @@ class CodeOpsApp extends ConsumerWidget {
       });
     });
 
+    final themeMode = ref.watch(themePreferenceProvider);
+    final accentColor = ref.watch(accentColorProvider);
+
     return MaterialApp.router(
       title: 'CodeOps',
-      theme: AppTheme.darkTheme,
+      theme: AppTheme.lightThemeWith(accentColor: accentColor),
+      darkTheme: AppTheme.darkThemeWith(accentColor: accentColor),
+      themeMode: themeMode,
       routerConfig: router,
       debugShowCheckedModeBanner: false,
     );

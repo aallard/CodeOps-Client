@@ -20,7 +20,7 @@ void main() {
         return count;
       }
 
-      expect(countRoutes(router.configuration.routes), 105);
+      expect(countRoutes(router.configuration.routes), 106);
     });
 
     test('initial location is /login', () {
@@ -53,6 +53,7 @@ void main() {
         '/personas/:id/edit',
         '/directives',
         '/settings',
+        '/settings/preferences',
         '/admin',
         '/vault',
         '/vault/secrets',

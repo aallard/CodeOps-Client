@@ -13,6 +13,7 @@ import 'package:window_manager/window_manager.dart';
 
 import '../../models/enums.dart';
 import '../../providers/auth_providers.dart';
+import '../../providers/preferences_providers.dart';
 import '../../providers/settings_providers.dart';
 import '../../providers/team_providers.dart';
 import '../../theme/colors.dart';
@@ -36,6 +37,23 @@ class _NavigationShellState extends ConsumerState<NavigationShell> {
   Widget build(BuildContext context) {
     final collapsed = ref.watch(sidebarCollapsedProvider);
     final sidebarWidth = collapsed ? 64.0 : 240.0;
+    final sidebarPosition = ref.watch(sidebarPositionProvider);
+
+    final sidebar = AnimatedContainer(
+      duration: const Duration(milliseconds: 200),
+      curve: Curves.easeInOut,
+      width: sidebarWidth,
+      child: _Sidebar(collapsed: collapsed),
+    );
+
+    final content = Expanded(
+      child: Column(
+        children: [
+          const _TopBar(),
+          Expanded(child: widget.child),
+        ],
+      ),
+    );
 
     return CallbackShortcuts(
       bindings: <ShortcutActivator, VoidCallback>{
@@ -56,24 +74,9 @@ class _NavigationShellState extends ConsumerState<NavigationShell> {
           // Sidebar + main content below the title bar
           Expanded(
             child: Row(
-              children: [
-                // Sidebar
-                AnimatedContainer(
-                  duration: const Duration(milliseconds: 200),
-                  curve: Curves.easeInOut,
-                  width: sidebarWidth,
-                  child: _Sidebar(collapsed: collapsed),
-                ),
-                // Main content area
-                Expanded(
-                  child: Column(
-                    children: [
-                      const _TopBar(),
-                      Expanded(child: widget.child),
-                    ],
-                  ),
-                ),
-              ],
+              children: sidebarPosition == SidebarPosition.left
+                  ? [sidebar, content]
+                  : [content, sidebar],
             ),
           ),
         ],
@@ -222,160 +225,10 @@ class _Sidebar extends ConsumerWidget {
                   currentPath: currentPath,
                   collapsed: collapsed,
                 ),
-                _SectionHeader('VAULT', collapsed),
-                _NavItem(
-                  icon: Icons.dashboard_outlined,
-                  label: 'Dashboard',
-                  path: '/vault',
-                  currentPath: currentPath,
-                  collapsed: collapsed,
-                ),
-                _NavItem(
-                  icon: Icons.key_outlined,
-                  label: 'Secrets',
-                  path: '/vault/secrets',
-                  currentPath: currentPath,
-                  collapsed: collapsed,
-                ),
-                _NavItem(
-                  icon: Icons.policy_outlined,
-                  label: 'Policies',
-                  path: '/vault/policies',
-                  currentPath: currentPath,
-                  collapsed: collapsed,
-                ),
-                _NavItem(
-                  icon: Icons.transform_outlined,
-                  label: 'Transit',
-                  path: '/vault/transit',
-                  currentPath: currentPath,
-                  collapsed: collapsed,
-                ),
-                _NavItem(
-                  icon: Icons.autorenew_outlined,
-                  label: 'Dynamic',
-                  path: '/vault/dynamic',
-                  currentPath: currentPath,
-                  collapsed: collapsed,
-                ),
-                _NavItem(
-                  icon: Icons.security_outlined,
-                  label: 'Seal',
-                  path: '/vault/seal',
-                  currentPath: currentPath,
-                  collapsed: collapsed,
-                ),
-                _NavItem(
-                  icon: Icons.receipt_long_outlined,
-                  label: 'Audit',
-                  path: '/vault/audit',
-                  currentPath: currentPath,
-                  collapsed: collapsed,
-                ),
-                _SectionHeader('REGISTRY', collapsed),
-                _NavItem(
-                  icon: Icons.app_registration_outlined,
-                  label: 'Registry',
-                  path: '/registry',
-                  currentPath: currentPath,
-                  collapsed: collapsed,
-                ),
-                _SectionHeader('FLEET', collapsed),
-                _NavItem(
-                  icon: Icons.dns_outlined,
-                  label: 'Health',
-                  path: '/fleet',
-                  currentPath: currentPath,
-                  collapsed: collapsed,
-                ),
-                _NavItem(
-                  icon: Icons.view_in_ar_outlined,
-                  label: 'Containers',
-                  path: '/fleet/containers',
-                  currentPath: currentPath,
-                  collapsed: collapsed,
-                ),
-                _NavItem(
-                  icon: Icons.miscellaneous_services_outlined,
-                  label: 'Services',
-                  path: '/fleet/service-profiles',
-                  currentPath: currentPath,
-                  collapsed: collapsed,
-                ),
-                _NavItem(
-                  icon: Icons.widgets_outlined,
-                  label: 'Solutions',
-                  path: '/fleet/solution-profiles',
-                  currentPath: currentPath,
-                  collapsed: collapsed,
-                ),
-                _NavItem(
-                  icon: Icons.computer_outlined,
-                  label: 'Workstations',
-                  path: '/fleet/workstation-profiles',
-                  currentPath: currentPath,
-                  collapsed: collapsed,
-                ),
-                _NavItem(
-                  icon: Icons.image_outlined,
-                  label: 'Images',
-                  path: '/fleet/images',
-                  currentPath: currentPath,
-                  collapsed: collapsed,
-                ),
-                _NavItem(
-                  icon: Icons.storage_outlined,
-                  label: 'Volumes',
-                  path: '/fleet/volumes',
-                  currentPath: currentPath,
-                  collapsed: collapsed,
-                ),
-                _NavItem(
-                  icon: Icons.hub_outlined,
-                  label: 'Networks',
-                  path: '/fleet/networks',
-                  currentPath: currentPath,
-                  collapsed: collapsed,
-                ),
-                _SectionHeader('COURIER', collapsed),
-                _NavItem(
-                  icon: Icons.send_outlined,
-                  label: 'Courier',
-                  path: '/courier',
-                  currentPath: currentPath,
-                  collapsed: collapsed,
-                ),
-                _SectionHeader('DATALENS', collapsed),
-                _NavItem(
-                  icon: Icons.grid_view_outlined,
-                  label: 'DataLens',
-                  path: '/datalens',
-                  currentPath: currentPath,
-                  collapsed: collapsed,
-                ),
-                _SectionHeader('LOGGER', collapsed),
-                _NavItem(
-                  icon: Icons.terminal_outlined,
-                  label: 'Logger',
-                  path: '/logger',
-                  currentPath: currentPath,
-                  collapsed: collapsed,
-                ),
-                _SectionHeader('COMMUNICATE', collapsed),
-                _NavItem(
-                  icon: Icons.forum_outlined,
-                  label: 'Relay',
-                  path: '/relay',
-                  currentPath: currentPath,
-                  collapsed: collapsed,
-                ),
-                _SectionHeader('MCP', collapsed),
-                _NavItem(
-                  icon: Icons.psychology,
-                  label: 'MCP',
-                  path: '/mcp',
-                  currentPath: currentPath,
-                  collapsed: collapsed,
+                ..._buildModuleSections(
+                  ref.watch(sidebarOrderProvider),
+                  currentPath,
+                  collapsed,
                 ),
               ],
             ),
@@ -387,6 +240,67 @@ class _Sidebar extends ConsumerWidget {
         ],
       ),
     );
+  }
+
+  /// Builds the module sidebar sections in the order specified by
+  /// [sidebarOrderProvider].
+  static List<Widget> _buildModuleSections(
+    List<String> order,
+    String currentPath,
+    bool collapsed,
+  ) {
+    final modules = <String, List<Widget>>{
+      'vault': [
+        _SectionHeader('VAULT', collapsed),
+        _NavItem(icon: Icons.dashboard_outlined, label: 'Dashboard', path: '/vault', currentPath: currentPath, collapsed: collapsed),
+        _NavItem(icon: Icons.key_outlined, label: 'Secrets', path: '/vault/secrets', currentPath: currentPath, collapsed: collapsed),
+        _NavItem(icon: Icons.policy_outlined, label: 'Policies', path: '/vault/policies', currentPath: currentPath, collapsed: collapsed),
+        _NavItem(icon: Icons.transform_outlined, label: 'Transit', path: '/vault/transit', currentPath: currentPath, collapsed: collapsed),
+        _NavItem(icon: Icons.autorenew_outlined, label: 'Dynamic', path: '/vault/dynamic', currentPath: currentPath, collapsed: collapsed),
+        _NavItem(icon: Icons.security_outlined, label: 'Seal', path: '/vault/seal', currentPath: currentPath, collapsed: collapsed),
+        _NavItem(icon: Icons.receipt_long_outlined, label: 'Audit', path: '/vault/audit', currentPath: currentPath, collapsed: collapsed),
+      ],
+      'registry': [
+        _SectionHeader('REGISTRY', collapsed),
+        _NavItem(icon: Icons.app_registration_outlined, label: 'Registry', path: '/registry', currentPath: currentPath, collapsed: collapsed),
+      ],
+      'fleet': [
+        _SectionHeader('FLEET', collapsed),
+        _NavItem(icon: Icons.dns_outlined, label: 'Health', path: '/fleet', currentPath: currentPath, collapsed: collapsed),
+        _NavItem(icon: Icons.view_in_ar_outlined, label: 'Containers', path: '/fleet/containers', currentPath: currentPath, collapsed: collapsed),
+        _NavItem(icon: Icons.miscellaneous_services_outlined, label: 'Services', path: '/fleet/service-profiles', currentPath: currentPath, collapsed: collapsed),
+        _NavItem(icon: Icons.widgets_outlined, label: 'Solutions', path: '/fleet/solution-profiles', currentPath: currentPath, collapsed: collapsed),
+        _NavItem(icon: Icons.computer_outlined, label: 'Workstations', path: '/fleet/workstation-profiles', currentPath: currentPath, collapsed: collapsed),
+        _NavItem(icon: Icons.image_outlined, label: 'Images', path: '/fleet/images', currentPath: currentPath, collapsed: collapsed),
+        _NavItem(icon: Icons.storage_outlined, label: 'Volumes', path: '/fleet/volumes', currentPath: currentPath, collapsed: collapsed),
+        _NavItem(icon: Icons.hub_outlined, label: 'Networks', path: '/fleet/networks', currentPath: currentPath, collapsed: collapsed),
+      ],
+      'courier': [
+        _SectionHeader('COURIER', collapsed),
+        _NavItem(icon: Icons.send_outlined, label: 'Courier', path: '/courier', currentPath: currentPath, collapsed: collapsed),
+      ],
+      'datalens': [
+        _SectionHeader('DATALENS', collapsed),
+        _NavItem(icon: Icons.grid_view_outlined, label: 'DataLens', path: '/datalens', currentPath: currentPath, collapsed: collapsed),
+      ],
+      'logger': [
+        _SectionHeader('LOGGER', collapsed),
+        _NavItem(icon: Icons.terminal_outlined, label: 'Logger', path: '/logger', currentPath: currentPath, collapsed: collapsed),
+      ],
+      'relay': [
+        _SectionHeader('COMMUNICATE', collapsed),
+        _NavItem(icon: Icons.forum_outlined, label: 'Relay', path: '/relay', currentPath: currentPath, collapsed: collapsed),
+      ],
+      'mcp': [
+        _SectionHeader('MCP', collapsed),
+        _NavItem(icon: Icons.psychology, label: 'MCP', path: '/mcp', currentPath: currentPath, collapsed: collapsed),
+      ],
+    };
+
+    return [
+      for (final key in order)
+        if (modules.containsKey(key)) ...modules[key]!,
+    ];
   }
 }
 
@@ -827,6 +741,7 @@ class _TopBar extends StatelessWidget {
       '/personas': 'Personas',
       '/directives': 'Directives',
       '/settings': 'Settings',
+      '/settings/preferences': 'Preferences',
       '/admin': 'Admin Hub',
       '/vault': 'Vault',
       '/vault/secrets': 'Secrets',

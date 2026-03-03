@@ -105,6 +105,7 @@ import 'pages/mcp/mcp_connection_status_page.dart';
 import 'pages/mcp/tool_call_audit_log_page.dart';
 import 'pages/relay/relay_page.dart';
 import 'pages/scribe_page.dart';
+import 'pages/settings/preferences_page.dart';
 import 'pages/settings_page.dart';
 import 'services/auth/auth_service.dart';
 import 'widgets/shell/navigation_shell.dart';
@@ -350,6 +351,14 @@ final GoRouter router = GoRouter(
           name: 'settings',
           pageBuilder: (context, state) => const NoTransitionPage(
             child: SettingsPage(),
+          ),
+        ),
+        // 23a. Settings — Preferences
+        GoRoute(
+          path: '/settings/preferences',
+          name: 'settings-preferences',
+          pageBuilder: (context, state) => const NoTransitionPage(
+            child: PreferencesPage(),
           ),
         ),
         // 24. Admin Hub

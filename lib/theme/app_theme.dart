@@ -12,6 +12,91 @@ import 'typography.dart';
 class AppTheme {
   AppTheme._();
 
+  /// Builds a dark theme with a custom [accentColor].
+  static ThemeData darkThemeWith({Color? accentColor}) {
+    final primary = accentColor ?? CodeOpsColors.primary;
+    return darkTheme.copyWith(
+      colorScheme: darkTheme.colorScheme.copyWith(primary: primary),
+    );
+  }
+
+  /// Builds a light theme for the CodeOps desktop app.
+  static ThemeData get lightTheme {
+    return ThemeData(
+      brightness: Brightness.light,
+      fontFamily: CodeOpsTypography.fontFamily,
+      scaffoldBackgroundColor: const Color(0xFFF8FAFC),
+      colorScheme: const ColorScheme.light(
+        primary: CodeOpsColors.primary,
+        onPrimary: Colors.white,
+        secondary: CodeOpsColors.secondary,
+        onSecondary: Colors.white,
+        surface: Color(0xFFFFFFFF),
+        onSurface: Color(0xFF1E293B),
+        error: CodeOpsColors.error,
+        onError: Colors.white,
+      ),
+      textTheme: TextTheme(
+        headlineLarge: CodeOpsTypography.headlineLarge.copyWith(color: const Color(0xFF1E293B)),
+        headlineMedium: CodeOpsTypography.headlineMedium.copyWith(color: const Color(0xFF1E293B)),
+        headlineSmall: CodeOpsTypography.headlineSmall.copyWith(color: const Color(0xFF1E293B)),
+        titleLarge: CodeOpsTypography.titleLarge.copyWith(color: const Color(0xFF1E293B)),
+        titleMedium: CodeOpsTypography.titleMedium.copyWith(color: const Color(0xFF1E293B)),
+        titleSmall: CodeOpsTypography.titleSmall.copyWith(color: const Color(0xFF1E293B)),
+        bodyLarge: CodeOpsTypography.bodyLarge.copyWith(color: const Color(0xFF334155)),
+        bodyMedium: CodeOpsTypography.bodyMedium.copyWith(color: const Color(0xFF334155)),
+        bodySmall: CodeOpsTypography.bodySmall.copyWith(color: const Color(0xFF64748B)),
+        labelLarge: CodeOpsTypography.labelLarge.copyWith(color: const Color(0xFF334155)),
+        labelMedium: CodeOpsTypography.labelMedium.copyWith(color: const Color(0xFF64748B)),
+        labelSmall: CodeOpsTypography.labelSmall.copyWith(color: const Color(0xFF94A3B8)),
+      ),
+      cardTheme: CardThemeData(
+        color: Colors.white,
+        elevation: 0,
+        shape: RoundedRectangleBorder(
+          borderRadius: const BorderRadius.all(Radius.circular(8)),
+          side: BorderSide(color: Colors.grey.shade200, width: 1),
+        ),
+      ),
+      inputDecorationTheme: InputDecorationTheme(
+        filled: true,
+        fillColor: const Color(0xFFF1F5F9),
+        contentPadding:
+            const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+        border: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(8),
+          borderSide: BorderSide(color: Colors.grey.shade300),
+        ),
+        enabledBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(8),
+          borderSide: BorderSide(color: Colors.grey.shade300),
+        ),
+        focusedBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(8),
+          borderSide: const BorderSide(color: CodeOpsColors.primary, width: 2),
+        ),
+      ),
+      elevatedButtonTheme: ElevatedButtonThemeData(
+        style: ElevatedButton.styleFrom(
+          backgroundColor: CodeOpsColors.primary,
+          foregroundColor: Colors.white,
+          padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(8),
+          ),
+        ),
+      ),
+    );
+  }
+
+  /// Builds a light theme with a custom [accentColor].
+  static ThemeData lightThemeWith({Color? accentColor}) {
+    final primary = accentColor ?? CodeOpsColors.primary;
+    return lightTheme.copyWith(
+      colorScheme: lightTheme.colorScheme.copyWith(primary: primary),
+    );
+  }
+
   /// The dark theme used by the CodeOps desktop app.
   static ThemeData get darkTheme {
     return ThemeData(

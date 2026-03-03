@@ -974,3 +974,25 @@ class AgentFiles extends Table {
   @override
   Set<Column> get primaryKey => {id};
 }
+
+// ─────────────────────────────────────────────────────────────────────────────
+// User Preferences
+// ─────────────────────────────────────────────────────────────────────────────
+
+/// Local key–value store for user preferences.
+///
+/// Each preference is stored as a text key with a JSON-encoded value.
+/// Preferences are synced to the server via DeveloperProfile.preferencesJson.
+class UserPreferencesTable extends Table {
+  /// Preference key (e.g. "theme", "accentColor", "editorTabSize").
+  TextColumn get key => text()();
+
+  /// JSON-encoded preference value.
+  TextColumn get value => text()();
+
+  /// Last modification timestamp.
+  DateTimeColumn get updatedAt => dateTime()();
+
+  @override
+  Set<Column> get primaryKey => {key};
+}

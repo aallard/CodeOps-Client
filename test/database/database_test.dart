@@ -19,16 +19,16 @@ void main() {
       expect(db, isNotNull);
     });
 
-    test('schema version is 9', () {
-      expect(db.schemaVersion, 9);
+    test('schema version is 10', () {
+      expect(db.schemaVersion, 10);
     });
 
     test('clearAllTables does not throw', () async {
       await expectLater(db.clearAllTables(), completes);
     });
 
-    test('has all 26 tables', () {
-      expect(db.allTables.length, 26);
+    test('has all 27 tables', () {
+      expect(db.allTables.length, 27);
     });
 
     test('can insert and query a user', () async {
