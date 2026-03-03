@@ -5,6 +5,7 @@
 library;
 
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:url_launcher/url_launcher.dart';
@@ -15,6 +16,7 @@ import '../../providers/auth_providers.dart';
 import '../../providers/settings_providers.dart';
 import '../../providers/team_providers.dart';
 import '../../theme/colors.dart';
+import '../search/global_search_dialog.dart';
 import 'team_switcher_dialog.dart';
 
 /// The main application shell with sidebar navigation and top bar.
@@ -35,7 +37,16 @@ class _NavigationShellState extends ConsumerState<NavigationShell> {
     final collapsed = ref.watch(sidebarCollapsedProvider);
     final sidebarWidth = collapsed ? 64.0 : 240.0;
 
-    return Scaffold(
+    return CallbackShortcuts(
+      bindings: <ShortcutActivator, VoidCallback>{
+        const SingleActivator(LogicalKeyboardKey.keyK, control: true):
+            () => showGlobalSearchDialog(context),
+        const SingleActivator(LogicalKeyboardKey.keyK, meta: true):
+            () => showGlobalSearchDialog(context),
+      },
+      child: Focus(
+        autofocus: true,
+        child: Scaffold(
       backgroundColor: CodeOpsColors.background,
       body: Column(
         children: [
@@ -67,6 +78,8 @@ class _NavigationShellState extends ConsumerState<NavigationShell> {
           ),
         ],
       ),
+    ),
+    ),
     );
   }
 }
@@ -771,8 +784,8 @@ class _TopBar extends StatelessWidget {
           IconButton(
             icon: const Icon(Icons.search, size: 18),
             color: CodeOpsColors.textSecondary,
-            onPressed: () {},
-            tooltip: 'Search',
+            onPressed: () => showGlobalSearchDialog(context),
+            tooltip: 'Search (Ctrl+K)',
           ),
           IconButton(
             icon: const Badge(
