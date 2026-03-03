@@ -31,6 +31,9 @@ class SqlEditorToolbar extends StatelessWidget {
   /// Called when the Explain button is tapped.
   final VoidCallback? onExplain;
 
+  /// Called when the Explain Analyze button is tapped.
+  final VoidCallback? onExplainAnalyze;
+
   /// Called when the Format button is tapped.
   final VoidCallback? onFormat;
 
@@ -47,6 +50,7 @@ class SqlEditorToolbar extends StatelessWidget {
     this.onCancel,
     this.onSave,
     this.onExplain,
+    this.onExplainAnalyze,
     this.onFormat,
     this.onHistory,
     this.isRunning = false,
@@ -92,6 +96,13 @@ class SqlEditorToolbar extends StatelessWidget {
             icon: Icons.analytics_outlined,
             tooltip: 'EXPLAIN query plan',
             onPressed: isRunning ? null : onExplain,
+          ),
+
+          // Explain Analyze
+          _ToolbarButton(
+            icon: Icons.query_stats,
+            tooltip: 'EXPLAIN ANALYZE (executes query)',
+            onPressed: isRunning ? null : onExplainAnalyze,
           ),
 
           // Format

@@ -13,6 +13,7 @@ import '../models/datalens_enums.dart';
 import '../models/datalens_er_models.dart';
 import '../models/datalens_models.dart';
 import '../services/datalens/database_connection_service.dart';
+import '../services/datalens/plan_execution_service.dart';
 import '../services/datalens/query_execution_service.dart';
 import '../services/datalens/query_history_service.dart';
 import '../services/datalens/schema_introspection_service.dart';
@@ -58,6 +59,12 @@ final datalensQueryServiceProvider = Provider<QueryExecutionService>((ref) {
   final connectionService = ref.watch(datalensConnectionServiceProvider);
   final historyService = ref.watch(datalensHistoryServiceProvider);
   return QueryExecutionService(connectionService, historyService);
+});
+
+/// Plan execution service — runs EXPLAIN (FORMAT JSON) and parses plans.
+final datalensPlanServiceProvider = Provider<PlanExecutionService>((ref) {
+  final connectionService = ref.watch(datalensConnectionServiceProvider);
+  return PlanExecutionService(connectionService);
 });
 
 /// SQL autocomplete service — provides context-aware completions.

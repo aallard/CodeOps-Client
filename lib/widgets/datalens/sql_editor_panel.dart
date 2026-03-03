@@ -12,6 +12,7 @@ import 'package:split_view/split_view.dart';
 import '../../models/datalens_enums.dart';
 import '../../models/datalens_models.dart';
 import '../../providers/datalens_providers.dart';
+import '../../services/datalens/plan_execution_service.dart';
 import '../../theme/colors.dart';
 import 'save_query_dialog.dart';
 import 'sql_editor_widget.dart';
@@ -87,6 +88,7 @@ class _SqlEditorPanelState extends ConsumerState<SqlEditorPanel> {
                 onCancel: _cancelQuery,
                 onSave: _saveQuery,
                 onExplain: _explainQuery,
+                onExplainAnalyze: _explainAnalyzeQuery,
                 onFormat: _formatSql,
                 isRunning: _activeTab.isRunning,
                 autoCommit: ref.watch(autoCommitProvider),
@@ -99,6 +101,7 @@ class _SqlEditorPanelState extends ConsumerState<SqlEditorPanel> {
               SqlResultsPanel(
                 result: _activeTab.lastResult,
                 explainOutput: _activeTab.explainOutput,
+                planResult: _activeTab.planResult,
               ),
             ],
           ),
@@ -387,7 +390,7 @@ class _SqlEditorPanelState extends ConsumerState<SqlEditorPanel> {
     }
   }
 
-  /// Runs EXPLAIN on the current SQL content.
+  /// Runs EXPLAIN (FORMAT JSON) on the current SQL content.
   Future<void> _explainQuery() async {
     final connectionId = ref.read(selectedConnectionIdProvider);
     if (connectionId == null) return;
@@ -398,13 +401,14 @@ class _SqlEditorPanelState extends ConsumerState<SqlEditorPanel> {
     setState(() => _activeTab.isRunning = true);
 
     try {
-      final service = ref.read(datalensQueryServiceProvider);
-      final output = await service.explainQuery(connectionId, sql);
+      final planService = ref.read(datalensPlanServiceProvider);
+      final result = await planService.executeExplain(connectionId, sql);
 
       if (!mounted) return;
 
       setState(() {
-        _activeTab.explainOutput = output;
+        _activeTab.planResult = result;
+        _activeTab.explainOutput = result.rawOutput;
         _activeTab.isRunning = false;
       });
     } on Object catch (e) {
@@ -412,6 +416,42 @@ class _SqlEditorPanelState extends ConsumerState<SqlEditorPanel> {
 
       setState(() {
         _activeTab.explainOutput = 'EXPLAIN failed: $e';
+        _activeTab.planResult = null;
+        _activeTab.isRunning = false;
+      });
+    }
+  }
+
+  /// Runs EXPLAIN ANALYZE on the current SQL content.
+  ///
+  /// **Warning:** ANALYZE actually executes the query.
+  Future<void> _explainAnalyzeQuery() async {
+    final connectionId = ref.read(selectedConnectionIdProvider);
+    if (connectionId == null) return;
+
+    final sql = _activeTab.content.trim();
+    if (sql.isEmpty) return;
+
+    setState(() => _activeTab.isRunning = true);
+
+    try {
+      final planService = ref.read(datalensPlanServiceProvider);
+      final result =
+          await planService.executeExplainAnalyze(connectionId, sql);
+
+      if (!mounted) return;
+
+      setState(() {
+        _activeTab.planResult = result;
+        _activeTab.explainOutput = result.rawOutput;
+        _activeTab.isRunning = false;
+      });
+    } on Object catch (e) {
+      if (!mounted) return;
+
+      setState(() {
+        _activeTab.explainOutput = 'EXPLAIN ANALYZE failed: $e';
+        _activeTab.planResult = null;
         _activeTab.isRunning = false;
       });
     }
@@ -564,6 +604,9 @@ class _SqlTab {
 
   /// Last EXPLAIN output.
   String? explainOutput;
+
+  /// Parsed execution plan result (from PlanExecutionService).
+  PlanResult? planResult;
 
   /// Whether a query is currently running.
   bool isRunning = false;

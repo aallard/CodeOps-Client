@@ -10,8 +10,10 @@ import 'package:flutter/material.dart';
 
 import '../../models/datalens_enums.dart';
 import '../../models/datalens_models.dart';
+import '../../services/datalens/plan_execution_service.dart';
 import '../../theme/colors.dart';
 import 'data_grid.dart';
+import 'plan_tree_visualizer.dart';
 
 /// The results panel below the SQL editor.
 ///
@@ -24,11 +26,15 @@ class SqlResultsPanel extends StatefulWidget {
   /// The EXPLAIN plan output text.
   final String? explainOutput;
 
+  /// The parsed execution plan (from PlanExecutionService).
+  final PlanResult? planResult;
+
   /// Creates a [SqlResultsPanel].
   const SqlResultsPanel({
     super.key,
     this.result,
     this.explainOutput,
+    this.planResult,
   });
 
   @override
@@ -53,6 +59,7 @@ class _SqlResultsPanelState extends State<SqlResultsPanel> {
             0 => _buildResultsTab(),
             1 => _buildMessagesTab(),
             2 => _buildExplainTab(),
+            3 => _buildPlanTab(),
             _ => const SizedBox.shrink(),
           },
         ),
@@ -74,6 +81,7 @@ class _SqlResultsPanelState extends State<SqlResultsPanel> {
           _tab('Results', 0),
           _tab('Messages', 1),
           _tab('Explain', 2),
+          _tab('Plan', 3),
         ],
       ),
     );
@@ -234,6 +242,22 @@ class _SqlResultsPanelState extends State<SqlResultsPanel> {
         ),
       ),
     );
+  }
+
+  /// Builds the Plan tab — parsed execution plan visualizer.
+  Widget _buildPlanTab() {
+    final plan = widget.planResult;
+
+    if (plan == null) {
+      return const Center(
+        child: Text(
+          'Run EXPLAIN to see the visual query plan',
+          style: TextStyle(color: CodeOpsColors.textTertiary, fontSize: 12),
+        ),
+      );
+    }
+
+    return PlanVisualizer(planResult: plan);
   }
 
   /// Builds the bottom status bar.

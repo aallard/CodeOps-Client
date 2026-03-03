@@ -38,6 +38,9 @@ class SqlEditorWidget extends StatefulWidget {
   /// Called when the Explain action is triggered.
   final VoidCallback? onExplain;
 
+  /// Called when the Explain Analyze action is triggered.
+  final VoidCallback? onExplainAnalyze;
+
   /// Called when the Format action is triggered (button or Ctrl+Shift+F).
   final VoidCallback? onFormat;
 
@@ -74,6 +77,7 @@ class SqlEditorWidget extends StatefulWidget {
     this.onCancel,
     this.onSave,
     this.onExplain,
+    this.onExplainAnalyze,
     this.onFormat,
     this.onHistory,
     this.isRunning = false,
@@ -146,6 +150,7 @@ class _SqlEditorWidgetState extends State<SqlEditorWidget> {
           onCancel: widget.onCancel,
           onSave: widget.onSave,
           onExplain: widget.onExplain,
+          onExplainAnalyze: widget.onExplainAnalyze,
           onFormat: widget.onFormat,
           onHistory: widget.onHistory,
           isRunning: widget.isRunning,
