@@ -211,6 +211,27 @@ void main() {
       expect(find.text('Check Health'), findsOneWidget);
     });
 
+    testWidgets('renders cross-module navigation buttons', (tester) async {
+      _setWideViewport(tester);
+      addTearDown(tester.view.resetPhysicalSize);
+      addTearDown(tester.view.resetDevicePixelRatio);
+      await tester.pumpWidget(
+        _buildPage(
+          overrides: [
+            registryServiceIdentityProvider('svc-1').overrideWith(
+              (ref) async => _testIdentity,
+            ),
+          ],
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      expect(find.text('Test API'), findsOneWidget);
+      expect(find.text('Explore DB'), findsOneWidget);
+      expect(find.text('View Logs'), findsOneWidget);
+      expect(find.text('Fleet'), findsOneWidget);
+    });
+
     testWidgets('renders identity kit cards', (tester) async {
       _setWideViewport(tester);
       addTearDown(tester.view.resetPhysicalSize);

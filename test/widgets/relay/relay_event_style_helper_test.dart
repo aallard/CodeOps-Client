@@ -144,10 +144,58 @@ void main() {
       );
     });
 
-    test('returns null route for unknown module', () {
+    test('returns route for fleet event', () {
       const event = PlatformEventResponse(
         id: 'evt-3',
         sourceModule: 'fleet',
+        sourceEntityId: 'ctr-789',
+      );
+      expect(
+        RelayEventStyleHelper.routeForEvent(event),
+        '/fleet/containers/ctr-789',
+      );
+    });
+
+    test('returns route for courier event', () {
+      const event = PlatformEventResponse(
+        id: 'evt-6',
+        sourceModule: 'courier',
+        sourceEntityId: 'req-101',
+      );
+      expect(
+        RelayEventStyleHelper.routeForEvent(event),
+        '/courier/request/req-101',
+      );
+    });
+
+    test('returns route for logger event', () {
+      const event = PlatformEventResponse(
+        id: 'evt-7',
+        sourceModule: 'logger',
+        sourceEntityId: 'log-202',
+      );
+      expect(
+        RelayEventStyleHelper.routeForEvent(event),
+        '/logger/search',
+      );
+    });
+
+    test('returns route for mcp event', () {
+      const event = PlatformEventResponse(
+        id: 'evt-8',
+        sourceModule: 'mcp',
+        sourceEntityId: 'sess-303',
+      );
+      expect(
+        RelayEventStyleHelper.routeForEvent(event),
+        '/mcp/sessions/sess-303',
+      );
+    });
+
+    test('returns null route for unknown module', () {
+      const event = PlatformEventResponse(
+        id: 'evt-9',
+        sourceModule: 'unknown-module',
         sourceEntityId: 'entity-789',
       );
       expect(RelayEventStyleHelper.routeForEvent(event), isNull);

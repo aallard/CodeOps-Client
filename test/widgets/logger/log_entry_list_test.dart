@@ -110,6 +110,12 @@ void main() {
             child: Scaffold(body: Center(child: Text('Trace Page'))),
           ),
         ),
+        GoRoute(
+          path: '/logger/search',
+          pageBuilder: (context, state) => const NoTransitionPage(
+            child: Scaffold(body: Center(child: Text('Search Page'))),
+          ),
+        ),
       ],
     );
     return MaterialApp.router(routerConfig: router);
@@ -248,6 +254,22 @@ void main() {
       await tester.tap(find.text('NullPointerException in UserService').first);
       await tester.pumpAndSettle();
       expect(find.byIcon(Icons.copy), findsNothing);
+    });
+
+    testWidgets('service name is styled as clickable link', (tester) async {
+      tester.view.physicalSize = const Size(1440, 1000);
+      tester.view.devicePixelRatio = 1.0;
+      addTearDown(() => tester.view.resetPhysicalSize());
+
+      await tester.pumpWidget(createWidget(singlePage));
+      await tester.pumpAndSettle();
+
+      // Service name should use primary color and underline decoration.
+      final serviceNameFinder = find.text('worker-service');
+      expect(serviceNameFinder, findsOneWidget);
+
+      final textWidget = tester.widget<Text>(serviceNameFinder);
+      expect(textWidget.style?.decoration, TextDecoration.underline);
     });
   });
 }

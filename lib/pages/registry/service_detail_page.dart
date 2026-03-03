@@ -11,6 +11,7 @@ import 'package:go_router/go_router.dart';
 
 import '../../models/registry_models.dart';
 import '../../providers/registry_providers.dart';
+import '../../services/navigation/cross_module_navigator.dart';
 import '../../theme/colors.dart';
 import '../../utils/date_utils.dart';
 import '../../widgets/registry/identity_kit_panel.dart';
@@ -133,7 +134,8 @@ class ServiceDetailPage extends ConsumerWidget {
   }
 }
 
-/// Action buttons for Clone, Delete, Check Health, and API Docs.
+/// Action buttons for Clone, Delete, Check Health, API Docs, and cross-module
+/// navigation (Test API, Explore DB, View Logs, Fleet).
 class _ActionButtons extends ConsumerWidget {
   final String serviceId;
   final String serviceName;
@@ -149,6 +151,33 @@ class _ActionButtons extends ConsumerWidget {
           icon: Icons.api_outlined,
           label: 'API Docs',
           onPressed: () => context.go('/registry/api-docs/$serviceId'),
+        ),
+        const SizedBox(width: 8),
+        _ActionButton(
+          icon: Icons.send_outlined,
+          label: 'Test API',
+          onPressed: () => CrossModuleNavigator.goToCourier(context),
+        ),
+        const SizedBox(width: 8),
+        _ActionButton(
+          icon: Icons.storage_outlined,
+          label: 'Explore DB',
+          onPressed: () => CrossModuleNavigator.goToDataLens(context),
+        ),
+        const SizedBox(width: 8),
+        _ActionButton(
+          icon: Icons.list_alt_outlined,
+          label: 'View Logs',
+          onPressed: () => CrossModuleNavigator.goToLoggerSearch(
+            context,
+            serviceName: serviceName,
+          ),
+        ),
+        const SizedBox(width: 8),
+        _ActionButton(
+          icon: Icons.dns_outlined,
+          label: 'Fleet',
+          onPressed: () => CrossModuleNavigator.goToFleetContainers(context),
         ),
         const SizedBox(width: 8),
         _ActionButton(

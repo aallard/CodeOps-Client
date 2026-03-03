@@ -9,9 +9,11 @@
 library;
 
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
 
 import '../../models/health_snapshot.dart';
 import '../../models/logger_models.dart';
+import '../../services/navigation/cross_module_navigator.dart';
 import '../../theme/colors.dart';
 import 'log_entry_detail.dart';
 import 'log_level_badge.dart';
@@ -251,17 +253,29 @@ class _LogEntryRow extends StatelessWidget {
               ),
               const SizedBox(width: 8),
 
-              // Service name.
+              // Service name — clickable to navigate to Logger search
+              // filtered by this service.
               SizedBox(
                 width: 120,
-                child: Text(
-                  entry.serviceName,
-                  style: const TextStyle(
-                    color: CodeOpsColors.textSecondary,
-                    fontSize: 11,
-                    fontFamily: 'monospace',
+                child: MouseRegion(
+                  cursor: SystemMouseCursors.click,
+                  child: GestureDetector(
+                    onTap: () => CrossModuleNavigator.goToLoggerSearch(
+                      context,
+                      serviceName: entry.serviceName,
+                    ),
+                    child: Text(
+                      entry.serviceName,
+                      style: const TextStyle(
+                        color: CodeOpsColors.primary,
+                        fontSize: 11,
+                        fontFamily: 'monospace',
+                        decoration: TextDecoration.underline,
+                        decorationColor: CodeOpsColors.primary,
+                      ),
+                      overflow: TextOverflow.ellipsis,
+                    ),
                   ),
-                  overflow: TextOverflow.ellipsis,
                 ),
               ),
               const SizedBox(width: 8),

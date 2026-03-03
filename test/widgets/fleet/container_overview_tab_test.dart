@@ -151,5 +151,13 @@ void main() {
       await tester.tap(find.text('Remove'));
       expect(called, isTrue);
     });
+
+    testWidgets('renders View in Logger button', (tester) async {
+      useWideViewport(tester);
+      await tester.pumpWidget(wrap());
+
+      expect(find.text('View in Logger'), findsOneWidget);
+      expect(find.byIcon(Icons.list_alt_outlined), findsOneWidget);
+    });
   });
 }

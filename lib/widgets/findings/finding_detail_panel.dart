@@ -9,6 +9,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../models/finding.dart';
 import '../../services/cloud/finding_api.dart';
+import '../../services/navigation/cross_module_navigator.dart';
 import '../../theme/colors.dart';
 import '../../utils/date_utils.dart';
 import '../reports/markdown_renderer.dart';
@@ -137,6 +138,15 @@ class FindingDetailPanel extends ConsumerWidget {
                         label: 'Created',
                         value: formatTimeAgo(finding.createdAt!)),
 
+                  // Service name badge derived from file path.
+                  if (_deriveServiceName(finding.filePath) != null)
+                    Padding(
+                      padding: const EdgeInsets.only(top: 8),
+                      child: _ServiceBadge(
+                        serviceName: _deriveServiceName(finding.filePath)!,
+                      ),
+                    ),
+
                   const SizedBox(height: 12),
                   const Divider(color: CodeOpsColors.divider, height: 1),
                   const SizedBox(height: 12),
@@ -215,6 +225,94 @@ class FindingDetailPanel extends ConsumerWidget {
           ),
         ],
       ),
+    );
+  }
+}
+
+/// Derives a service/project name from a file path.
+///
+/// Extracts the first path segment that looks like a project directory
+/// (e.g., `src/main/java/...` → parent directory of `src`).
+/// Returns `null` if no service name can be derived.
+String? _deriveServiceName(String? filePath) {
+  if (filePath == null || filePath.isEmpty) return null;
+
+  final segments = filePath.split('/').where((s) => s.isNotEmpty).toList();
+  if (segments.isEmpty) return null;
+
+  // Look for common project root markers and return the segment before them.
+  const markers = ['src', 'lib', 'app', 'test', 'tests'];
+  for (var i = 0; i < segments.length; i++) {
+    if (markers.contains(segments[i].toLowerCase()) && i > 0) {
+      return segments[i - 1];
+    }
+  }
+
+  // Fallback: return the first segment if it looks like a project name.
+  if (segments.length > 1) return segments[0];
+  return null;
+}
+
+/// Clickable badge showing a derived service name that navigates to
+/// the Logger search filtered by that service.
+class _ServiceBadge extends StatelessWidget {
+  final String serviceName;
+
+  const _ServiceBadge({required this.serviceName});
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      children: [
+        SizedBox(
+          width: 90,
+          child: Text(
+            'Service',
+            style: const TextStyle(
+              color: CodeOpsColors.textTertiary,
+              fontSize: 11,
+            ),
+          ),
+        ),
+        MouseRegion(
+          cursor: SystemMouseCursors.click,
+          child: GestureDetector(
+            onTap: () => CrossModuleNavigator.goToLoggerSearch(
+              context,
+              serviceName: serviceName,
+            ),
+            child: Container(
+              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+              decoration: BoxDecoration(
+                color: CodeOpsColors.primary.withValues(alpha: 0.1),
+                borderRadius: BorderRadius.circular(4),
+                border: Border.all(
+                  color: CodeOpsColors.primary.withValues(alpha: 0.3),
+                ),
+              ),
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Icon(
+                    Icons.inventory_2_outlined,
+                    size: 12,
+                    color: CodeOpsColors.primary,
+                  ),
+                  const SizedBox(width: 4),
+                  Text(
+                    serviceName,
+                    style: const TextStyle(
+                      color: CodeOpsColors.primary,
+                      fontSize: 11,
+                      fontWeight: FontWeight.w500,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ),
+      ],
     );
   }
 }

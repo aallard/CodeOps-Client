@@ -13,6 +13,7 @@ import 'package:intl/intl.dart';
 import '../../models/mcp_enums.dart';
 import '../../models/mcp_models.dart';
 import '../../providers/mcp_providers.dart';
+import '../../services/navigation/cross_module_navigator.dart';
 import '../../theme/colors.dart';
 import '../../widgets/shared/error_panel.dart';
 
@@ -548,6 +549,10 @@ class _ToolCallRow extends StatelessWidget {
       null => CodeOpsColors.textTertiary,
     };
 
+    final categoryRoute = call.toolCategory != null
+        ? CrossModuleNavigator.routeForModule(call.toolCategory!, '')
+        : null;
+
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 4),
       child: Row(
@@ -573,11 +578,29 @@ class _ToolCallRow extends StatelessWidget {
                   ),
                 ),
                 if (call.toolCategory != null)
-                  Text(
-                    call.toolCategory!,
-                    style: const TextStyle(
-                      fontSize: 11,
-                      color: CodeOpsColors.textTertiary,
+                  MouseRegion(
+                    cursor: categoryRoute != null
+                        ? SystemMouseCursors.click
+                        : SystemMouseCursors.basic,
+                    child: GestureDetector(
+                      onTap: categoryRoute != null
+                          ? () => context.go(categoryRoute)
+                          : null,
+                      child: Text(
+                        call.toolCategory!,
+                        style: TextStyle(
+                          fontSize: 11,
+                          color: categoryRoute != null
+                              ? CodeOpsColors.primary
+                              : CodeOpsColors.textTertiary,
+                          decoration: categoryRoute != null
+                              ? TextDecoration.underline
+                              : null,
+                          decorationColor: categoryRoute != null
+                              ? CodeOpsColors.primary
+                              : null,
+                        ),
+                      ),
                     ),
                   ),
               ],

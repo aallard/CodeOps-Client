@@ -9,6 +9,7 @@ import 'package:flutter/material.dart';
 
 import '../../models/fleet_enums.dart';
 import '../../models/fleet_models.dart';
+import '../../services/navigation/cross_module_navigator.dart';
 import '../../theme/colors.dart';
 import '../../theme/typography.dart';
 import '../../utils/date_utils.dart';
@@ -45,7 +46,7 @@ class ContainerOverviewTab extends StatelessWidget {
         children: [
           _buildInfoCard(),
           const SizedBox(height: 24),
-          _buildActions(),
+          _buildActions(context),
         ],
       ),
     );
@@ -116,7 +117,7 @@ class ContainerOverviewTab extends StatelessWidget {
   }
 
   /// Builds the action buttons row.
-  Widget _buildActions() {
+  Widget _buildActions(BuildContext context) {
     final isRunning = detail.status == ContainerStatus.running;
 
     return Wrap(
@@ -149,6 +150,18 @@ class ContainerOverviewTab extends StatelessWidget {
           style: OutlinedButton.styleFrom(
             foregroundColor: CodeOpsColors.error,
             side: const BorderSide(color: CodeOpsColors.error),
+          ),
+        ),
+        OutlinedButton.icon(
+          onPressed: () => CrossModuleNavigator.goToLoggerSearch(
+            context,
+            serviceName: detail.serviceName,
+          ),
+          icon: const Icon(Icons.list_alt_outlined, size: 18),
+          label: const Text('View in Logger'),
+          style: OutlinedButton.styleFrom(
+            foregroundColor: CodeOpsColors.primary,
+            side: const BorderSide(color: CodeOpsColors.primary),
           ),
         ),
       ],

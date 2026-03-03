@@ -251,5 +251,26 @@ void main() {
 
       expect(find.text('Connection Manager'), findsNothing);
     });
+
+    testWidgets('shows Fetch from Vault button in form', (tester) async {
+      await tester.binding.setSurfaceSize(const Size(1400, 900));
+      addTearDown(() => tester.binding.setSurfaceSize(null));
+
+      await tester.pumpWidget(_createWidget());
+      await tester.tap(find.text('Open'));
+      await tester.pumpAndSettle();
+
+      await tester.tap(find.text('New Connection'));
+      await tester.pumpAndSettle();
+
+      expect(
+        find.text('Fetch from Vault', skipOffstage: false),
+        findsOneWidget,
+      );
+      expect(
+        find.byIcon(Icons.key_outlined, skipOffstage: false),
+        findsOneWidget,
+      );
+    });
   });
 }

@@ -69,6 +69,8 @@ class RelayEventStyleHelper {
   ///
   /// Returns `null` if the event has no navigable source (missing module,
   /// missing entity ID, or no matching route exists in the router).
+  /// Supports all CodeOps modules: registry, vault, fleet, courier, logger,
+  /// mcp, relay, and datalens.
   static String? routeForEvent(PlatformEventResponse event) {
     final module = event.sourceModule;
     final entityId = event.sourceEntityId;
@@ -77,6 +79,12 @@ class RelayEventStyleHelper {
     return switch (module.toLowerCase()) {
       'registry' => '/registry/services/$entityId',
       'vault' => '/vault/secrets/$entityId',
+      'fleet' => '/fleet/containers/$entityId',
+      'courier' => '/courier/request/$entityId',
+      'logger' => '/logger/search',
+      'mcp' => '/mcp/sessions/$entityId',
+      'relay' => '/relay/channel/$entityId',
+      'datalens' => '/datalens',
       _ => null,
     };
   }

@@ -13,6 +13,7 @@ import 'package:uuid/uuid.dart';
 import '../../models/datalens_enums.dart';
 import '../../models/datalens_models.dart';
 import '../../providers/datalens_providers.dart';
+import '../../services/navigation/cross_module_navigator.dart';
 import '../../theme/colors.dart';
 
 /// Predefined connection colors for the color picker.
@@ -772,7 +773,27 @@ class _ConnectionFormState extends ConsumerState<_ConnectionForm> {
                 ),
               ],
             ),
-            const SizedBox(height: 12),
+            const SizedBox(height: 8),
+            Align(
+              alignment: Alignment.centerRight,
+              child: TextButton.icon(
+                onPressed: () {
+                  Navigator.of(context).pop();
+                  CrossModuleNavigator.goToVaultSecrets(context);
+                },
+                icon: const Icon(Icons.key_outlined, size: 14),
+                label: const Text(
+                  'Fetch from Vault',
+                  style: TextStyle(fontSize: 12),
+                ),
+                style: TextButton.styleFrom(
+                  foregroundColor: CodeOpsColors.secondary,
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                ),
+              ),
+            ),
+            const SizedBox(height: 4),
           ],
 
           // SSL + Timeout row
