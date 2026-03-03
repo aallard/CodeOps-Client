@@ -90,6 +90,8 @@ import 'pages/courier/import_page.dart';
 import 'pages/courier/request_history_page.dart';
 import 'pages/courier/run_results_page.dart';
 import 'pages/mcp/mcp_dashboard_page.dart';
+import 'pages/mcp/session_detail_page.dart';
+import 'pages/mcp/session_list_page.dart';
 import 'pages/relay/relay_page.dart';
 import 'pages/scribe_page.dart';
 import 'pages/settings_page.dart';
@@ -947,18 +949,19 @@ final GoRouter router = GoRouter(
           path: '/mcp/sessions',
           name: 'mcp-sessions',
           pageBuilder: (context, state) => const NoTransitionPage(
-            child: PlaceholderPage(title: 'MCP Sessions'),
+            child: SessionListPage(),
           ),
         ),
         // 87. MCP — Session Detail
         GoRoute(
           path: '/mcp/sessions/:sessionId',
           name: 'mcp-session-detail',
-          pageBuilder: (context, state) => NoTransitionPage(
-            child: PlaceholderPage(
-              title: 'Session ${state.pathParameters['sessionId']}',
-            ),
-          ),
+          pageBuilder: (context, state) {
+            final sessionId = state.pathParameters['sessionId']!;
+            return NoTransitionPage(
+              child: SessionDetailPage(sessionId: sessionId),
+            );
+          },
         ),
         // 88. MCP — Activity Feed
         GoRoute(
