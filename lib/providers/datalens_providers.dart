@@ -206,9 +206,14 @@ final connectionStatusProvider =
 // ─────────────────────────────────────────────────────────────────────────────
 
 /// Schemas for the selected connection.
+///
+/// Returns an empty list when the connection is not yet established,
+/// preventing [StateError] from [DatabaseConnectionService._requireDriver].
 final datalensSchemasProvider = FutureProvider<List<SchemaInfo>>((ref) {
   final connectionId = ref.watch(selectedConnectionIdProvider);
   if (connectionId == null) return [];
+  final connService = ref.watch(datalensConnectionServiceProvider);
+  if (!connService.isConnected(connectionId)) return [];
   final service = ref.watch(datalensSchemaServiceProvider);
   return service.getSchemas(connectionId);
 });
